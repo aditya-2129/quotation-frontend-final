@@ -1,0 +1,442 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { quotationService } from '@/services/quotations';
+import { customerService } from '@/services/customers';
+import { materialService } from '@/services/materials';
+import { laborRateService, toolingRateService, bopRateService } from '@/services/rates';
+import CustomerModal from '@/components/modals/CustomerModal';
+import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
+import BOMRegistry from '@/components/quotations/BOMRegistry';
+import RawMaterial from '@/components/quotations/RawMaterial';
+import MachiningLogic from '@/components/quotations/MachiningLogic';
+import BroughtOutParts from '@/components/quotations/BoughtOutParts';
+import TechnicalSpecifications from '@/components/quotations/TechnicalSpecifications';
+import OperationalTooling from '@/components/quotations/OperationalTooling';
+import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
+import ValuationLedger from '@/components/quotations/ValuationLedger';
+
+export default function NewQuotationPage() {
+  const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [formData, setFormData] = useState({
+    quotation_no: '', 
+    supplier_name: '', 
+    customer: null, // Project-wide customer
+    contact_person: '',
+    contact_phone: '',
+    contact_email: '',
+    quoting_engineer: '',
+    revision_no: 'Rev 00',
+    inquiry_date: new Date().toISOString().split('T')[0],
+    delivery_date: '',
+    status: 'Draft',
+    markup: 15,
+    packaging_cost: 0,
+    transportation_cost: 0,
+    design_cost: 0,
+    assembly_cost: 0,
+    production_mode: 'Batch',
+    quantity: 1,
+    items: [
+      {
+        id: Date.now(),
+        part_name: 'Part 01',
+        qty: 1,
+        material: null,
+        material_weight: 0,
+        wastage: 3,
+        hardness: '',
+        tolerance: '',
+        surface_finish: '',
+        treatments: [],
+        inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
+        processes: [],
+        tooling: [],
+        bought_out_items: [],
+        design_files: []
+      }
+    ] 
+  });
+
+  // Master Data for Selects
+  const [libraries, setLibraries] = useState({
+    customers: [],
+    materials: [],
+    labor: [],
+    tooling: []
+  });
+
+  const [activePhase, setActivePhase] = useState('scope'); // scope, material, machining, tooling
+
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Persistence Layer: Load Draft
+  useEffect(() => {
+    setMounted(true);
+    const savedFormData = localStorage.getItem('draft_formData');
+    if (savedFormData) {
+      setFormData(JSON.parse(savedFormData));
+    }
+  }, []);
+
+  // Persistence Layer: Save changes
+  useEffect(() => {
+     if (!isLoading) {
+        localStorage.setItem('draft_formData', JSON.stringify({
+           ...formData,
+           items: formData.items.map(item => ({ 
+              ...item, 
+              design_files: (item.design_files || []).filter(f => f.$id) // Only persist uploaded assets
+           })) 
+        }));
+     }
+  }, [formData, isLoading]);
+
+  // Derived Active Item
+  const activeQuote = formData.items[selectedItemIndex] || formData.items[0] || {
+    id: Date.now(),
+    part_name: 'Part 01',
+    qty: 1,
+    material: null,
+    material_weight: 0,
+    wastage: 3,
+    hardness: '',
+    tolerance: '',
+    surface_finish: '',
+    treatments: [], // Dynamic array for HT, ST, etc.
+    inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
+    processes: [],
+    tooling: [],
+    bought_out_items: [],
+    design_files: []
+  };
+
+  const setActiveQuote = (update) => {
+     setFormData(prev => {
+        const newItems = [...prev.items];
+        const currentItem = newItems[selectedItemIndex];
+        const updatedItem = typeof update === 'function' ? update(currentItem) : update;
+        newItems[selectedItemIndex] = { ...currentItem, ...updatedItem };
+        return { ...prev, items: newItems };
+     });
+  };
+
+  useEffect(() => {
+    // Generate sequential ID only if not restored from draft
+    const initSequence = async () => {
+      const savedFormData = localStorage.getItem('draft_formData');
+      if (savedFormData) {
+         const parsed = JSON.parse(savedFormData);
+         if (parsed.quotation_no) return; // Already have an ID
+      }
+      try {
+        const nextId = await quotationService.generateNextQuotationID();
+        setFormData(prev => ({ ...prev, quotation_no: nextId }));
+      } catch (err) {
+        console.error("ID Generation failed:", err);
+      }
+    };
+    initSequence();
+
+    const fetchMasterData = async () => {
+      try {
+        setIsLoading(true);
+        const [c, m, l, t, b] = await Promise.all([
+          customerService.listCustomers(100),
+          materialService.listMaterials(100),
+          laborRateService.listRates(100),
+          toolingRateService.listRates(100),
+          bopRateService.listRates(100)
+        ]);
+        setLibraries({
+          customers: c.documents,
+          materials: m.documents,
+          labor: l.documents,
+          tooling: t.documents,
+          bop: b.documents
+        });
+      } catch (err) {
+        console.error("Master data fetch failed:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchMasterData();
+  }, []);
+
+  // Calculation Logic (Consolidated Ledger)
+  if (!mounted) {
+     return (
+        <DashboardLayout title="Engineering Workspace">
+           <div className="flex h-64 items-center justify-center">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 animate-pulse">Initializing Command Center...</span>
+           </div>
+        </DashboardLayout>
+     );
+  }
+
+  const calculateTotals = () => {
+    let materialTotal = 0;
+    let laborTotal = 0;
+    let toolingTotal = 0;
+    let bopTotal = 0;
+    let treatmentTotal = 0;
+    let qualityTotal = 0;
+    let projectEngineeringTotal = parseFloat(formData.design_cost || 0) + parseFloat(formData.assembly_cost || 0); 
+
+    formData.items.forEach(item => {
+      const quantity = parseFloat(item.qty || 1);
+      
+      // Material Component (per unit * quantity)
+      if (item.material && item.material_weight > 0) {
+          materialTotal += (item.material_weight * item.material.base_rate) * quantity;
+      }
+
+      // Labor Component (Total Batch Cost = (Setup Time + (Cycle Time * Quantity)) * Rate / 60)
+      laborTotal += item.processes.reduce((acc, p) => {
+          const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * quantity);
+          const hours = totalMinutes / 60;
+          return acc + (parseFloat(p.hourly_rate || 0) * hours);
+      }, 0);
+
+      // Tooling Component (Fixed total batch cost)
+      toolingTotal += item.tooling.reduce((acc, t) => acc + (parseFloat(t.rate || 0) * parseFloat(t.qty || 1)), 0);
+
+      // External Treatments (Batch-level costs)
+      treatmentTotal += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? quantity : 1)), 0);
+
+      // Quality & Documentation (per unit * quantity)
+      if (item.inspection?.cmm || item.inspection?.mtc) {
+          const cmmCost = parseFloat(item.inspection.cmm ? (item.inspection.cmm_cost || 0) : 0);
+          const mtcCost = parseFloat(item.inspection.mtc ? (item.inspection.mtc_cost || 0) : 0);
+          qualityTotal += (cmmCost + mtcCost) * quantity;
+      }
+
+      // Design and Assembly are now handled project-wide outside the items loop
+
+      // 3. Brought Out Parts (BOP)
+      bopTotal += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * quantity), 0);
+    });
+    
+    // 3. Project Level Adjustments
+    const commercialTotal = parseFloat(formData.packaging_cost || 0) + parseFloat(formData.transportation_cost || 0);
+
+    const subtotal = materialTotal + laborTotal + toolingTotal + bopTotal + treatmentTotal + qualityTotal + projectEngineeringTotal + commercialTotal;
+    const finalTotal = subtotal * (1 + (formData.markup / 100));
+    
+    return { 
+      subtotal, 
+      finalTotal, 
+      materialCost: materialTotal, 
+      laborCost: laborTotal, 
+      toolingCost: toolingTotal, 
+      bopCost: bopTotal, 
+      treatmentCost: treatmentTotal, 
+      qualityCost: qualityTotal,
+      engineeringCost: projectEngineeringTotal,
+      commercialCost: commercialTotal
+    };
+  };
+
+  const totals = calculateTotals();
+
+
+   const handleSave = async () => {
+      try {
+         // Destructure only valid schema fields from formData
+         const { 
+            quotation_no, supplier_name, contact_person, contact_phone, 
+            contact_email, quoting_engineer, revision_no, inquiry_date, 
+            delivery_date, status, markup, packaging_cost, 
+            transportation_cost, design_cost, assembly_cost,
+            production_mode, quantity 
+         } = formData;
+
+         const payload = {
+            quotation_no,
+            supplier_name: formData.customer?.name || supplier_name || 'Unknown',
+            contact_person,
+            contact_phone,
+            contact_email,
+            quoting_engineer,
+            revision_no,
+            inquiry_date,
+            delivery_date,
+            status,
+            markup,
+            packaging_cost,
+            transportation_cost,
+            design_cost,
+            assembly_cost,
+            production_mode,
+            quantity: parseInt(quantity) || 1,
+            // Required part_number for schema compatibility, mapping to first item
+            part_number: formData.items[0]?.part_name || 'MULTIPLE',
+            items: JSON.stringify(formData.items.map(i => ({ 
+               ...i, 
+               design_files: (i.design_files || []).filter(f => f.$id) // Persist only uploaded assets
+            }))),
+            detailed_breakdown: JSON.stringify(totals),
+            total_amount: totals.finalTotal,
+            subtotal: totals.subtotal,
+            customer_id: formData.customer?.$id || ''
+         };
+
+         await quotationService.createQuotation(payload);
+         localStorage.removeItem('draft_formData');
+         window.location.href = '/quotations';
+      } catch (e) {
+         console.error("Save Error:", e);
+         alert("Save failed: " + (e.message || "Unknown error"));
+      }
+   };
+
+  const handleDiscard = () => {
+     if (window.confirm("Abandon this valuation? Restoration will not be possible.")) {
+        localStorage.removeItem('draft_formData');
+        window.location.href = '/quotations';
+     }
+  };
+
+  return (
+    <DashboardLayout 
+      title="Engineering Valuation Workspace"
+      primaryAction={
+        <div className="flex gap-3">
+           <button 
+             onClick={handleDiscard}
+             className="px-5 h-9 flex items-center justify-center text-[11px] font-black uppercase tracking-tight text-zinc-500 hover:text-zinc-950 transition-colors"
+           >
+             Discard
+           </button>
+           <button 
+             onClick={handleSave}
+             className="px-6 h-9 flex items-center justify-center rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 hover:bg-zinc-900 transition-all active:scale-95 border border-zinc-800"
+           >
+             Commit Valuation
+           </button>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+         {/* Left: Engineering Ledger */}
+         <div className="xl:col-span-3 space-y-4">
+            <ScopeAndIdentity 
+               formData={formData}
+               setFormData={setFormData}
+               activeQuote={activeQuote}
+               setActiveQuote={setActiveQuote}
+               libraries={libraries}
+               activePhase={activePhase}
+               setActivePhase={setActivePhase}
+               setIsQuickAddOpen={setIsQuickAddOpen}
+               customerSearch={customerSearch}
+               setCustomerSearch={setCustomerSearch}
+               isDropdownOpen={isDropdownOpen}
+               setIsDropdownOpen={setIsDropdownOpen}
+               panelIndex={1}
+            />
+
+            <BOMRegistry 
+               formData={formData}
+               setFormData={setFormData}
+               activePhase={activePhase}
+               setActivePhase={setActivePhase}
+               panelIndex={2}
+            />
+
+            <RawMaterial 
+               activePhase={activePhase}
+               setActivePhase={setActivePhase}
+               formData={formData}
+               setFormData={setFormData}
+               libraries={libraries}
+               panelIndex={3}
+            />
+
+            <MachiningLogic 
+               activePhase={activePhase}
+               setActivePhase={setActivePhase}
+               formData={formData}
+               setFormData={setFormData}
+               libraries={libraries}
+               panelIndex={4}
+            />
+
+            <OperationalTooling 
+               activePhase={activePhase}
+               setActivePhase={setActivePhase}
+               formData={formData}
+               setFormData={setFormData}
+               libraries={libraries}
+               panelIndex={5}
+            />
+
+             <TechnicalSpecifications 
+                activePhase={activePhase}
+                setActivePhase={setActivePhase}
+                formData={formData}
+                setFormData={setFormData}
+                panelIndex={6}
+             />
+
+            <BroughtOutParts
+               activePhase={activePhase}
+               setActivePhase={setActivePhase}
+               formData={formData}
+               setFormData={setFormData}
+               libraries={libraries}
+               panelIndex={7}
+            />
+
+             <CommercialAdjustments 
+                activePhase={activePhase}
+                setActivePhase={setActivePhase}
+                formData={formData}
+                setFormData={setFormData}
+                panelIndex={8}
+             />
+         </div>
+
+         {/* Right: Valuation Sidebar */}
+         <div className="xl:col-span-1">
+            <ValuationLedger 
+               totals={totals}
+               activeQuote={activeQuote}
+               setActiveQuote={setActiveQuote}
+               formData={formData}
+               setFormData={setFormData}
+               activePhase={activePhase}
+            />
+         </div>
+      </div>
+
+      {isQuickAddOpen && (
+         <CustomerModal 
+            onClose={() => setIsQuickAddOpen(false)} 
+            onSuccess={(newCustomer) => {
+               setLibraries(prev => ({
+                  ...prev,
+                  customers: [newCustomer, ...prev.customers]
+               }));
+               setActiveQuote(prev => ({ ...prev, customer: newCustomer }));
+               setFormData(prev => ({ 
+                  ...prev, 
+                  supplier_name: newCustomer.name,
+                  contact_person: newCustomer.contact_person || prev.contact_person,
+                  contact_phone: newCustomer.phone || prev.contact_phone,
+                  contact_email: newCustomer.email || prev.contact_email
+               }));
+               setCustomerSearch(newCustomer.name);
+               setIsQuickAddOpen(false);
+            }} 
+         />
+      )}
+    </DashboardLayout>
+  );
+}

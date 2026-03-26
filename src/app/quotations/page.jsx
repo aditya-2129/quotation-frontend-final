@@ -1,0 +1,187 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { quotationService } from '@/services/quotations';
+import { assetService } from '@/services/assets';
+import ActionButtons from '@/components/shared/ActionButtons';
+
+export default function QuotationsPage() {
+  const [quotations, setQuotations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 25;
+
+  const fetchQuotations = async () => {
+    try {
+      setIsLoading(true);
+      const response = await quotationService.listQuotations(limit, (page - 1) * limit);
+      setQuotations(response.documents);
+      setTotal(response.total);
+    } catch (err) {
+      console.error("Failed to fetch quotations:", err);
+      setError("Unable to sync with central repository. Verify connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuotations();
+  }, [page]);
+
+  const handleDelete = async (quote) => {
+     if (confirm("Are you sure you want to delete this valuation? This cannot be undone.")) {
+        try { 
+           // 1. Check for files and delete them
+           let parsedItems = [];
+           try {
+              parsedItems = JSON.parse(quote.items || '[]');
+           } catch (e) {
+              console.error("Failed to parse items for cleanup:", e);
+           }
+
+           if (parsedItems.length > 0) {
+              const fileIds = parsedItems.flatMap(item => (item.design_files || []).map(f => f.$id)).filter(Boolean);
+              if (fileIds.length > 0) {
+                 await Promise.all(fileIds.map(id => assetService.deleteFile(id)));
+              }
+           }
+
+           // 2. Delete the database record
+           await quotationService.deleteQuotation(quote.$id); 
+           fetchQuotations(); 
+        }
+        catch (e) { 
+           console.error("Deletion cycle failed:", e);
+           alert("Delete failed: " + (e.message || "Unknown error")); 
+        }
+     }
+  };
+
+  return (
+    <DashboardLayout 
+      title="Project Quotations"
+      primaryAction={
+        <button 
+          onClick={() => window.location.href = '/quotations/new'}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-95"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Project New Valuation
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-6">
+
+        {error && (
+           <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
+              {error}
+           </div>
+        )}
+
+        <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="bg-zinc-50 border-b border-zinc-200">
+                <tr>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Quote Vector / ID</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Client Name</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Batch Date</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Status</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Valuation Total</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Registry Ops</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200">
+                {isLoading ? (
+                  [1,2,3,4,5].map(i => (
+                    <tr key={i} className="animate-pulse">
+                       <td className="px-6 py-4"><div className="h-4 w-28 bg-zinc-100 rounded" /></td>
+                       <td className="px-6 py-4"><div className="h-4 w-32 bg-zinc-100 rounded" /></td>
+                       <td className="px-6 py-4 text-center"><div className="h-4 w-16 bg-zinc-100 rounded mx-auto" /></td>
+                       <td className="px-6 py-4 text-center"><div className="h-6 w-16 bg-zinc-100 rounded-full mx-auto" /></td>
+                       <td className="px-6 py-4 text-right"><div className="h-4 w-20 bg-zinc-100 rounded ml-auto" /></td>
+                       <td className="px-6 py-4 text-right"><div className="h-8 w-16 bg-zinc-100 rounded ml-auto" /></td>
+                    </tr>
+                  ))
+                ) : quotations.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-20 text-center text-zinc-400 italic">
+                       No valuations found in central repository.
+                    </td>
+                  </tr>
+                ) : (
+                  quotations.map((row) => (
+                    <tr key={row.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                      <td className="px-6 py-4">
+                         <div className="flex flex-col">
+                            <span className="text-zinc-950 font-bold">{row.quotation_no || row.$id.substring(0,8)}</span>
+                            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-tighter">{row.part_number || 'No Part Ref'}</span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-zinc-600 font-medium">
+                         <span className="truncate max-w-[150px] inline-block">{row.supplier_name || 'N/A'}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center text-[10px] font-bold font-mono text-zinc-500">
+                         {new Date(row.$createdAt).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest leading-none ${
+                          row.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                          row.status === 'Pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                          'bg-zinc-50 text-zinc-500 border border-zinc-200'
+                        }`}>
+                          {row.status || 'Draft'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono font-bold text-zinc-950">
+                        ₹{parseFloat(row.total_amount || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                         <ActionButtons 
+                           onEdit={() => window.location.href = `/quotations/edit/${row.$id}`} 
+                           onDelete={() => handleDelete(row)} 
+                         />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="px-6 py-4 border-t border-zinc-200 bg-zinc-50/50 flex items-center justify-between">
+             <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
+                Showing {Math.min(total, (page - 1) * limit + 1)} - {Math.min(total, page * limit)} of {total}
+             </div>
+             <div className="flex items-center gap-2">
+                <button 
+                   disabled={page === 1}
+                   onClick={() => setPage(p => p - 1)}
+                   className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                   Previous
+                </button>
+                <div className="flex items-center gap-1 px-2 text-[11px] font-bold text-zinc-900 mono">
+                   {page} <span className="text-zinc-300 font-normal">/</span> {Math.ceil(total / limit) || 1}
+                </div>
+                <button 
+                   disabled={page >= Math.ceil(total / limit)}
+                   onClick={() => setPage(p => p + 1)}
+                   className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                   Next
+                </button>
+             </div>
+          </div>
+        </section>
+      </div>
+    </DashboardLayout>
+  );
+}

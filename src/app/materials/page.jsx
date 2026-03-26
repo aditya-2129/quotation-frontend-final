@@ -1,0 +1,343 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { materialService } from '@/services/materials';
+import ActionButtons from '@/components/shared/ActionButtons';
+
+export default function MaterialsPage() {
+  const [materials, setMaterials] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 25;
+
+  const fetchMaterials = async () => {
+    try {
+      setIsLoading(true);
+      const response = await materialService.listMaterials(limit, (page - 1) * limit);
+      setMaterials(response.documents);
+      setTotal(response.total);
+    } catch (error) {
+      console.error("Failed to fetch materials library:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMaterials();
+  }, [page]);
+
+  const openAddModal = () => {
+    setSelectedMaterial(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (material) => {
+    setSelectedMaterial(material);
+    setIsModalOpen(true);
+  };
+
+  const closeAndResetModal = () => {
+    setIsModalOpen(false);
+    setSelectedMaterial(null);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to remove this material from the master library?")) {
+      try {
+        await materialService.deleteMaterial(id);
+        fetchMaterials();
+      } catch (error) {
+        alert("Execution failed: " + error.message);
+      }
+    }
+  };
+
+  const filteredMaterials = materials.filter(m => 
+    m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.grade?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.shape?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.density?.toString().includes(searchQuery)
+  );
+
+  return (
+    <DashboardLayout 
+      title="Materials Inventory"
+      primaryAction={
+        <button 
+           onClick={openAddModal}
+           className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-95"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Material
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between p-4 bg-white border border-zinc-200 rounded-xl shadow-sm">
+           <div className="relative w-full max-w-md">
+              <input 
+                 type="text" 
+                 placeholder="Search registry (Name, Grade, Shape...)" 
+                 className="w-full h-11 pl-11 pr-4 rounded-lg bg-zinc-50 border border-zinc-200 text-sm focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <svg className="h-5 w-5 absolute left-3.5 top-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+           </div>
+           <div className="flex gap-2">
+              <div className="flex items-center gap-1.5 px-3 h-11 rounded-lg border border-zinc-200 bg-zinc-50 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                 <span className="h-2 w-2 rounded-full bg-zinc-400" />
+                 Total Records: {total}
+              </div>
+           </div>
+        </div>
+
+        <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="bg-zinc-50 border-b border-zinc-200">
+                <tr>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Material Name</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Grade</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Form Factor</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Density</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Base Rate (per kg)</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200">
+                {isLoading ? (
+                  [1,2,3,4,5].map(i => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-6 py-5"><div className="h-4 w-48 bg-zinc-100 rounded" /></td>
+                      <td className="px-6 py-5"><div className="h-4 w-20 bg-zinc-100 rounded mx-auto" /></td>
+                      <td className="px-6 py-5"><div className="h-4 w-16 bg-zinc-100 rounded mx-auto" /></td>
+                      <td className="px-6 py-5"><div className="h-4 w-24 bg-zinc-100 rounded ml-auto" /></td>
+                      <td className="px-6 py-5"><div className="h-4 w-16 bg-zinc-100 rounded ml-auto" /></td>
+                    </tr>
+                  ))
+                ) : filteredMaterials.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-20 text-center">
+                       <div className="flex flex-col items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-300">
+                             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                             </svg>
+                          </div>
+                          <span className="text-sm text-zinc-500 font-medium">No materials matching your trajectory.</span>
+                       </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredMaterials.map((m) => (
+                    <tr key={m.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                      <td className="px-6 py-4 font-bold text-zinc-950">{m.name}</td>
+                      <td className="px-6 py-4 text-[11px] font-mono font-bold text-zinc-500 uppercase italic">{m.grade || '—'}</td>
+                      <td className="px-6 py-4 text-center">
+                         <span className="inline-flex px-2 py-0.5 rounded border border-zinc-200 bg-white text-[10px] font-bold text-zinc-600 uppercase tracking-tight">
+                            {m.shape?.replace('_', ' ')}
+                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="text-xs font-mono font-medium text-zinc-600">{parseFloat(m.density).toFixed(3)} <span className="text-[10px] text-zinc-400 font-sans uppercase">g/cm³</span></span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-xs font-mono font-bold text-emerald-700">₹{parseFloat(m.base_rate).toFixed(2)}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <ActionButtons onEdit={() => openEditModal(m)} onDelete={() => handleDelete(m.$id)} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="px-6 py-4 border-t border-zinc-200 bg-zinc-50/50 flex items-center justify-between mt-auto">
+             <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
+                Index {Math.min(total, (page - 1) * limit + 1)} - {Math.min(total, page * limit)} of {total}
+             </div>
+             <div className="flex items-center gap-2">
+                <button 
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                  className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm uppercase tracking-tighter"
+                >
+                  Prev
+                </button>
+                <div className="flex items-center gap-1 px-2 text-[11px] font-mono font-bold text-zinc-900">
+                   {page} <span className="text-zinc-300 font-normal">/</span> {Math.ceil(total / limit) || 1}
+                </div>
+                <button 
+                  disabled={page >= Math.ceil(total / limit)}
+                  onClick={() => setPage(p => p + 1)}
+                  className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm uppercase tracking-tighter"
+                >
+                  Next
+                </button>
+             </div>
+          </div>
+        </section>
+      </div>
+
+      {isModalOpen && (
+        <MaterialModal 
+          material={selectedMaterial} 
+          onClose={closeAndResetModal} 
+          onSuccess={() => {
+            closeAndResetModal();
+            fetchMaterials();
+          }} 
+        />
+      )}
+    </DashboardLayout>
+  );
+}
+
+function MaterialModal({ onClose, onSuccess, material }) {
+  const [formData, setFormData] = useState({
+    name: material?.name || '',
+    grade: material?.grade || '',
+    density: material?.density || 0,
+    base_rate: material?.base_rate || 0,
+    shape: material?.shape || 'round_bar'
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const shapes = [
+    { id: 'round_bar', label: 'Round Bar' },
+    { id: 'square_bar', label: 'Square Bar' },
+    { id: 'rectangular_bar', label: 'Rectangular Bar' },
+    { id: 'plate_sheet', label: 'Plate / Sheet' },
+    { id: 'hollow_tube', label: 'Hollow Tube' },
+    { id: 'hex_bar', label: 'Hex Bar' },
+    { id: 'forged_block', label: 'Forged Block' },
+    { id: 'casting', label: 'Casting' },
+    { id: 'extruded_section', label: 'Extruded Section' }
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setIsSubmitting(true);
+      // Ensure numeric values are numbers
+      const submissionData = {
+        ...formData,
+        density: parseFloat(formData.density),
+        base_rate: parseFloat(formData.base_rate)
+      };
+
+      if (material) {
+        await materialService.updateMaterial(material.$id, submissionData);
+      } else {
+        await materialService.createMaterial(submissionData);
+      }
+      onSuccess();
+    } catch (error) {
+      alert("Error syncing material record: " + error.message);
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/20 backdrop-blur-sm">
+      <div className="w-full max-w-lg bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <header className="px-8 py-6 border-b border-zinc-100 bg-zinc-50/50">
+           <h2 className="text-xl font-bold text-zinc-950 tracking-tight">
+              {material ? 'Material Specification Update' : 'New Material Inventory Entry'}
+           </h2>
+           <p className="text-sm text-zinc-500 mt-1.5 font-medium leading-relaxed">
+              Configure precise physical properties and market rates for the global registry.
+           </p>
+        </header>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+           <div className="grid grid-cols-2 gap-5">
+              <div className="col-span-2">
+                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Material Name *</label>
+                 <input 
+                    required
+                    placeholder="e.g. Aluminium"
+                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-bold focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                 />
+              </div>
+              <div>
+                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Grade / Specification</label>
+                 <input 
+                    placeholder="e.g. 6061-T6"
+                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
+                    value={formData.grade}
+                    onChange={(e) => setFormData({...formData, grade: e.target.value})}
+                 />
+              </div>
+              <div>
+                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Form Factor (Shape) *</label>
+                 <select 
+                    required
+                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
+                    value={formData.shape}
+                    onChange={(e) => setFormData({...formData, shape: e.target.value})}
+                 >
+                    {shapes.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                 </select>
+              </div>
+              <div>
+                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Density (g/cm³) *</label>
+                 <input 
+                    required
+                    type="number"
+                    step="0.001"
+                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-mono focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
+                    value={formData.density}
+                    onChange={(e) => setFormData({...formData, density: e.target.value})}
+                 />
+              </div>
+              <div>
+                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Base Rate (₹/kg) *</label>
+                 <input 
+                    required
+                    type="number"
+                    step="0.01"
+                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-mono focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
+                    value={formData.base_rate}
+                    onChange={(e) => setFormData({...formData, base_rate: e.target.value})}
+                 />
+              </div>
+           </div>
+
+           <div className="flex gap-4 pt-6 border-t border-zinc-100">
+              <button 
+                 type="button" 
+                 onClick={onClose}
+                 className="flex-1 h-12 rounded-xl font-bold text-zinc-400 hover:text-zinc-950 transition-colors"
+              >
+                 Abort
+              </button>
+              <button 
+                 type="submit"
+                 disabled={isSubmitting}
+                 className="flex-[2] h-12 rounded-xl bg-zinc-950 text-white font-bold shadow-xl hover:bg-zinc-800 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                 {isSubmitting ? 'Syncing...' : (material ? 'Commit Changes' : 'Update Registry')}
+              </button>
+           </div>
+        </form>
+      </div>
+    </div>
+  );
+}
