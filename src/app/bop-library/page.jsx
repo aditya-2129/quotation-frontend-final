@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { bopRateService } from '@/services/rates';
 import ActionButtons from '@/components/shared/ActionButtons';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
 
 export default function BOPLibraryPage() {
   const [items, setItems] = useState([]);
@@ -12,6 +13,8 @@ export default function BOPLibraryPage() {
   const [modalState, setModalState] = useState({ open: false, data: null });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const limit = 25;
 
   useEffect(() => {
@@ -34,16 +37,22 @@ export default function BOPLibraryPage() {
   const openModal = (data = null) => setModalState({ open: true, data });
   const closeModal = () => setModalState({ open: false, data: null });
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Purge this component from the master library?")) {
+   const handleDelete = (item) => {
+      setDeleteConfirm({ open: true, row: item });
+   };
+
+   const commitDelete = async () => {
+      const item = deleteConfirm.row;
+      if (!item) return;
       try {
-        await bopRateService.deleteRate(id);
-        fetchData();
+         await bopRateService.deleteRate(item.$id);
+         fetchData();
       } catch (error) {
-        alert("Execution failed: " + error.message);
+         setErrorDetails({ open: true, message: error.message || "Failed to excise component from procurement path." });
+      } finally {
+         setDeleteConfirm({ open: false, row: null });
       }
-    }
-  };
+   };
 
   const filteredItems = items.filter(i => 
     i.item_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,9 +128,9 @@ export default function BOPLibraryPage() {
                           <td className="px-6 py-5 text-right">
                              <span className="text-sm font-mono font-bold text-emerald-700 italic">₹{parseFloat(item.rate).toFixed(2)}</span>
                           </td>
-                          <td className="px-6 py-5 text-right">
-                             <ActionButtons onEdit={() => openModal(item)} onDelete={() => handleDelete(item.$id)} />
-                          </td>
+                           <td className="px-6 py-5 text-right">
+                              <ActionButtons onEdit={() => openModal(item)} onDelete={() => handleDelete(item)} />
+                           </td>
                        </tr>
                     ))}
                  </tbody>
@@ -149,18 +158,40 @@ export default function BOPLibraryPage() {
         </section>
       </div>
 
-      {modalState.open && (
-        <RateModal 
-          data={modalState.data}
-          onClose={closeModal}
-          onSuccess={() => { fetchData(); closeModal(); }}
-        />
-      )}
-    </DashboardLayout>
+       {modalState.open && (
+         <RateModal 
+           data={modalState.data}
+           onClose={closeModal}
+           onSuccess={() => { fetchData(); closeModal(); }}
+           onError={(msg) => setErrorDetails({ open: true, message: msg })}
+         />
+       )}
+
+       <ConfirmationModal 
+          isOpen={deleteConfirm.open}
+          onClose={() => setDeleteConfirm({ open: false, row: null })}
+          onConfirm={commitDelete}
+          title="Purge Catalog Item?"
+          message={`Are you sure you want to permanently remove '${deleteConfirm.row?.item_name || 'this item'}' from the procurement registry?`}
+          confirmText="PURGE ITEM"
+          cancelText="KEEP ITEM"
+          type="danger"
+       />
+
+       <ConfirmationModal 
+          isOpen={errorDetails.open}
+          onClose={() => setErrorDetails({ open: false, message: '' })}
+          onConfirm={() => setErrorDetails({ open: false, message: '' })}
+          title="REGISTRY ERROR"
+          message={errorDetails.message}
+          confirmText="CLOSE"
+          type="danger"
+       />
+     </DashboardLayout>
   );
 }
 
-function RateModal({ data, onClose, onSuccess }) {
+function RateModal({ data, onClose, onSuccess, onError }) {
   const [formData, setFormData] = useState({
     name: data?.item_name || '',
     rate: data?.rate || 0,
@@ -176,12 +207,13 @@ function RateModal({ data, onClose, onSuccess }) {
       const payload = { item_name: formData.name, rate: parseFloat(formData.rate), unit: formData.unit, supplier: formData.supplier };
       if (data) await bopRateService.updateRate(data.$id, payload);
       else await bopRateService.createRate(payload);
-      onSuccess();
-    } catch (error) {
-      alert("Error: " + error.message);
-      setIsSubmitting(false);
-    }
-  };
+       onSuccess();
+     } catch (error) {
+       console.error("Catalog Save Error:", error);
+       onError(error.message || "Failed to commit catalog entry.");
+       setIsSubmitting(false);
+     }
+   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/20 backdrop-blur-sm">

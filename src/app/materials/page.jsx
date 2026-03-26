@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { materialService } from '@/services/materials';
 import ActionButtons from '@/components/shared/ActionButtons';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
 
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState([]);
@@ -13,6 +14,8 @@ export default function MaterialsPage() {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const limit = 25;
 
   const fetchMaterials = async () => {
@@ -47,16 +50,22 @@ export default function MaterialsPage() {
     setSelectedMaterial(null);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to remove this material from the master library?")) {
+   const handleDelete = (material) => {
+      setDeleteConfirm({ open: true, row: material });
+   };
+
+   const commitDelete = async () => {
+      const material = deleteConfirm.row;
+      if (!material) return;
       try {
-        await materialService.deleteMaterial(id);
-        fetchMaterials();
+         await materialService.deleteMaterial(material.$id);
+         fetchMaterials();
       } catch (error) {
-        alert("Execution failed: " + error.message);
+         setErrorDetails({ open: true, message: error.message || "Failed to excise material from library." });
+      } finally {
+         setDeleteConfirm({ open: false, row: null });
       }
-    }
-  };
+   };
 
   const filteredMaterials = materials.filter(m => 
     m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -155,9 +164,9 @@ export default function MaterialsPage() {
                       <td className="px-6 py-4 text-right">
                         <span className="text-xs font-mono font-bold text-emerald-700">₹{parseFloat(m.base_rate).toFixed(2)}</span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <ActionButtons onEdit={() => openEditModal(m)} onDelete={() => handleDelete(m.$id)} />
-                      </td>
+                       <td className="px-6 py-4 text-right">
+                         <ActionButtons onEdit={() => openEditModal(m)} onDelete={() => handleDelete(m)} />
+                       </td>
                     </tr>
                   ))
                 )}
@@ -193,21 +202,43 @@ export default function MaterialsPage() {
         </section>
       </div>
 
-      {isModalOpen && (
-        <MaterialModal 
-          material={selectedMaterial} 
-          onClose={closeAndResetModal} 
-          onSuccess={() => {
-            closeAndResetModal();
-            fetchMaterials();
-          }} 
-        />
-      )}
-    </DashboardLayout>
+       {isModalOpen && (
+         <MaterialModal 
+           material={selectedMaterial} 
+           onClose={closeAndResetModal} 
+           onSuccess={() => {
+             closeAndResetModal();
+             fetchMaterials();
+           }} 
+           onError={(msg) => setErrorDetails({ open: true, message: msg })}
+         />
+       )}
+
+       <ConfirmationModal 
+          isOpen={deleteConfirm.open}
+          onClose={() => setDeleteConfirm({ open: false, row: null })}
+          onConfirm={commitDelete}
+          title="Excise Material?"
+          message={`Are you sure you want to permanently remove '${deleteConfirm.row?.name || 'this material'}' from the master library? This will impact all future quotations using this material.`}
+          confirmText="DELETE MATERIAL"
+          cancelText="KEEP MATERIAL"
+          type="danger"
+       />
+
+       <ConfirmationModal 
+          isOpen={errorDetails.open}
+          onClose={() => setErrorDetails({ open: false, message: '' })}
+          onConfirm={() => setErrorDetails({ open: false, message: '' })}
+          title="REGISTRY ERROR"
+          message={errorDetails.message}
+          confirmText="CLOSE"
+          type="danger"
+       />
+     </DashboardLayout>
   );
 }
 
-function MaterialModal({ onClose, onSuccess, material }) {
+function MaterialModal({ onClose, onSuccess, onError, material }) {
   const [formData, setFormData] = useState({
     name: material?.name || '',
     grade: material?.grade || '',
@@ -245,12 +276,13 @@ function MaterialModal({ onClose, onSuccess, material }) {
       } else {
         await materialService.createMaterial(submissionData);
       }
-      onSuccess();
-    } catch (error) {
-      alert("Error syncing material record: " + error.message);
-      setIsSubmitting(false);
-    }
-  };
+       onSuccess();
+     } catch (error) {
+       console.error("Material Save Error:", error);
+       onError(error.message || "Failed to update material record.");
+       setIsSubmitting(false);
+     }
+   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/20 backdrop-blur-sm">

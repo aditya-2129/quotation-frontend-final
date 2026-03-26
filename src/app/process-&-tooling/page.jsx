@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { laborRateService, bopRateService } from '@/services/rates';
 import ActionButtons from '@/components/shared/ActionButtons';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
 
 export default function ToolingRatePage() {
   const [laborRates, setLaborRates] = useState([]);
@@ -20,7 +21,8 @@ export default function ToolingRatePage() {
   const [laborTotal, setLaborTotal] = useState(0);
 
   const [bopTotal, setBopTotal] = useState(0);
-  
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, type: null, row: null });
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const limit = 12;
 
   useEffect(() => {
@@ -49,17 +51,23 @@ export default function ToolingRatePage() {
   const openEditModal = (type, data) => setModalState({ open: true, type, data });
   const closeModal = () => setModalState({ open: false, type: null, data: null });
 
-  const handleDelete = async (type, id) => {
-    if (window.confirm(`Are you sure you want to remove this ${type} record?`)) {
+   const handleDelete = (type, rate) => {
+      setDeleteConfirm({ open: true, type, row: rate });
+   };
+
+   const commitDelete = async () => {
+      const { type, row } = deleteConfirm;
+      if (!row) return;
       try {
-        if (type === 'labor') await laborRateService.deleteRate(id);
-        else await bopRateService.deleteRate(id);
-        fetchData();
+         if (type === 'labor') await laborRateService.deleteRate(row.$id);
+         else await bopRateService.deleteRate(row.$id);
+         fetchData();
       } catch (error) {
-        alert("Action failed: " + error.message);
+         setErrorDetails({ open: true, message: error.message || "Failed to remove engineering record." });
+      } finally {
+         setDeleteConfirm({ open: false, type: null, row: null });
       }
-    }
-  };
+   };
 
   return (
     <DashboardLayout 
@@ -105,9 +113,9 @@ export default function ToolingRatePage() {
                         <td className="px-5 py-3.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap text-xs">
                            ₹{parseFloat(rate.hourly_rate).toFixed(2)}
                         </td>
-                        <td className="px-5 py-3.5 text-right">
-                           <ActionButtons onEdit={() => openEditModal('labor', rate)} onDelete={() => handleDelete('labor', rate.$id)} />
-                        </td>
+                         <td className="px-5 py-3.5 text-right">
+                            <ActionButtons onEdit={() => openEditModal('labor', rate)} onDelete={() => handleDelete('labor', rate)} />
+                         </td>
                       </tr>
                     ))}
                   </tbody>
@@ -143,9 +151,9 @@ export default function ToolingRatePage() {
                         <td className="px-5 py-3.5 text-right font-mono font-bold text-blue-700 whitespace-nowrap text-xs">
                            ₹{parseFloat(rate.rate).toFixed(2)}
                         </td>
-                        <td className="px-5 py-3.5 text-right">
-                           <ActionButtons onEdit={() => openEditModal('bop', rate)} onDelete={() => handleDelete('bop', rate.$id)} />
-                        </td>
+                         <td className="px-5 py-3.5 text-right">
+                            <ActionButtons onEdit={() => openEditModal('bop', rate)} onDelete={() => handleDelete('bop', rate)} />
+                         </td>
                       </tr>
                     ))}
                   </tbody>
@@ -156,15 +164,37 @@ export default function ToolingRatePage() {
         </section>
       </div>
 
-      {modalState.open && (
-        <RateModal 
-          type={modalState.type}
-          data={modalState.data}
-          onClose={closeModal}
-          onSuccess={() => { fetchData(); closeModal(); }}
-        />
-      )}
-    </DashboardLayout>
+       {modalState.open && (
+         <RateModal 
+           type={modalState.type}
+           data={modalState.data}
+           onClose={closeModal}
+           onSuccess={() => { fetchData(); closeModal(); }}
+           onError={(msg) => setErrorDetails({ open: true, message: msg })}
+         />
+       )}
+
+       <ConfirmationModal 
+          isOpen={deleteConfirm.open}
+          onClose={() => setDeleteConfirm({ open: false, type: null, row: null })}
+          onConfirm={commitDelete}
+          title={deleteConfirm.type === 'labor' ? "Excise Process?" : "Purge BOP Item?"}
+          message={`Are you sure you want to permanently remove '${deleteConfirm.row?.process_name || deleteConfirm.row?.item_name || 'this record'}' from the engineering library?`}
+          confirmText="PURGE RECORD"
+          cancelText="KEEP RECORD"
+          type="danger"
+       />
+
+       <ConfirmationModal 
+          isOpen={errorDetails.open}
+          onClose={() => setErrorDetails({ open: false, message: '' })}
+          onConfirm={() => setErrorDetails({ open: false, message: '' })}
+          title="REGISTRY ERROR"
+          message={errorDetails.message}
+          confirmText="CLOSE"
+          type="danger"
+       />
+     </DashboardLayout>
   );
 }
 
@@ -211,7 +241,7 @@ function SkeletonRow() {
   );
 }
 
-function RateModal({ type, data, onClose, onSuccess }) {
+function RateModal({ type, data, onClose, onSuccess, onError }) {
   const [formData, setFormData] = useState({
     name: data?.process_name || data?.item_name || '',
     rate: data?.hourly_rate || data?.rate || 0,
@@ -234,12 +264,13 @@ function RateModal({ type, data, onClose, onSuccess }) {
         if (data) await bopRateService.updateRate(data.$id, payload);
         else await bopRateService.createRate(payload);
       }
-      onSuccess();
-    } catch (error) {
-      alert("Error: " + error.message);
-      setIsSubmitting(false);
-    }
-  };
+       onSuccess();
+     } catch (error) {
+       console.error("Registry Sync Error:", error);
+       onError(error.message || "Failed to commit engineering entry.");
+       setIsSubmitting(false);
+     }
+   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/20 backdrop-blur-sm">

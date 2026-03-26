@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { customerService } from '@/services/customers';
 
-export default function CustomerModal({ onClose, onSuccess, customer }) {
+export default function CustomerModal({ onClose, onSuccess, onError, customer }) {
    const [formData, setFormData] = useState({
       name: customer?.name || '',
       contact_person: customer?.contact_person || '',
@@ -23,7 +23,8 @@ export default function CustomerModal({ onClose, onSuccess, customer }) {
          }
          onSuccess(result || formData); // Pass back the new/updated customer
       } catch (error) {
-         alert(`Error saving customer: ${error.message}`);
+         if (onError) onError(`Execution Failure: ${error.message || 'Registry sync failed'}`);
+         else console.error("Customer Save Error:", error);
          setIsSubmitting(false);
       }
    };

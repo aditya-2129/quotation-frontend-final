@@ -6,10 +6,10 @@ export default function Home() {
       <div className="flex flex-col gap-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-950">Industrial Precision Dashboard</h1>
-            <p className="mt-1 text-sm text-zinc-500">Manage your quotations and engineering data with pinpoint accuracy.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-brand-primary">Industrial Precision Dashboard</h1>
+            <p className="mt-1 text-sm text-zinc-500 font-medium">Manage your quotations and engineering data with pinpoint accuracy.</p>
           </div>
-          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-zinc-950 px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2">
+          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand-primary px-6 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -24,9 +24,9 @@ export default function Home() {
             { label: 'Materials Indexed', value: '1,240', trend: '+12', color: 'zinc' },
             { label: 'Drafts', value: '8', trend: '-2', color: 'zinc' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300">
-              <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">{stat.label}</div>
-              <div className="mt-2 text-2xl font-bold text-zinc-950 tracking-tighter">{stat.value}</div>
+            <div key={stat.label} className="rounded-xl border border-zinc-200 bg-white p-6 transition-all hover:border-brand-primary/50 hover:shadow-xl hover:shadow-brand-primary/5 group">
+              <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider group-hover:text-brand-primary transition-colors">{stat.label}</div>
+              <div className="mt-2 text-2xl font-bold text-zinc-950 tracking-tighter group-hover:text-brand-primary transition-colors">{stat.value}</div>
               <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
                 <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -39,7 +39,7 @@ export default function Home() {
 
         <section className="rounded-xl border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-6">
-            <h2 className="text-lg font-bold text-zinc-950 tracking-tight">Recent Quotations</h2>
+            <h2 className="text-lg font-bold text-brand-primary tracking-tight">Recent Quotations</h2>
           </div>
           <div className="p-0">
             <table className="w-full text-left text-sm">

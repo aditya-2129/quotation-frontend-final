@@ -7,7 +7,8 @@ const BOMRegistry = ({
   setFormData, 
   activePhase,
   setActivePhase,
-  panelIndex = 2
+  panelIndex = 2,
+  onError
 }) => {
   const [previewFile, setPreviewFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -71,8 +72,8 @@ const BOMRegistry = ({
         className={`px-6 py-5 border-b cursor-pointer flex justify-between items-center group transition-colors ${isExpanded ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
       >
         <div className="flex items-center gap-3">
-           <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-zinc-950 border-zinc-950 text-white shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-           <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Parts</h3>
+           <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-brand-primary border-brand-primary text-zinc-950 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
+           <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Parts</h3>
         </div>
         <div className="flex items-center gap-4">
            {!isExpanded && (
@@ -83,12 +84,12 @@ const BOMRegistry = ({
            <button 
              type="button"
              onClick={(e) => { e.stopPropagation(); addPart(); }}
-             className="h-9 px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-black uppercase tracking-tight transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-emerald-700/20"
+             className="h-9 px-5 rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-tight transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-brand-primary/25 border border-brand-primary/20"
            >
              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
              ADD PART +
            </button>
-           <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-zinc-950' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+           <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
         </div>
       </header>
       
@@ -97,12 +98,12 @@ const BOMRegistry = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-zinc-50/50 border-b border-zinc-100 italic">
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest w-16 text-center">No.</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Component Name <span className="text-red-500 font-extrabold">*</span></th>
-                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center whitespace-nowrap">Quantity To Make <span className="text-red-500 font-extrabold">*</span></th>
-                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Blueprints / Drawings</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Creation Date</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center w-24">Ops</th>
+                <th className="px-4 py-2.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest w-16 text-center">No.</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Component Name <span className="text-red-500 font-extrabold">*</span></th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center whitespace-nowrap">Quantity To Make <span className="text-red-500 font-extrabold">*</span></th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Blueprints / Drawings</th>
+                <th className="px-4 py-2.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Creation Date</th>
+                <th className="px-4 py-2.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center w-24">Ops</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -111,15 +112,15 @@ const BOMRegistry = ({
                     key={item.id}
                     className="group transition-all duration-300 bg-white hover:bg-zinc-50"
                   >
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-4 py-3 text-center">
                        <span className="text-[10px] font-black font-mono text-zinc-400">
                           {String(idx + 1).padStart(2, '0')}
                        </span>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-4 py-3">
                        <div className="relative group/input max-w-sm">
                           <input 
-                            className="bg-transparent border-b border-dashed border-zinc-200 hover:border-zinc-950 focus:border-zinc-950 focus:border-solid outline-none font-black text-[14px] py-0.5 w-full text-zinc-900 transition-all cursor-text"
+                            className="bg-transparent border-b border-dashed border-zinc-200 hover:border-brand-primary focus:border-brand-primary focus:border-solid outline-none font-black text-[14px] py-0.5 w-full text-zinc-900 transition-all cursor-text"
                             placeholder="Enter Name (e.g. Shaft, Plate)..."
                             value={item.part_name}
                             onChange={(e) => {
@@ -133,11 +134,11 @@ const BOMRegistry = ({
                           </div>
                        </div>
                     </td>
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-4 py-3 text-center">
                        <input 
                          type="number"
                          min="1"
-                         className="w-20 h-9 bg-zinc-50 border border-zinc-200 rounded-lg px-2 text-center text-[13px] font-black outline-none focus:ring-1 focus:ring-zinc-950 transition-all font-mono shadow-sm"
+                         className="w-20 h-9 bg-zinc-50 border border-zinc-200 rounded-lg px-2 text-center text-[13px] font-black outline-none focus:ring-1 focus:ring-brand-primary transition-all font-mono shadow-sm"
                          value={item.qty ?? 1}
                          onChange={(e) => {
                             const newItems = [...formData.items];
@@ -146,7 +147,7 @@ const BOMRegistry = ({
                          }}
                        />
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-4 py-3">
                        <div className="flex items-center justify-start">
                           <input 
                             type="file" 
@@ -168,7 +169,7 @@ const BOMRegistry = ({
                                   setFormData({...formData, items: newItems});
                                } catch (err) {
                                   console.error("Upload failed:", err);
-                                  alert("Failed to upload assets. Check connection.");
+                                  if (onError) onError("Failed to upload assets. Check connection or file registry status.");
                                } finally {
                                   setIsUploading(false);
                                }
@@ -181,9 +182,9 @@ const BOMRegistry = ({
                                       <div 
                                         key={fIdx} 
                                         onClick={() => setPreviewFile(file)}
-                                        className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-950 hover:border-zinc-900 transition-all shadow-sm group/file cursor-pointer active:scale-95"
+                                        className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-950 hover:border-brand-primary transition-all shadow-sm group/file cursor-pointer active:scale-95"
                                       >
-                                         <svg className="h-3 w-3 text-zinc-400 group-hover/file:text-zinc-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                         <svg className="h-3 w-3 text-zinc-400 group-hover/file:text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                                          <span className="text-[10px] font-bold uppercase tracking-tight truncate max-w-[120px]">{file.name}</span>
                                          <button 
                                            onClick={async (e) => {
@@ -212,14 +213,14 @@ const BOMRegistry = ({
                                          Uploading...
                                       </div>
                                    ) : (
-                                      <label htmlFor={`drawing-${item.id}`} className="h-7 w-7 flex items-center justify-center rounded-lg bg-emerald-100/50 text-emerald-700 border border-emerald-200 cursor-pointer hover:bg-emerald-700 hover:text-white transition-all shadow-sm active:scale-90" title="Add More">
+                                      <label htmlFor={`drawing-${item.id}`} className="h-7 w-7 flex items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary border border-brand-primary/20 cursor-pointer hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-90" title="Add More">
                                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
                                       </label>
                                    )}
                                 </div>
                              </div>
                           ) : (
-                             <label htmlFor={`drawing-${item.id}`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all group/upload shadow-sm-inset cursor-pointer ${isUploading ? 'bg-zinc-100 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:bg-white hover:text-zinc-950 hover:border-zinc-950'}`}>
+                             <label htmlFor={`drawing-${item.id}`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all group/upload shadow-sm-inset cursor-pointer ${isUploading ? 'bg-zinc-100 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:bg-white hover:text-brand-primary hover:border-brand-primary'}`}>
                                 {isUploading ? (
                                    <svg className="animate-spin h-3.5 w-3.5 text-zinc-400" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
                                 ) : (
@@ -230,12 +231,12 @@ const BOMRegistry = ({
                           )}
                        </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-4 py-3">
                        <span className="text-[11px] font-bold text-zinc-600 whitespace-nowrap">
                           {new Date(item.id).toLocaleDateString()}
                        </span>
                     </td>
-                    <td className="px-6 py-5 text-center text-zinc-300">
+                    <td className="px-4 py-3 text-center text-zinc-300">
                        {formData.items.length > 1 ? (
                           <button 
                             onClick={(e) => removePart(idx, e)}

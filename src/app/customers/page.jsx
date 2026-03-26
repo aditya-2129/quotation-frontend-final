@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { customerService } from '@/services/customers';
 import ActionButtons from '@/components/shared/ActionButtons';
 import CustomerModal from '@/components/modals/CustomerModal';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -12,6 +13,8 @@ export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -43,6 +46,23 @@ export default function CustomersPage() {
   const closeAndResetModal = () => {
      setIsModalOpen(false);
      setSelectedCustomer(null);
+  };
+
+  const handleDelete = (customer) => {
+     setDeleteConfirm({ open: true, row: customer });
+  };
+
+  const commitDelete = async () => {
+     const customer = deleteConfirm.row;
+     if (!customer) return;
+     try {
+        await customerService.deleteCustomer(customer.$id);
+        fetchCustomers();
+     } catch (e) {
+        setErrorDetails({ open: true, message: e.message || "Failed to remove customer record." });
+     } finally {
+        setDeleteConfirm({ open: false, row: null });
+     }
   };
 
   return (
@@ -142,14 +162,7 @@ export default function CustomersPage() {
                       <td className="px-6 py-4 text-right">
                          <ActionButtons 
                            onEdit={() => openEditModal(customer)} 
-                           onDelete={async () => {
-                             if (confirm(`Are you sure you want to delete ${customer.name}?`)) {
-                                try {
-                                   await customerService.deleteCustomer(customer.$id);
-                                   fetchCustomers();
-                                } catch (e) { alert("Delete failed"); }
-                             }
-                           }} 
+                           onDelete={() => handleDelete(customer)} 
                          />
                       </td>
                     </tr>
@@ -195,9 +208,30 @@ export default function CustomersPage() {
               closeAndResetModal();
               fetchCustomers();
             }} 
+            onError={(msg) => setErrorDetails({ open: true, message: msg })}
          />
       )}
+
+      <ConfirmationModal 
+         isOpen={deleteConfirm.open}
+         onClose={() => setDeleteConfirm({ open: false, row: null })}
+         onConfirm={commitDelete}
+         title="Delete Customer?"
+         message={`Are you sure you want to permanently remove ${deleteConfirm.row?.name || 'this customer record'}? This action is irreversible.`}
+         confirmText="DELETE RECORD"
+         cancelText="CANCEL"
+         type="danger"
+      />
+
+      <ConfirmationModal 
+         isOpen={errorDetails.open}
+         onClose={() => setErrorDetails({ open: false, message: '' })}
+         onConfirm={() => setErrorDetails({ open: false, message: '' })}
+         title="REGISTRY ERROR"
+         message={errorDetails.message}
+         confirmText="CLOSE"
+         type="danger"
+      />
     </DashboardLayout>
   );
 }
-

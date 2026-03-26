@@ -8,6 +8,8 @@ import { customerService } from '@/services/customers';
 import { materialService } from '@/services/materials';
 import { laborRateService, bopRateService } from '@/services/rates';
 import CustomerModal from '@/components/modals/CustomerModal';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import ValidationModal from '@/components/modals/ValidationModal';
 import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
 import BOMRegistry from '@/components/quotations/BOMRegistry';
 import RawMaterial from '@/components/quotations/RawMaterial';
@@ -16,6 +18,11 @@ import BroughtOutParts from '@/components/quotations/BoughtOutParts';
 import TechnicalSpecifications from '@/components/quotations/TechnicalSpecifications';
 import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
 import ValuationLedger from '@/components/quotations/ValuationLedger';
+const nextRevision = (rev) => {
+  const match = (rev || "").match(/Rev (\d+)/i);
+  const num = match ? parseInt(match[1]) + 1 : 1;
+  return `Rev ${String(num).padStart(2, '0')}`;
+};
 
 export default function EditQuotationPage() {
   const params = useParams();
@@ -25,6 +32,12 @@ export default function EditQuotationPage() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isUpdateConfirmOpen, setIsUpdateConfirmOpen] = useState(false);
+  const [isDraftConfirmOpen, setIsDraftConfirmOpen] = useState(false);
+  const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
+  const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [activePhase, setActivePhase] = useState('scope');
   const [customerSearch, setCustomerSearch] = useState("");
@@ -49,6 +62,7 @@ export default function EditQuotationPage() {
     assembly_cost: 0,
     production_mode: 'Batch',
     quantity: 1,
+    project_image: null,
     items: [] 
   });
 
@@ -124,7 +138,7 @@ export default function EditQuotationPage() {
           contact_phone: quote.contact_phone || '',
           contact_email: quote.contact_email || '',
           quoting_engineer: quote.quoting_engineer || '',
-          revision_no: quote.revision_no || 'Rev 00',
+          revision_no: quote.status === 'Completed' ? nextRevision(quote.revision_no) : (quote.revision_no || 'Rev 00'),
           inquiry_date: quote.inquiry_date || '',
           delivery_date: quote.delivery_date || '',
           status: quote.status || 'Draft',
@@ -135,6 +149,7 @@ export default function EditQuotationPage() {
           assembly_cost: quote.assembly_cost || 0,
           production_mode: quote.production_mode || 'Batch',
           quantity: quote.quantity || 1,
+          project_image: quote.project_image ? JSON.parse(quote.project_image) : null,
           items: sanitizedItems
         });
 
@@ -144,7 +159,7 @@ export default function EditQuotationPage() {
 
       } catch (err) {
         console.error("Initialization failed:", err);
-        alert("Failed to load valuation data. Verify connection.");
+        setErrorDetails({ open: true, message: "Critical failure loading valuation record. Check database connection." });
       } finally {
         setIsLoading(false);
       }
@@ -230,7 +245,8 @@ export default function EditQuotationPage() {
 
   const totals = calculateTotals();
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (e) => {
+    if (e) e.preventDefault();
     // Validation Logic
     const missingFields = [];
     if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
@@ -241,6 +257,7 @@ export default function EditQuotationPage() {
     if (!formData.inquiry_date) missingFields.push("Date Received");
     if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
     if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
+    if (!formData.project_image) missingFields.push("Project Model / Snapshot Image");
 
     if (formData.items.length === 0) {
        missingFields.push("At least one BOM item");
@@ -297,17 +314,22 @@ export default function EditQuotationPage() {
     }
 
     if (missingFields.length > 0) {
-       alert("PLEASE COMPLETE THESE SECTIONS:\n\n" + missingFields.map(f => `• ${f}`).join("\n"));
+       setMissingFields(missingFields);
+       setIsValidationOpen(true);
        return;
     }
 
+    setIsUpdateConfirmOpen(true);
+  };
+
+  const commitUpdate = async () => {
     try {
        const { 
           quotation_no, supplier_name, contact_person, contact_phone, 
           contact_email, quoting_engineer, revision_no, inquiry_date, 
           delivery_date, status, markup, packaging_cost, 
           transportation_cost, design_cost, assembly_cost,
-          production_mode, quantity
+          production_mode, quantity, project_image 
        } = formData;
 
        const payload = {
@@ -320,13 +342,14 @@ export default function EditQuotationPage() {
           revision_no,
           inquiry_date,
           delivery_date,
-          status,
+          status: 'Completed',
           markup,
           packaging_cost,
           transportation_cost,
           design_cost,
           assembly_cost,
           production_mode,
+          project_image: project_image ? JSON.stringify(project_image) : '',
           quantity: parseInt(quantity) || 1,
           part_number: formData.items[0]?.part_name || 'MULTIPLE',
           items: JSON.stringify(formData.items.map(i => ({ 
@@ -343,14 +366,72 @@ export default function EditQuotationPage() {
        router.push('/quotations');
     } catch (e) {
        console.error("Update Error:", e);
-       alert("Update failed: " + (e.message || "Unknown error"));
+       setErrorDetails({ open: true, message: e.message || "Unknown persistence error" });
+    } finally {
+       setIsUpdateConfirmOpen(false);
     }
   };
 
-  const handleCancel = () => {
-     if (window.confirm("Discard unsaved changes?")) {
+  const handleUpdateDraft = () => {
+     setIsDraftConfirmOpen(true);
+  };
+
+  const commitDraftUpdate = async () => {
+     try {
+        const { 
+           quotation_no, supplier_name, contact_person, contact_phone, 
+           contact_email, quoting_engineer, revision_no, inquiry_date, 
+           delivery_date, markup, packaging_cost, 
+           transportation_cost, design_cost, assembly_cost,
+           production_mode, quantity
+        } = formData;
+
+        const payload = {
+           quotation_no,
+           supplier_name: formData.customer?.name || supplier_name || 'Anonymous Draft',
+           contact_person,
+           contact_phone,
+           contact_email,
+           quoting_engineer,
+           revision_no,
+           inquiry_date,
+           delivery_date,
+           status: 'Draft',
+           markup,
+           packaging_cost,
+           transportation_cost,
+           design_cost,
+           assembly_cost,
+           production_mode,
+           quantity: parseInt(quantity) || 1,
+           part_number: formData.items[0]?.part_name || 'DRAFT',
+           items: JSON.stringify(formData.items.map(i => ({ 
+              ...i, 
+              design_files: (i.design_files || []).filter(f => f.$id) 
+           }))),
+           detailed_breakdown: JSON.stringify(totals),
+           total_amount: totals.finalTotal,
+           subtotal: totals.subtotal,
+           customer_id: formData.customer?.$id || ''
+        };
+
+        await quotationService.updateQuotation(id, payload);
         router.push('/quotations');
+     } catch (e) {
+        console.error("Draft Update Error:", e);
+        setErrorDetails({ open: true, message: e.message || "Failed to update draft in registry." });
+     } finally {
+        setIsDraftConfirmOpen(false);
      }
+  };
+
+  const handleCancel = (e) => {
+     if (e) e.preventDefault();
+     setIsCancelConfirmOpen(true);
+  };
+
+  const confirmCancel = () => {
+     router.push('/quotations');
   };
 
   if (!mounted || isLoading) {
@@ -367,24 +448,34 @@ export default function EditQuotationPage() {
     <DashboardLayout 
       title={`Edit Quotation: ${formData.quotation_no}`}
       primaryAction={
-        <div className="flex gap-3">
-           <button 
-             onClick={handleCancel}
-             className="px-5 h-9 flex items-center justify-center text-[11px] font-black uppercase tracking-tight text-zinc-500 hover:text-zinc-950 transition-colors"
-           >
-             Cancel
-           </button>
-           <button 
-             onClick={handleUpdate}
-             className="px-6 h-9 flex items-center justify-center rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 hover:bg-zinc-900 transition-all active:scale-95 border border-zinc-800"
-           >
-             Save Changes
-           </button>
+        <div className="flex gap-4 items-center relative z-[999]">
+            <button 
+              type="button"
+              onClick={handleCancel}
+              className="px-4 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer pointer-events-auto"
+            >
+              Cancel
+            </button>
+            <div className="h-6 w-px bg-zinc-200" />
+            <button 
+              type="button"
+              onClick={handleUpdateDraft}
+              className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 rounded-xl transition-all cursor-pointer pointer-events-auto"
+            >
+              Save Draft
+            </button>
+            <button 
+              type="button"
+              onClick={handleUpdate}
+              className="px-8 h-10 flex items-center justify-center rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-brand-primary/25 hover:scale-[1.02] transition-all active:scale-95 border border-brand-primary/20 cursor-pointer pointer-events-auto"
+            >
+              Save Changes
+            </button>
         </div>
       }
     >
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-         <div className="xl:col-span-3 space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+         <div className="xl:col-span-3 space-y-3">
             <ScopeAndIdentity 
                formData={formData}
                setFormData={setFormData}
@@ -407,6 +498,7 @@ export default function EditQuotationPage() {
                activePhase={activePhase}
                setActivePhase={setActivePhase}
                panelIndex={2}
+               onError={(msg) => setErrorDetails({ open: true, message: msg })}
             />
 
             <RawMaterial 
@@ -465,28 +557,77 @@ export default function EditQuotationPage() {
          </div>
       </div>
 
-      {isQuickAddOpen && (
-         <CustomerModal 
-            onClose={() => setIsQuickAddOpen(false)} 
-            onSuccess={(newCustomer) => {
-               setLibraries(prev => ({
-                  ...prev,
-                  customers: [newCustomer, ...prev.customers]
-               }));
-               setActiveQuote(prev => ({ ...prev, customer: newCustomer }));
-               setFormData(prev => ({ 
-                  ...prev, 
-                  supplier_name: newCustomer.name,
-                  customer: newCustomer,
-                  contact_person: newCustomer.contact_person || prev.contact_person,
-                  contact_phone: newCustomer.phone || prev.contact_phone,
-                  contact_email: newCustomer.email || prev.contact_email
-               }));
-               setCustomerSearch(newCustomer.name);
-               setIsQuickAddOpen(false);
-            }} 
-         />
-      )}
+     {isQuickAddOpen && (
+        <CustomerModal 
+           onClose={() => setIsQuickAddOpen(false)} 
+           onSuccess={(newCustomer) => {
+              setLibraries(prev => ({
+                 ...prev,
+                 customers: [newCustomer, ...prev.customers]
+              }));
+              setActiveQuote(prev => ({ ...prev, customer: newCustomer }));
+              setFormData(prev => ({ 
+                 ...prev, 
+                 supplier_name: newCustomer.name,
+                 customer: newCustomer,
+                 contact_person: newCustomer.contact_person || prev.contact_person,
+                 contact_phone: newCustomer.phone || prev.contact_phone,
+                 contact_email: newCustomer.email || prev.contact_email
+              }));
+              setCustomerSearch(newCustomer.name);
+              setIsQuickAddOpen(false);
+           }} 
+        />
+     )}
+
+     <ConfirmationModal 
+        isOpen={isCancelConfirmOpen}
+        onClose={() => setIsCancelConfirmOpen(false)}
+        onConfirm={confirmCancel}
+        title="Discard Changes?"
+        message="Unsaved progress will be lost. Return to the list?"
+        confirmText="DISCARD"
+        cancelText="CONTINUE EDITING"
+        type="warning"
+     />
+
+     <ConfirmationModal 
+        isOpen={isDraftConfirmOpen}
+        onClose={() => setIsDraftConfirmOpen(false)}
+        onConfirm={commitDraftUpdate}
+        title="Update Draft?"
+        message="Persist these changes but keep the quotation in Draft status."
+        confirmText="UPDATE DRAFT"
+        cancelText="KEEP EDITING"
+        type="brand"
+     />
+
+     <ConfirmationModal 
+        isOpen={isUpdateConfirmOpen}
+        onClose={() => setIsUpdateConfirmOpen(false)}
+        onConfirm={commitUpdate}
+        title="Commit Updates?"
+        message="Apply these revisions to the master valuation record."
+        confirmText="FINISH & UPDATE"
+        cancelText="REVIEW EDITS"
+        type="brand"
+     />
+
+     <ValidationModal 
+        isOpen={isValidationOpen}
+        onClose={() => setIsValidationOpen(false)}
+        missingFields={missingFields}
+     />
+
+     <ConfirmationModal 
+        isOpen={errorDetails.open}
+        onClose={() => setErrorDetails({ open: false, message: '' })}
+        onConfirm={() => setErrorDetails({ open: false, message: '' })}
+        title="VALUATION ERROR"
+        message={errorDetails.message}
+        confirmText="CLOSE"
+        type="danger"
+     />
     </DashboardLayout>
   );
 }

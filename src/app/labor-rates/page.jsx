@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { laborRateService } from '@/services/rates';
 import ActionButtons from '@/components/shared/ActionButtons';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
 
 export default function LaborRatesPage() {
   const [rates, setRates] = useState([]);
@@ -12,6 +13,8 @@ export default function LaborRatesPage() {
   const [modalState, setModalState] = useState({ open: false, data: null });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const limit = 25;
 
   useEffect(() => {
@@ -34,16 +37,22 @@ export default function LaborRatesPage() {
   const openModal = (data = null) => setModalState({ open: true, data });
   const closeModal = () => setModalState({ open: false, data: null });
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Remove this process from the library?")) {
+   const handleDelete = (rate) => {
+      setDeleteConfirm({ open: true, row: rate });
+   };
+
+   const commitDelete = async () => {
+      const rate = deleteConfirm.row;
+      if (!rate) return;
       try {
-        await laborRateService.deleteRate(id);
-        fetchData();
+         await laborRateService.deleteRate(rate.$id);
+         fetchData();
       } catch (error) {
-        alert("Action failed: " + error.message);
+         setErrorDetails({ open: true, message: error.message || "Failed to excise process from library." });
+      } finally {
+         setDeleteConfirm({ open: false, row: null });
       }
-    }
-  };
+   };
 
   const filteredRates = rates.filter(r => 
     r.process_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -117,9 +126,9 @@ export default function LaborRatesPage() {
                           <td className="px-6 py-5 text-right">
                              <span className="text-sm font-mono font-bold text-emerald-700 italic">₹{parseFloat(rate.hourly_rate).toFixed(2)}</span>
                           </td>
-                          <td className="px-6 py-5 text-right">
-                             <ActionButtons onEdit={() => openModal(rate)} onDelete={() => handleDelete(rate.$id)} />
-                          </td>
+                           <td className="px-6 py-5 text-right">
+                              <ActionButtons onEdit={() => openModal(rate)} onDelete={() => handleDelete(rate)} />
+                           </td>
                        </tr>
                     ))}
                  </tbody>
@@ -147,18 +156,40 @@ export default function LaborRatesPage() {
         </section>
       </div>
 
-      {modalState.open && (
-        <RateModal 
-          data={modalState.data}
-          onClose={closeModal}
-          onSuccess={() => { fetchData(); closeModal(); }}
-        />
-      )}
-    </DashboardLayout>
+       {modalState.open && (
+         <RateModal 
+           data={modalState.data}
+           onClose={closeModal}
+           onSuccess={() => { fetchData(); closeModal(); }}
+           onError={(msg) => setErrorDetails({ open: true, message: msg })}
+         />
+       )}
+
+       <ConfirmationModal 
+          isOpen={deleteConfirm.open}
+          onClose={() => setDeleteConfirm({ open: false, row: null })}
+          onConfirm={commitDelete}
+          title="Excise Process?"
+          message={`Are you sure you want to permanently remove '${deleteConfirm.row?.process_name || 'this process'}' from the engineering library?`}
+          confirmText="REMOVE SKILL"
+          cancelText="KEEP SKILL"
+          type="danger"
+       />
+
+       <ConfirmationModal 
+          isOpen={errorDetails.open}
+          onClose={() => setErrorDetails({ open: false, message: '' })}
+          onConfirm={() => setErrorDetails({ open: false, message: '' })}
+          title="LIBRARY ERROR"
+          message={errorDetails.message}
+          confirmText="CLOSE"
+          type="danger"
+       />
+     </DashboardLayout>
   );
 }
 
-function RateModal({ data, onClose, onSuccess }) {
+function RateModal({ data, onClose, onSuccess, onError }) {
   const [formData, setFormData] = useState({
     name: data?.process_name || '',
     rate: data?.hourly_rate || 0
@@ -172,12 +203,13 @@ function RateModal({ data, onClose, onSuccess }) {
       const payload = { process_name: formData.name, hourly_rate: parseFloat(formData.rate) };
       if (data) await laborRateService.updateRate(data.$id, payload);
       else await laborRateService.createRate(payload);
-      onSuccess();
-    } catch (error) {
-      alert("Error: " + error.message);
-      setIsSubmitting(false);
-    }
-  };
+       onSuccess();
+     } catch (error) {
+       console.error("Rate Save Error:", error);
+       onError(error.message || "Failed to commit process settings.");
+       setIsSubmitting(false);
+     }
+   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/20 backdrop-blur-sm">

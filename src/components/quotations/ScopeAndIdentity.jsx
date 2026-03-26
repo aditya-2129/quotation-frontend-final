@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { assetService } from '@/services/assets';
 
 const ScopeAndIdentity = ({ 
   formData, 
@@ -24,21 +25,21 @@ const ScopeAndIdentity = ({
          onClick={() => setActivePhase(activePhase === 'scope' ? '' : 'scope')}
        >
           <div className="flex items-center gap-3">
-             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${activePhase === 'scope' ? 'bg-zinc-950 border-zinc-950 text-white shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'scope' ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Project Information</h3>
+             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${activePhase === 'scope' ? 'bg-brand-primary border-brand-primary text-zinc-950 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'scope' ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Project Information</h3>
           </div>
           <div className="flex items-center gap-4">
              <button 
                onClick={(e) => { e.stopPropagation(); setIsQuickAddOpen(true); }}
-               className="h-9 px-5 rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 transition-all hover:bg-zinc-900 active:scale-95 flex items-center justify-center border border-zinc-800"
+               className="h-9 px-5 rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-tight shadow-xl shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center border border-brand-primary/30"
              >
                ADD CUSTOMER +
              </button>
-             <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${activePhase === 'scope' ? 'rotate-180 text-zinc-950' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+             <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${activePhase === 'scope' ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </div>
        </header>
        <div className={`transition-all duration-300 ${activePhase === 'scope' ? 'max-h-[3000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          <div className="p-5 grid grid-cols-4 gap-x-6 gap-y-4 items-start">
+          <div className="p-4 grid grid-cols-4 gap-x-6 gap-y-3 items-start">
              {/* Row 1: Personnel & Reach */}
              <div className="relative z-50">
                 <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
@@ -48,7 +49,7 @@ const ScopeAndIdentity = ({
                 <div className="relative group">
                    <input 
                      type="text"
-                     className="w-full h-9.5 pl-4 pr-10 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] placeholder:text-zinc-400 placeholder:font-normal shadow-sm"
+                     className="w-full h-9.5 pl-4 pr-10 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-brand-primary focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
                      placeholder="Search Customers..."
                      value={customerSearch || ""}
                      onFocus={() => setIsDropdownOpen(true)}
@@ -57,7 +58,7 @@ const ScopeAndIdentity = ({
                         setIsDropdownOpen(true);
                      }}
                    />
-                   <div className="absolute right-3 top-3 text-zinc-400 group-focus-within:text-zinc-950 transition-colors pointer-events-none">
+                   <div className="absolute right-3 top-3 text-zinc-400 group-focus-within:text-brand-primary transition-colors pointer-events-none">
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeWidth={2} stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
                    </div>
 
@@ -73,7 +74,7 @@ const ScopeAndIdentity = ({
                                      <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">No Match Found</div>
                                      <button 
                                        onClick={() => setIsQuickAddOpen(true)}
-                                       className="h-8 px-4 rounded bg-zinc-950 text-white text-[11px] font-black uppercase transition-all shadow-lg active:scale-95"
+                                       className="h-8 px-4 rounded bg-brand-primary text-zinc-950 text-[11px] font-black uppercase transition-all shadow-lg shadow-brand-primary/20 active:scale-95"
                                      >
                                         ADD CUSTOMER
                                      </button>
@@ -233,6 +234,72 @@ const ScopeAndIdentity = ({
                    <option value="Batch">Batch / Lot</option>
                    <option value="Production">Mass Production</option>
                 </select>
+             </div>
+
+             {/* Row 4: Project Snapshot / Model Image */}
+             <div className="col-span-4 mt-4 pt-4 border-t border-zinc-100">
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-3 flex items-center gap-1">
+                   PROJECT MODEL / SNAPSHOT 
+                   <span className="text-red-500 font-black">*</span>
+                   <span className="ml-2 text-[8px] font-medium text-zinc-400 normal-case italic">(Clear technical image or 3D snapshot required)</span>
+                </label>
+                
+                <div className="flex items-start gap-6">
+                   <div className="relative group/upload h-32 w-48 rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center transition-all hover:bg-white hover:border-brand-primary/50 overflow-hidden shadow-sm-inset text-center">
+                      {formData.project_image ? (
+                         <div className="absolute inset-0 group/img">
+                            <img 
+                              src={formData.project_image.$id ? assetService.getFilePreview(formData.project_image.$id) : ""} 
+                              alt="Project Model" 
+                              className="h-full w-full object-cover transition-transform group-hover/img:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                               <button 
+                                 type="button"
+                                 onClick={() => setFormData({...formData, project_image: null})}
+                                 className="h-8 w-8 rounded-full bg-white text-red-500 flex items-center justify-center shadow-lg hover:scale-110 transition-all active:scale-95"
+                               >
+                                  <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                               </button>
+                            </div>
+                         </div>
+                      ) : (
+                         <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full p-2">
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={async (e) => {
+                                 const file = e.target.files[0];
+                                 if (!file) return;
+                                 try {
+                                    const uploaded = await assetService.uploadFile(file);
+                                    setFormData({...formData, project_image: uploaded});
+                                 } catch (err) {
+                                    console.error("Upload failed:", err);
+                                 }
+                              }}
+                            />
+                            <div className="h-10 w-10 rounded-xl bg-white border border-zinc-100 flex items-center justify-center text-zinc-300 group-hover/upload:text-brand-primary group-hover/upload:border-brand-primary/20 transition-all shadow-sm mb-2">
+                               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            </div>
+                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter group-hover/upload:text-brand-primary transition-colors">Select Model Image</span>
+                         </label>
+                      )}
+                   </div>
+                   
+                   <div className="flex-1 space-y-3 py-2">
+                      <div className="flex items-center gap-2">
+                         <div className={`h-2 w-2 rounded-full ${formData.project_image ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-red-500 shadow-lg shadow-red-500/30'}`} />
+                         <span className={`text-[10px] font-black uppercase tracking-widest ${formData.project_image ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {formData.project_image ? 'Image Registered' : 'Image Missing (Required)'}
+                         </span>
+                      </div>
+                      <p className="max-w-[400px] text-[11px] font-semibold text-zinc-400 italic leading-snug">
+                         Please upload a clear high-resolution image of the 3D model or technical drawing. This image will appear in the final quotation document and serve as the project reference.
+                      </p>
+                   </div>
+                </div>
              </div>
           </div>
        </div>

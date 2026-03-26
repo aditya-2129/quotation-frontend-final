@@ -14,13 +14,13 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
   return (
     <div className="mb-4 last:mb-0 border border-zinc-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-700">
       {/* Block Header */}
-      <div className="px-6 py-4 bg-zinc-50/50 border-b border-zinc-100 flex justify-between items-center group/header">
+      <div className="px-5 py-3 bg-zinc-50/50 border-b border-zinc-100 flex justify-between items-center group/header">
         <div className="flex items-center gap-4">
-          <div className="h-8 w-8 rounded-lg bg-zinc-950 text-white flex items-center justify-center text-[10px] font-black shadow-lg shadow-zinc-950/20 transition-transform duration-500">
+          <div className="h-8 w-8 rounded-lg bg-brand-primary text-zinc-950 flex items-center justify-center text-[10px] font-black shadow-lg shadow-brand-primary/20 transition-transform duration-500">
              {String(idx + 1).padStart(2, '0')}
           </div>
           <div>
-            <h4 className="text-[13px] font-black text-zinc-950 uppercase tracking-tight">{item.part_name}</h4>
+            <h4 className="text-[13px] font-black text-brand-primary uppercase tracking-tight">{item.part_name}</h4>
             <div className="flex items-center gap-2 mt-0.5">
                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.1em] italic font-mono leading-none">Engineering Compliance Setup</span>
                <div className="h-1 w-1 rounded-full bg-zinc-200" />
@@ -38,7 +38,7 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
                  const newTreatments = [...(item.treatments || []), { id: Date.now(), category: '', type: '', cost: 0, per_unit: true }];
                  onUpdate({ treatments: newTreatments });
               }}
-              className="h-8 px-4 rounded-lg bg-zinc-950 text-white text-[10px] font-black uppercase tracking-tight hover:bg-zinc-800 transition-all flex items-center gap-2"
+              className="h-8 px-4 rounded-lg bg-brand-primary text-zinc-950 text-[10px] font-black uppercase tracking-tight hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-brand-primary/25 border border-brand-primary/20"
            >
               ADD PROCESS +
            </button>
@@ -46,7 +46,7 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
       </div>
 
       {/* Block Content: Vertical Stack */}
-      <div className="p-6 space-y-6 bg-zinc-50/20">
+      <div className="p-3 bg-zinc-50/20">
          
 
 
@@ -54,17 +54,17 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
              <table className="w-full text-left text-sm border-collapse">
                 <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
                    <tr>
-                      <th className="px-6 py-3">Treatment Category <span className="text-red-500 font-extrabold">*</span></th>
-                      <th className="px-6 py-3 text-center">Process Details <span className="text-red-500 font-extrabold">*</span></th>
-                      <th className="px-6 py-3 text-center text-[10px]">Rate (₹) <span className="text-red-500 font-extrabold">*</span></th>
-                      <th className="px-6 py-3 text-right">Processing Cost</th>
-                      <th className="px-6 py-3 text-center w-10"></th>
+                      <th className="px-4 py-2.5 whitespace-nowrap">Treatment Category <span className="text-red-500 font-extrabold">*</span></th>
+                      <th className="px-4 py-2.5 whitespace-nowrap text-center">Process Details <span className="text-red-500 font-extrabold">*</span></th>
+                      <th className="px-4 py-2.5 whitespace-nowrap text-center text-[10px]">Rate (₹) <span className="text-red-500 font-extrabold">*</span></th>
+                      <th className="px-4 py-2.5 whitespace-nowrap text-right">Processing Cost</th>
+                      <th className="px-4 py-2.5 whitespace-nowrap text-center w-10"></th>
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-50">
                    {(item.treatments || []).map((t, index) => (
                       <tr key={index} className="group hover:bg-zinc-50/50 transition-colors border-b border-zinc-100 last:border-0">
-                         <td className="px-6 py-3.5 w-[240px]">
+                         <td className="px-4 py-2.5 w-[240px]">
                             <select 
                                className="w-full h-9 px-4 rounded-lg bg-zinc-50 border border-zinc-200 text-xs font-black outline-none focus:bg-white focus:ring-1 focus:ring-zinc-950 transition-all"
                                value={t.category}
@@ -81,7 +81,7 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
                                <option value="PT">Painting / Coating</option>
                             </select>
                          </td>
-                         <td className="px-6 py-3.5">
+                         <td className="px-4 py-2.5">
                             <input 
                                type="text" 
                                className="w-full h-9 px-4 rounded-lg bg-white border border-zinc-200 text-xs font-black focus:ring-1 focus:ring-zinc-950 outline-none transition-all"
@@ -94,7 +94,7 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
                                }}
                             />
                          </td>
-                         <td className="px-6 py-3.5 w-[140px] text-center">
+                         <td className="px-4 py-2.5 w-[140px] text-center">
                             <div className="relative group/cost inline-block">
                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold">₹</span>
                                <input 
@@ -109,7 +109,7 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
                                />
                             </div>
                          </td>
-                         <td className="px-6 py-3.5 text-right w-[160px]">
+                         <td className="px-4 py-2.5 text-right w-[160px]">
                             <div className="font-black text-zinc-950 font-mono text-[12px]">
                                ₹{(t.cost * (item.qty || 1)).toFixed(2)}
                             </div>
@@ -143,8 +143,8 @@ const PartTechnicalBlock = ({ item, idx, onUpdate }) => {
                 {(item.treatments || []).length > 0 && (
                    <tfoot>
                       <tr className="bg-zinc-50/20 border-t border-zinc-100">
-                         <td colSpan="3" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Finishing Cost</td>
-                         <td className="px-6 py-4 text-right">
+                         <td colSpan="3" className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Finishing Cost</td>
+                         <td className="px-4 py-3 text-right">
                             <span className="text-[13px] font-black text-zinc-950 font-mono italic">
                                ₹{(item.treatments || []).reduce((acc, t) => acc + (t.cost * (item.qty || 1)), 0).toFixed(2)}
                             </span>
@@ -185,14 +185,21 @@ const TechnicalSpecifications = ({
          className={`px-6 py-5 border-b cursor-pointer flex justify-between items-center group transition-colors ${isExpanded ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
        >
           <div className="flex items-center gap-3">
-             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-zinc-950 border-zinc-950 text-white scale-110 shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Surface Finishing & Coating</h3>
+             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-brand-primary border-brand-primary text-zinc-950 scale-110 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Surface Finishing & Coating</h3>
           </div>
-          <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-zinc-950' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+          <div className="flex items-center gap-4">
+             {!isExpanded && formData.items.some(item => (item.treatments || []).length > 0) && (
+                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded italic animate-in fade-in slide-in-from-right-2 duration-300">
+                   TREATMENTS ALLOCATED
+                </span>
+             )}
+             <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+          </div>
        </header>
 
        <div className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          <div className="p-6 bg-zinc-50/10">
+          <div className="p-4 bg-zinc-50/10">
              {formData.items.map((item, idx) => (
                 <PartTechnicalBlock 
                    key={item.id}

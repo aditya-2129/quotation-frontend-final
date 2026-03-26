@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { quotationService } from '@/services/quotations';
 import { assetService } from '@/services/assets';
+import { useRouter } from 'next/navigation';
 import ActionButtons from '@/components/shared/ActionButtons';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
 
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState([]);
@@ -12,6 +14,9 @@ export default function QuotationsPage() {
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
+  const router = useRouter();
   const limit = 25;
 
   const fetchQuotations = async () => {
@@ -32,33 +37,40 @@ export default function QuotationsPage() {
     fetchQuotations();
   }, [page]);
 
-  const handleDelete = async (quote) => {
-     if (confirm("Are you sure you want to delete this valuation? This cannot be undone.")) {
-        try { 
-           // 1. Check for files and delete them
-           let parsedItems = [];
-           try {
-              parsedItems = JSON.parse(quote.items || '[]');
-           } catch (e) {
-              console.error("Failed to parse items for cleanup:", e);
-           }
+  const handleDelete = (quote) => {
+     setDeleteConfirm({ open: true, row: quote });
+  };
 
-           if (parsedItems.length > 0) {
-              const fileIds = parsedItems.flatMap(item => (item.design_files || []).map(f => f.$id)).filter(Boolean);
-              if (fileIds.length > 0) {
-                 await Promise.all(fileIds.map(id => assetService.deleteFile(id)));
-              }
-           }
+  const commitDelete = async () => {
+    const quote = deleteConfirm.row;
+    if (!quote) return;
 
-           // 2. Delete the database record
-           await quotationService.deleteQuotation(quote.$id); 
-           fetchQuotations(); 
-        }
-        catch (e) { 
-           console.error("Deletion cycle failed:", e);
-           alert("Delete failed: " + (e.message || "Unknown error")); 
-        }
-     }
+    try { 
+       // 1. Check for files and delete them
+       let parsedItems = [];
+       try {
+          parsedItems = JSON.parse(quote.items || '[]');
+       } catch (e) {
+          console.error("Failed to parse items for cleanup:", e);
+       }
+
+       if (parsedItems.length > 0) {
+          const fileIds = parsedItems.flatMap(item => (item.design_files || []).map(f => f.$id)).filter(Boolean);
+          if (fileIds.length > 0) {
+             await Promise.all(fileIds.map(id => assetService.deleteFile(id)));
+          }
+       }
+
+       // 2. Delete the database record
+       await quotationService.deleteQuotation(quote.$id); 
+       fetchQuotations(); 
+    }
+    catch (e) { 
+       console.error("Deletion cycle failed:", e);
+       setErrorDetails({ open: true, message: e.message || "Failed to purge record from registry." });
+    } finally {
+       setDeleteConfirm({ open: false, row: null });
+    }
   };
 
   return (
@@ -67,7 +79,7 @@ export default function QuotationsPage() {
       primaryAction={
         <button 
           onClick={() => window.location.href = '/quotations/new'}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-95"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-[13px] font-bold text-white shadow-lg shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-95 border border-brand-primary/20"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -120,7 +132,7 @@ export default function QuotationsPage() {
                     <tr key={row.$id} className="group hover:bg-zinc-50/80 transition-colors">
                       <td className="px-6 py-4">
                          <div className="flex flex-col">
-                            <span className="text-zinc-950 font-bold">{row.quotation_no || row.$id.substring(0,8)}</span>
+                            <span className="text-brand-primary font-bold">{row.quotation_no || row.$id.substring(0,8)}</span>
                             <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-tighter">{row.part_number || 'No Part Ref'}</span>
                          </div>
                       </td>
@@ -132,19 +144,19 @@ export default function QuotationsPage() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest leading-none ${
-                          row.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                          row.status === 'Completed' ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20' : 
                           row.status === 'Pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
                           'bg-zinc-50 text-zinc-500 border border-zinc-200'
                         }`}>
                           {row.status || 'Draft'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-mono font-bold text-zinc-950">
+                      <td className="px-6 py-4 text-right font-mono font-bold text-brand-primary">
                         ₹{parseFloat(row.total_amount || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-right">
                          <ActionButtons 
-                           onEdit={() => window.location.href = `/quotations/edit/${row.$id}`} 
+                           onEdit={() => router.push(`/quotations/edit/${row.$id}`)} 
                            onDelete={() => handleDelete(row)} 
                          />
                       </td>
@@ -182,6 +194,27 @@ export default function QuotationsPage() {
           </div>
         </section>
       </div>
+
+      <ConfirmationModal 
+        isOpen={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, row: null })}
+        onConfirm={commitDelete}
+        title="Purge Valuation?"
+        message={`This will permanently remove ${deleteConfirm.row?.quotation_no || 'this record'} and all associated design assets. RESTORATION IS NOT POSSIBLE.`}
+        confirmText="PURGE RECORD"
+        cancelText="KEEP RECORD"
+        type="danger"
+      />
+
+      <ConfirmationModal 
+        isOpen={errorDetails.open}
+        onClose={() => setErrorDetails({ open: false, message: '' })}
+        onConfirm={() => setErrorDetails({ open: false, message: '' })}
+        title="REGISTRY ERROR"
+        message={errorDetails.message}
+        confirmText="CLOSE"
+        type="danger"
+      />
     </DashboardLayout>
   );
 }

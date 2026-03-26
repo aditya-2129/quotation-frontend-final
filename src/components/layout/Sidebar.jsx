@@ -29,7 +29,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         )}
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm transition-transform hover:text-zinc-950 ${isCollapsed ? 'rotate-180' : ''}`}
+          className={`absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm transition-transform hover:text-brand-primary ${isCollapsed ? 'rotate-180' : ''}`}
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -45,16 +45,16 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               key={item.name}
               href={item.href}
               title={isCollapsed ? item.name : ''}
-              className={`group flex items-center transition-all duration-200 ${
+              className={`group flex items-center transition-all duration-300 ${
                 isActive 
-                  ? 'bg-zinc-950 text-white shadow-md' 
-                  : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950'
-              } ${isCollapsed ? 'justify-center rounded-lg p-2.5' : 'rounded-md px-3 py-2.5 text-sm font-medium'}`}
+                  ? 'bg-brand-primary text-zinc-950 shadow-lg shadow-brand-primary/40 font-black' 
+                  : 'text-zinc-600 hover:bg-brand-primary/10 hover:text-brand-primary'
+              } ${isCollapsed ? 'justify-center rounded-lg p-2.5' : 'rounded-xl px-4 py-3 text-[13.5px]'}`}
             >
               <svg
                 className={`${
-                  isActive ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-950'
-                } ${isCollapsed ? 'h-6 w-6' : 'mr-3 h-5 w-5'}`}
+                  isActive ? 'text-zinc-950' : 'text-zinc-400 group-hover:text-brand-primary'
+                } ${isCollapsed ? 'h-6 w-6' : 'mr-3 h-5.5 w-5.5'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

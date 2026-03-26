@@ -7,9 +7,9 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
 
   return (
     <tr className="group hover:bg-zinc-50/50 transition-colors border-b border-zinc-100 last:border-0">
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <select 
-          className="h-10 w-full px-4 rounded-lg bg-zinc-50 border border-zinc-200 text-xs font-black outline-none focus:bg-white focus:ring-1 focus:ring-zinc-950 transition-all font-mono"
+          className="h-10 w-full px-4 rounded-lg bg-zinc-50 border border-zinc-200 text-xs font-black outline-none focus:bg-white focus:ring-1 focus:ring-brand-primary transition-all font-mono"
           value={item.item_name || ""}
           onChange={(e) => {
              const ref = libraries.bop.find(b => b.item_name === e.target.value);
@@ -31,7 +31,7 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
            />
         )}
       </td>
-      <td className="px-6 py-4 text-center">
+      <td className="px-4 py-2.5 text-center">
         <div className="flex flex-col items-center">
            <input 
              type="number" 
@@ -42,7 +42,7 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
            <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mt-1 italic">{unitLabel}</span>
         </div>
       </td>
-      <td className="px-6 py-4 text-center">
+      <td className="px-4 py-2.5 text-center">
         <div className="relative group/rate inline-block">
           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold">₹</span>
           <input 
@@ -54,7 +54,7 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
           <div className="absolute -bottom-4 right-0 text-[8px] text-zinc-400 font-black uppercase tracking-tighter italic">PER {unitLabel.toUpperCase()}</div>
         </div>
       </td>
-      <td className="px-6 py-4 text-right">
+      <td className="px-4 py-2.5 text-right">
         <div className="font-black text-zinc-950 font-mono text-[13px] leading-tight">
           ₹{(parseFloat(item.rate || 0) * (item.qty || 1) * quantity).toFixed(2)}
         </div>
@@ -89,19 +89,19 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
 
   return (
     <div className="mb-8 last:mb-0 border border-zinc-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-in fade-in duration-500">
-      <div className="px-6 py-4 bg-zinc-50/50 border-b border-zinc-100 flex justify-between items-center">
+      <div className="px-4 py-2.5 bg-zinc-50/50 border-b border-zinc-100 flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <div className="h-8 w-8 rounded-lg bg-zinc-950 text-white flex items-center justify-center text-[10px] font-black italic">
+          <div className="h-8 w-8 rounded-lg bg-brand-primary text-white flex items-center justify-center text-[10px] font-black italic shadow-lg shadow-brand-primary/20">
              {String(idx + 1).padStart(2, '0')}
           </div>
           <div>
-            <h4 className="text-[13px] font-black text-zinc-950 uppercase tracking-tight">{part.part_name}</h4>
+            <h4 className="text-[13px] font-black text-brand-primary uppercase tracking-tight">{part.part_name}</h4>
              <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.15em] italic font-mono leading-none">Buying List for this Part</span>
           </div>
         </div>
         <button 
           onClick={addBOP}
-          className="h-8 px-5 rounded-lg bg-zinc-950 text-white text-[10px] font-black uppercase tracking-tight hover:bg-zinc-900 transition-all flex items-center gap-2"
+          className="h-8 px-5 rounded-lg bg-brand-primary text-white text-[10px] font-black uppercase tracking-tight hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-brand-primary/20"
         >
           Add Item +
         </button>
@@ -111,10 +111,10 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
         <table className="w-full text-left text-sm border-collapse table-fixed">
           <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
             <tr>
-               <th className="px-6 py-4 w-[40%]">Item Description <span className="text-red-500 font-extrabold">*</span></th>
-               <th className="px-6 py-4 text-center w-[15%]">Qty Needed <span className="text-red-500 font-extrabold">*</span></th>
-               <th className="px-6 py-4 text-center w-[20%]">Buying Price <span className="text-red-500 font-extrabold">*</span></th>
-               <th className="px-6 py-4 text-right w-[20%]">Total Cost (₹)</th>
+               <th className="px-4 py-2.5 w-[40%]">Item Description <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-4 py-2.5 text-center w-[15%]">Qty Needed <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-4 py-2.5 text-center w-[20%]">Buying Price <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-4 py-2.5 text-right w-[20%]">Total Cost (₹)</th>
               <th className="px-6 py-3 text-center w-[5%]"></th>
             </tr>
           </thead>
@@ -139,8 +139,8 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
           {part.bought_out_items?.length > 0 && (
             <tfoot>
               <tr className="bg-zinc-50/20 border-t border-zinc-100">
-                 <td colSpan="3" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Purchased Cost</td>
-                <td className="px-6 py-4 text-right">
+                 <td colSpan="3" className="px-4 py-2.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Purchased Cost</td>
+                <td className="px-4 py-2.5 text-right">
                   <div className="flex flex-col items-end">
                     <span className="text-[14px] font-black text-zinc-950 font-mono leading-tight">
                       ₹{part.bought_out_items.reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1) * (part.qty || 1)), 0).toFixed(2)}
@@ -185,14 +185,14 @@ const BroughtOutParts = ({
          className={`px-6 py-5 border-b cursor-pointer flex justify-between items-center group transition-colors ${isExpanded ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
        >
           <div className="flex items-center gap-3">
-             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-zinc-950 border-zinc-950 text-white scale-110 shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Additional Purchased Items</h3>
+             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-brand-primary border-brand-primary text-white scale-110 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Additional Purchased Items</h3>
           </div>
           <div className="flex items-center gap-4">
              {formData.items.some(it => it.bought_out_items?.length > 0) && !isExpanded && (
-                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100 uppercase tracking-tighter">Items Allocated</span>
+                <span className="text-[10px] font-black text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded border border-brand-primary/20 uppercase tracking-tighter">Items Allocated</span>
              )}
-             <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-zinc-950' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+             <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </div>
        </header>
        <div className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>

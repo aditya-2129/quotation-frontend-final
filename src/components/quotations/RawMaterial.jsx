@@ -10,7 +10,7 @@ const DimensionInput = ({ label, field, value, allowance, onChange }) => (
   <div className="flex-1 min-w-[120px]">
      <label className="text-[8px] font-black text-zinc-400 uppercase block mb-1.5 flex justify-between items-center">
         <span className="flex items-center gap-1">{label} <span className="text-red-500 font-extrabold">*</span></span>
-        <span className="text-emerald-700">+ Allowance</span>
+        <span className="text-brand-primary font-bold">+ Allowance</span>
      </label>
      <div className="flex gap-1">
         <input 
@@ -23,7 +23,7 @@ const DimensionInput = ({ label, field, value, allowance, onChange }) => (
         <input 
           type="number" 
           placeholder="+ mm"
-          className="w-[40%] h-9 bg-emerald-50/50 border border-emerald-200 border-l-0 rounded-r-lg px-2 text-[11px] font-black text-emerald-800 outline-none focus:ring-1 focus:ring-emerald-500 transition-all font-mono placeholder:text-emerald-400"
+          className="w-[40%] h-9 bg-brand-primary/5 border border-brand-primary/20 border-l-0 rounded-r-lg px-2 text-[11px] font-black text-brand-primary outline-none focus:ring-1 focus:ring-brand-primary transition-all font-mono placeholder:text-brand-primary/40"
           value={allowance ?? ""}
           onChange={(e) => onChange(field, e.target.value, true)}
         />
@@ -96,20 +96,20 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
 
   return (
     <div className="bg-white border border-zinc-200 rounded-2xl overflow-visible mb-4 transition-all hover:border-zinc-300">
-      <div className="flex items-stretch min-h-[80px]">
+      <div className="flex items-stretch min-h-[60px]">
         {/* Step Indicator Sidebar */}
-        <div className="w-16 bg-zinc-50 border-r border-zinc-100 flex flex-col items-center justify-center gap-1.5 py-4">
+        <div className="w-14 bg-zinc-50 border-r border-zinc-100 flex flex-col items-center justify-center gap-1.5 py-3">
            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter italic">Step</span>
-           <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-black transition-all duration-500 ${step === 3 ? 'bg-emerald-700 text-white shadow-lg shadow-emerald-600/20' : 'bg-zinc-950 text-white'}`}>
+           <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-black transition-all duration-500 ${step === 3 ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-zinc-950 text-white shadow-md'}`}>
               {step}
            </div>
            {step === 3 && (
-              <svg className="h-3.5 w-3.5 text-emerald-700 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+              <svg className="h-3.5 w-3.5 text-brand-primary animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
            )}
         </div>
 
         {/* Dynamic Workspace */}
-        <div className="flex-1 p-5 flex flex-wrap items-center gap-6">
+        <div className="flex-1 p-3 flex flex-wrap items-center gap-6">
            {/* Section 0: Part Profile */}
            <div className="w-48 border-r border-zinc-100 pr-6">
               <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest block mb-0.5">Part Name</span>
@@ -123,9 +123,9 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2 flex items-center gap-1">01. Pick Material Grade <span className="text-red-500 font-extrabold">*</span></span>
                  <div className="flex gap-3">
                     <div className="relative flex-1">
-                      <input 
+                       <input 
                         type="text"
-                        className={`w-full h-11 pl-4 pr-10 rounded-xl bg-zinc-50 border focus:ring-1 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-bold text-black text-[12px] placeholder:font-normal ${isOpen ? 'border-zinc-950 ring-1 ring-zinc-950 bg-white' : 'border-zinc-200'} ${item.material?.isManual ? 'border-amber-500 bg-amber-50/30' : ''}`}
+                        className={`w-full h-11 pl-4 pr-10 rounded-xl bg-zinc-50 border focus:ring-1 focus:ring-brand-primary focus:bg-white outline-none transition-all font-bold text-black text-[12px] placeholder:font-normal ${isOpen ? 'border-brand-primary ring-1 ring-brand-primary bg-white' : 'border-zinc-200'}`}
                         placeholder="e.g. Aluminum 6061, EN24..."
                         value={search || (item.material ? item.material.grade : "")}
                         onFocus={() => setIsOpen(true)}
@@ -133,7 +133,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                       />
                       <button 
                         onClick={() => setIsOpen(!isOpen)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-950 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-brand-primary transition-colors"
                       >
                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                       </button>
@@ -142,15 +142,15 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                     {item.material && (
                        <div className="w-28 animate-in slide-in-from-left-2 duration-300">
                           <div className="relative">
-                             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-700 text-[10px] font-black">₹</span>
+                             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-brand-primary text-[10px] font-black">₹</span>
                              <input 
                                type="number"
-                               className="w-full h-11 pl-6 pr-2 rounded-xl bg-emerald-50/50 border border-emerald-200 focus:ring-1 focus:ring-emerald-500 focus:bg-white outline-none transition-all font-black text-[13px] font-mono text-emerald-800 placeholder:text-emerald-400"
+                               className="w-full h-11 pl-6 pr-2 rounded-xl bg-brand-primary/5 border border-brand-primary/20 focus:ring-1 focus:ring-brand-primary focus:bg-white outline-none transition-all font-black text-[13px] font-mono text-brand-primary placeholder:text-brand-primary/40"
                                placeholder="Rate"
                                value={item.material.base_rate ?? ""}
                                onChange={(e) => onUpdate({ material: { ...item.material, base_rate: parseFloat(e.target.value) || 0 } })}
                              />
-                             <span className="absolute -top-4 right-0 text-[8px] font-black text-emerald-700 uppercase tracking-tighter">Buying Price / kg</span>
+                             <span className="absolute -top-4 right-0 text-[8px] font-black text-brand-primary uppercase tracking-tighter">Buying Price / kg</span>
                           </div>
                        </div>
                     )}
@@ -196,8 +196,8 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                                  <span className="text-[9px] text-zinc-400 font-normal opacity-70 italic tracking-tight">{m.name}</span>
                               </div>
                               <div className="flex items-center gap-3">
-                                 <span className="text-emerald-700 font-black italic">₹{m.base_rate} <span className="text-[8px] font-normal text-zinc-400 not-italic">/ kg</span></span>
-                                 <div className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                 <span className="text-brand-primary font-black italic">₹{m.base_rate} <span className="text-[8px] font-normal text-zinc-400 not-italic">/ kg</span></span>
+                                 <div className="h-5 w-5 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity">
                                     <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                                  </div>
                               </div>
@@ -291,7 +291,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                        <button 
                          key={s.id}
                          onClick={() => onUpdate({ shape: s.id })}
-                         className={`flex flex-col items-center justify-center h-16 w-20 rounded-xl border-2 transition-all ${item.shape === s.id ? 'border-zinc-950 bg-zinc-950 text-white shadow-lg' : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-zinc-200'}`}
+                         className={`flex flex-col items-center justify-center h-16 w-20 rounded-xl border-2 transition-all ${item.shape === s.id ? 'border-brand-primary bg-brand-primary text-white shadow-lg shadow-brand-primary/20 scale-105' : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-brand-primary/30 hover:bg-brand-primary/5'}`}
                        >
                           <svg className="h-5 w-5 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.icon} /></svg>
                           <span className="text-[8px] font-black uppercase text-center leading-tight">{s.name}</span>
@@ -391,20 +391,26 @@ const RawMaterial = ({
          className={`px-6 py-5 border-b cursor-pointer flex justify-between items-center group rounded-t-2xl transition-colors ${activePhase === 'material' ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
        >
           <div className="flex items-center gap-3">
-             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${activePhase === 'material' ? 'bg-zinc-950 border-zinc-950 text-white shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'material' ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Material & Weight Selection</h3>
+             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${activePhase === 'material' ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'material' ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Material & Weight Selection</h3>
           </div>
           <div className="flex items-center gap-4">
              {activePhase !== 'material' && (
-                <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/50 px-2.5 py-1 rounded-md border border-emerald-200/50 italic animate-in fade-in zoom-in duration-300">
-                   MATERIAL SETUP PENDING
+                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border italic animate-in fade-in zoom-in duration-300 ${
+                  formData.items.every(item => item.material && item.shape && (item.material_weight > 0))
+                    ? 'text-emerald-600 bg-emerald-50 border-emerald-100'
+                    : 'text-brand-primary bg-brand-primary/10 border-brand-primary/20'
+                }`}>
+                   {formData.items.every(item => item.material && item.shape && (item.material_weight > 0))
+                     ? 'MATERIAL SETUP COMPLETE'
+                     : 'MATERIAL SETUP PENDING'}
                 </span>
              )}
-             <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${activePhase === 'material' ? 'rotate-180 text-zinc-950' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+             <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${activePhase === 'material' ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </div>
        </header>
        <div className={`transition-all duration-500 ease-in-out ${activePhase === 'material' ? 'max-h-[3000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          <div className="p-6 bg-zinc-50/10">
+          <div className="p-4 bg-zinc-50/10">
              {formData.items.map((item, idx) => (
                 <MaterialConfigurationRow 
                    key={item.id}

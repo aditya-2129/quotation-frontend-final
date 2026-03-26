@@ -1,12 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { quotationService } from '@/services/quotations';
 import { customerService } from '@/services/customers';
 import { materialService } from '@/services/materials';
 import { laborRateService, bopRateService } from '@/services/rates';
+import { useRouter } from 'next/navigation';
 import CustomerModal from '@/components/modals/CustomerModal';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import ValidationModal from '@/components/modals/ValidationModal';
 import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
 import BOMRegistry from '@/components/quotations/BOMRegistry';
 import RawMaterial from '@/components/quotations/RawMaterial';
@@ -17,9 +21,16 @@ import CommercialAdjustments from '@/components/quotations/CommercialAdjustments
 import ValuationLedger from '@/components/quotations/ValuationLedger';
 
 export default function NewQuotationPage() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
+  const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
+  const [isDraftConfirmOpen, setIsDraftConfirmOpen] = useState(false);
+  const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
+  const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [formData, setFormData] = useState({
     quotation_no: '', 
@@ -40,6 +51,7 @@ export default function NewQuotationPage() {
     assembly_cost: 0,
     production_mode: 'Batch',
     quantity: 1,
+    project_image: null,
     items: [
       {
         id: 1,
@@ -157,6 +169,7 @@ export default function NewQuotationPage() {
         });
       } catch (err) {
         console.error("Master data fetch failed:", err);
+        setErrorDetails({ open: true, message: "Network instability detected. Master data failed to load." });
       } finally {
         setIsLoading(false);
       }
@@ -233,7 +246,8 @@ export default function NewQuotationPage() {
   const totals = calculateTotals();
 
 
-   const handleSave = async () => {
+  const handleSave = async (e) => {
+      if (e) e.preventDefault();
       // Validation Logic
       const missingFields = [];
       if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
@@ -244,6 +258,7 @@ export default function NewQuotationPage() {
      if (!formData.inquiry_date) missingFields.push("Date Received");
      if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
      if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
+     if (!formData.project_image) missingFields.push("Project Model / Snapshot Image");
 
       if (formData.items.length === 0) {
          missingFields.push("At least one BOM item");
@@ -300,10 +315,15 @@ export default function NewQuotationPage() {
       }
 
       if (missingFields.length > 0) {
-         alert("PLEASE COMPLETE THESE SECTIONS:\n\n" + missingFields.map(f => `• ${f}`).join("\n"));
+         setMissingFields(missingFields);
+         setIsValidationOpen(true);
          return;
       }
 
+      setIsSaveConfirmOpen(true);
+   };
+
+   const commitSave = async () => {
       try {
          // Destructure only valid schema fields from formData
          const { 
@@ -324,7 +344,7 @@ export default function NewQuotationPage() {
             revision_no,
             inquiry_date,
             delivery_date,
-            status,
+            status: 'Completed',
             markup,
             packaging_cost,
             transportation_cost,
@@ -332,6 +352,7 @@ export default function NewQuotationPage() {
             assembly_cost,
             production_mode,
             quantity: parseInt(quantity) || 1,
+            project_image: formData.project_image ? JSON.stringify(formData.project_image) : '',
             // Required part_number for schema compatibility, mapping to first item
             part_number: formData.items[0]?.part_name || 'MULTIPLE',
             items: JSON.stringify(formData.items.map(i => ({ 
@@ -346,43 +367,117 @@ export default function NewQuotationPage() {
 
          await quotationService.createQuotation(payload);
          localStorage.removeItem('draft_formData');
-         window.location.href = '/quotations';
+         router.push('/quotations');
       } catch (e) {
          console.error("Save Error:", e);
-         alert("Save failed: " + (e.message || "Unknown error"));
+         setErrorDetails({ open: true, message: e.message || "Unknown persistence error" });
+      } finally {
+         setIsSaveConfirmOpen(false);
       }
    };
 
-  const handleDiscard = () => {
-     if (window.confirm("Abandon this valuation? Restoration will not be possible.")) {
-        localStorage.removeItem('draft_formData');
-        window.location.href = '/quotations';
-     }
+   const handleSaveDraft = () => {
+      // Minimal validation for draft
+      if (!formData.quotation_no) {
+         setErrorDetails({ open: true, message: "A Quotation Reference ID is required to save a draft." });
+         return;
+      }
+      setIsDraftConfirmOpen(true);
+   };
+
+   const commitDraft = async () => {
+      try {
+         const { 
+            quotation_no, supplier_name, contact_person, contact_phone, 
+            contact_email, quoting_engineer, revision_no, inquiry_date, 
+            delivery_date, markup, packaging_cost, 
+            transportation_cost, design_cost, assembly_cost,
+            production_mode, quantity 
+         } = formData;
+
+         const payload = {
+            quotation_no,
+            supplier_name: formData.customer?.name || supplier_name || 'Anonymous Draft',
+            contact_person,
+            contact_phone,
+            contact_email,
+            quoting_engineer,
+            revision_no,
+            inquiry_date,
+            delivery_date,
+            status: 'Draft',
+            markup,
+            packaging_cost,
+            transportation_cost,
+            design_cost,
+            assembly_cost,
+            production_mode,
+            quantity: parseInt(quantity) || 1,
+            part_number: formData.items[0]?.part_name || 'DRAFT',
+            items: JSON.stringify(formData.items.map(i => ({ 
+               ...i, 
+               design_files: (i.design_files || []).filter(f => f.$id) 
+            }))),
+            detailed_breakdown: JSON.stringify(totals),
+            total_amount: totals.finalTotal,
+            subtotal: totals.subtotal,
+            customer_id: formData.customer?.$id || ''
+         };
+
+         await quotationService.createQuotation(payload);
+         localStorage.removeItem('draft_formData');
+         router.push('/quotations');
+      } catch (e) {
+         console.error("Draft Save Error:", e);
+         setErrorDetails({ open: true, message: e.message || "Failed to commit draft to registry." });
+      } finally {
+         setIsDraftConfirmOpen(false);
+      }
+   };
+
+  const handleDiscard = (e) => {
+     if (e) e.preventDefault();
+     setIsDiscardConfirmOpen(true);
+  };
+
+  const confirmDiscard = () => {
+     localStorage.removeItem('draft_formData');
+     router.push('/quotations');
   };
 
   return (
     <DashboardLayout 
       title="Create Your Quotation"
       primaryAction={
-        <div className="flex gap-3">
-           <button 
-             onClick={handleDiscard}
-             className="px-5 h-9 flex items-center justify-center text-[11px] font-black uppercase tracking-tight text-zinc-500 hover:text-zinc-950 transition-colors"
-           >
-             Cancel
-           </button>
-           <button 
-             onClick={handleSave}
-             className="px-6 h-9 flex items-center justify-center rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 hover:bg-zinc-900 transition-all active:scale-95 border border-zinc-800"
-           >
-             Save & Finish
-           </button>
+        <div className="flex gap-4 items-center relative z-[999]">
+            <button 
+              type="button"
+              onClick={handleDiscard}
+              className="px-4 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer pointer-events-auto"
+            >
+              Cancel
+            </button>
+            <div className="h-6 w-px bg-zinc-200" />
+            <button 
+              type="button"
+              onClick={handleSaveDraft}
+              className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 rounded-xl transition-all cursor-pointer pointer-events-auto"
+            >
+              Save Draft
+            </button>
+            <button 
+              type="button"
+              onClick={handleSave}
+              className="px-8 h-10 flex items-center justify-center rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-brand-primary/25 hover:scale-[1.02] transition-all active:scale-95 border border-brand-primary/20 cursor-pointer pointer-events-auto"
+            >
+              Save & Finish
+            </button>
         </div>
       }
     >
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
          {/* Left: Engineering Ledger */}
-         <div className="xl:col-span-3 space-y-4">
+         <div className="xl:col-span-3 space-y-3">
             <ScopeAndIdentity 
                formData={formData}
                setFormData={setFormData}
@@ -405,6 +500,7 @@ export default function NewQuotationPage() {
                activePhase={activePhase}
                setActivePhase={setActivePhase}
                panelIndex={2}
+               onError={(msg) => setErrorDetails({ open: true, message: msg })}
             />
 
             <RawMaterial 
@@ -464,27 +560,76 @@ export default function NewQuotationPage() {
          </div>
       </div>
 
-      {isQuickAddOpen && (
-         <CustomerModal 
-            onClose={() => setIsQuickAddOpen(false)} 
-            onSuccess={(newCustomer) => {
-               setLibraries(prev => ({
-                  ...prev,
-                  customers: [newCustomer, ...prev.customers]
-               }));
-               setActiveQuote(prev => ({ ...prev, customer: newCustomer }));
-               setFormData(prev => ({ 
-                  ...prev, 
-                  supplier_name: newCustomer.name,
-                  contact_person: newCustomer.contact_person || prev.contact_person,
-                  contact_phone: newCustomer.phone || prev.contact_phone,
-                  contact_email: newCustomer.email || prev.contact_email
-               }));
-               setCustomerSearch(newCustomer.name);
-               setIsQuickAddOpen(false);
-            }} 
-         />
-      )}
+     {isQuickAddOpen && (
+        <CustomerModal 
+           onClose={() => setIsQuickAddOpen(false)} 
+           onSuccess={(newCustomer) => {
+              setLibraries(prev => ({
+                 ...prev,
+                 customers: [newCustomer, ...prev.customers]
+              }));
+              setActiveQuote(prev => ({ ...prev, customer: newCustomer }));
+              setFormData(prev => ({ 
+                 ...prev, 
+                 supplier_name: newCustomer.name,
+                 contact_person: newCustomer.contact_person || prev.contact_person,
+                 contact_phone: newCustomer.phone || prev.contact_phone,
+                 contact_email: newCustomer.email || prev.contact_email
+              }));
+              setCustomerSearch(newCustomer.name);
+              setIsQuickAddOpen(false);
+           }} 
+        />
+     )}
+
+     <ConfirmationModal 
+        isOpen={isDiscardConfirmOpen}
+        onClose={() => setIsDiscardConfirmOpen(false)}
+        onConfirm={confirmDiscard}
+        title="Abandon Valuation?"
+        message="Restore will not be possible. Unsaved data will be purged."
+        confirmText="ABANDON"
+        cancelText="KEEP EDITING"
+        type="danger"
+     />
+
+     <ConfirmationModal 
+        isOpen={isDraftConfirmOpen}
+        onClose={() => setIsDraftConfirmOpen(false)}
+        onConfirm={commitDraft}
+        title="Save as Draft?"
+        message="This will persist your current progress to the registry as an incomplete valuation."
+        confirmText="SAVE DRAFT"
+        cancelText="KEEP EDITING"
+        type="warning"
+     />
+
+     <ConfirmationModal 
+        isOpen={isSaveConfirmOpen}
+        onClose={() => setIsSaveConfirmOpen(false)}
+        onConfirm={commitSave}
+        title="Commit Valuation?"
+        message="Finalize and save this quotation to the master registry."
+        confirmText="FINISH & SAVE"
+        cancelText="REVIEW DATA"
+        type="brand"
+     />
+
+     <ValidationModal 
+        isOpen={isValidationOpen}
+        onClose={() => setIsValidationOpen(false)}
+        missingFields={missingFields}
+     />
+
+     <ConfirmationModal 
+        isOpen={errorDetails.open}
+        onClose={() => setErrorDetails({ open: false, message: '' })}
+        onConfirm={() => setErrorDetails({ open: false, message: '' })}
+        title="VALUATION ERROR"
+        message={errorDetails.message}
+        confirmText="CLOSE"
+        type="danger"
+     />
     </DashboardLayout>
   );
 }
