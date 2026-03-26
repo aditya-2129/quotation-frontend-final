@@ -2,43 +2,40 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { laborRateService, toolingRateService, bopRateService } from '@/services/rates';
+import { laborRateService, bopRateService } from '@/services/rates';
 import ActionButtons from '@/components/shared/ActionButtons';
 
 export default function ToolingRatePage() {
   const [laborRates, setLaborRates] = useState([]);
-  const [toolingRates, setToolingRates] = useState([]);
+
   const [bopRates, setBopRates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalState, setModalState] = useState({ open: false, type: null, data: null });
   
   // Pagination State
   const [laborPage, setLaborPage] = useState(1);
-  const [toolingPage, setToolingPage] = useState(1);
+
   const [bopPage, setBopPage] = useState(1);
   
   const [laborTotal, setLaborTotal] = useState(0);
-  const [toolingTotal, setToolingTotal] = useState(0);
+
   const [bopTotal, setBopTotal] = useState(0);
   
   const limit = 12;
 
   useEffect(() => {
     fetchData();
-  }, [laborPage, toolingPage, bopPage]);
+  }, [laborPage, bopPage]);
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [laborRes, toolingRes, bopRes] = await Promise.all([
+      const [laborRes, bopRes] = await Promise.all([
         laborRateService.listRates(limit, (laborPage - 1) * limit),
-        toolingRateService.listRates(limit, (toolingPage - 1) * limit),
         bopRateService.listRates(limit, (bopPage - 1) * limit)
       ]);
       setLaborRates(laborRes.documents);
       setLaborTotal(laborRes.total);
-      setToolingRates(toolingRes.documents);
-      setToolingTotal(toolingRes.total);
       setBopRates(bopRes.documents);
       setBopTotal(bopRes.total);
     } catch (error) {
@@ -56,7 +53,6 @@ export default function ToolingRatePage() {
     if (window.confirm(`Are you sure you want to remove this ${type} record?`)) {
       try {
         if (type === 'labor') await laborRateService.deleteRate(id);
-        else if (type === 'tooling') await toolingRateService.deleteRate(id);
         else await bopRateService.deleteRate(id);
         fetchData();
       } catch (error) {
@@ -76,12 +72,7 @@ export default function ToolingRatePage() {
            >
               Add Labor
            </button>
-           <button 
-              onClick={() => openAddModal('tooling')}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-95"
-           >
-              Add Tooling
-           </button>
+
            <button 
               onClick={() => openAddModal('bop')}
               className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95"
@@ -91,7 +82,7 @@ export default function ToolingRatePage() {
         </div>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 h-full pb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full pb-8">
         {/* Labor Rates Section */}
         <section className="flex flex-col gap-4">
            <SectionHeader title="Process & Labor" count={laborTotal} color="bg-emerald-500" />
@@ -126,40 +117,6 @@ export default function ToolingRatePage() {
            </div>
         </section>
 
-        {/* Tooling Rates Section */}
-        <section className="flex flex-col gap-4">
-           <SectionHeader title="Tooling & Consumables" count={toolingTotal} color="bg-zinc-950" />
-           <div className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex-1 flex flex-col min-h-[500px]">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead className="bg-zinc-50 border-b border-zinc-200">
-                    <tr>
-                      <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Item / Operation</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Rate (₹)</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200">
-                    {isLoading ? [1,2,3,4].map(i => <SkeletonRow key={i} />) : toolingRates.length === 0 ? (
-                      <tr><td colSpan="3" className="px-5 py-20 text-center text-zinc-400 italic">No tools specified.</td></tr>
-                    ) : toolingRates.map(rate => (
-                      <tr key={rate.$id} className="group hover:bg-zinc-50/80 transition-colors">
-                        <td className="px-5 py-3.5 font-bold text-zinc-900 leading-tight">{rate.item_name}</td>
-                        <td className="px-5 py-3.5 text-right font-mono font-bold text-zinc-900 text-xs">
-                           ₹{parseFloat(rate.rate).toFixed(2)}
-                           <span className="ml-1 text-[9px] text-zinc-400 uppercase">{rate.unit}</span>
-                        </td>
-                        <td className="px-5 py-3.5 text-right">
-                           <ActionButtons onEdit={() => openEditModal('tooling', rate)} onDelete={() => handleDelete('tooling', rate.$id)} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Pagination page={toolingPage} setPage={setToolingPage} total={toolingTotal} limit={limit} />
-           </div>
-        </section>
 
         {/* BOP Items Section */}
         <section className="flex flex-col gap-4">
@@ -271,10 +228,7 @@ function RateModal({ type, data, onClose, onSuccess }) {
         const payload = { process_name: formData.name, hourly_rate: parseFloat(formData.rate) };
         if (data) await laborRateService.updateRate(data.$id, payload);
         else await laborRateService.createRate(payload);
-      } else if (type === 'tooling') {
-        const payload = { item_name: formData.name, rate: parseFloat(formData.rate), unit: formData.unit };
-        if (data) await toolingRateService.updateRate(data.$id, payload);
-        else await toolingRateService.createRate(payload);
+
       } else {
         const payload = { item_name: formData.name, rate: parseFloat(formData.rate), supplier: formData.supplier, unit: formData.unit };
         if (data) await bopRateService.updateRate(data.$id, payload);

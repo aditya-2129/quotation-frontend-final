@@ -4,7 +4,7 @@ export const APPWRITE_CONFIG = {
         QUOTATIONS: "quotation_history",
         CUSTOMERS: "customers",
         MATERIALS: "materials_library",
-        TOOLING_RATES: "tooling_rates",
+
         LABOR_RATES: "labor_rates",
         BOP_LIBRARY: "bop_library"
     },

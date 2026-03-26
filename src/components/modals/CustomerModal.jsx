@@ -33,18 +33,18 @@ export default function CustomerModal({ onClose, onSuccess, customer }) {
          <div className="w-full max-w-lg bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <header className="px-8 py-6 border-b border-zinc-100 bg-zinc-50/50">
                <h2 className="text-[14px] font-black text-zinc-950 uppercase tracking-[0.25em]">
-                  {customer ? 'Update Client Record' : 'Quick Customer Integration'}
+                  {customer ? 'Edit Customer' : 'Add New Customer'}
                </h2>
                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-2 flex items-center gap-2">
                   <div className="h-1 w-1 rounded-full bg-amber-500 animate-pulse" />
-                  {customer ? 'Modify existing profile information in the master repository.' : 'Configure essential profile data for the master repository.'}
+                  {customer ? 'Update the details for this customer.' : 'Fill in the details to add a new customer to your list.'}
                </p>
             </header>
             
             <form onSubmit={handleSubmit} className="p-8 space-y-5">
                <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                     <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 leading-none">Organization Name *</label>
+                     <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 leading-none">Customer Name *</label>
                      <input 
                         required
                         autoFocus
@@ -97,13 +97,13 @@ export default function CustomerModal({ onClose, onSuccess, customer }) {
                   >
                      Cancel
                   </button>
-                  <button 
-                     type="submit"
-                     disabled={isSubmitting}
-                     className="flex-[2] h-11 rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 hover:bg-zinc-900 disabled:opacity-50 transition-all active:scale-[0.98] border border-zinc-800"
-                  >
-                     {isSubmitting ? 'Syncing...' : (customer ? 'Update Record' : 'Commit Registry')}
-                  </button>
+                   <button 
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-[2] h-11 rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 hover:bg-zinc-900 disabled:opacity-50 transition-all active:scale-[0.98] border border-zinc-800"
+                   >
+                      {isSubmitting ? 'Saving...' : (customer ? 'Save Changes' : 'Save Customer')}
+                   </button>
                </div>
             </form>
          </div>

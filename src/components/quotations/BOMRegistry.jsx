@@ -72,7 +72,7 @@ const BOMRegistry = ({
       >
         <div className="flex items-center gap-3">
            <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-zinc-950 border-zinc-950 text-white shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-           <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Engineered BOM Definition</h3>
+           <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Parts</h3>
         </div>
         <div className="flex items-center gap-4">
            {!isExpanded && (
@@ -83,10 +83,10 @@ const BOMRegistry = ({
            <button 
              type="button"
              onClick={(e) => { e.stopPropagation(); addPart(); }}
-             className="h-9 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-tight transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-emerald-600/20"
+             className="h-9 px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-black uppercase tracking-tight transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-emerald-700/20"
            >
              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
-             ADD COMPONENT +
+             ADD PART +
            </button>
            <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-zinc-950' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
         </div>
@@ -98,9 +98,9 @@ const BOMRegistry = ({
             <thead>
               <tr className="bg-zinc-50/50 border-b border-zinc-100 italic">
                 <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest w-16 text-center">No.</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Component Name / Designation</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Build Qty</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Drawing Assets</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Component Name <span className="text-red-500 font-extrabold">*</span></th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center whitespace-nowrap">Quantity To Make <span className="text-red-500 font-extrabold">*</span></th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Blueprints / Drawings</th>
                 <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">Creation Date</th>
                 <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center w-24">Ops</th>
               </tr>
@@ -120,6 +120,7 @@ const BOMRegistry = ({
                        <div className="relative group/input max-w-sm">
                           <input 
                             className="bg-transparent border-b border-dashed border-zinc-200 hover:border-zinc-950 focus:border-zinc-950 focus:border-solid outline-none font-black text-[14px] py-0.5 w-full text-zinc-900 transition-all cursor-text"
+                            placeholder="Enter Name (e.g. Shaft, Plate)..."
                             value={item.part_name}
                             onChange={(e) => {
                                const newItems = [...formData.items];
@@ -211,7 +212,7 @@ const BOMRegistry = ({
                                          Uploading...
                                       </div>
                                    ) : (
-                                      <label htmlFor={`drawing-${item.id}`} className="h-7 w-7 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-pointer hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-90" title="Add More">
+                                      <label htmlFor={`drawing-${item.id}`} className="h-7 w-7 flex items-center justify-center rounded-lg bg-emerald-100/50 text-emerald-700 border border-emerald-200 cursor-pointer hover:bg-emerald-700 hover:text-white transition-all shadow-sm active:scale-90" title="Add More">
                                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
                                       </label>
                                    )}
@@ -224,7 +225,7 @@ const BOMRegistry = ({
                                 ) : (
                                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
                                 )}
-                                <span className="text-[10px] font-black uppercase tracking-tight">{isUploading ? 'Safeguarding Assets...' : 'ADD ASSETS'}</span>
+                                 <span className="text-[10px] font-black uppercase tracking-tight">{isUploading ? 'Uploading...' : 'Upload Blueprints'}</span>
                              </label>
                           )}
                        </div>

@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { quotationService } from '@/services/quotations';
 import { customerService } from '@/services/customers';
 import { materialService } from '@/services/materials';
-import { laborRateService, toolingRateService, bopRateService } from '@/services/rates';
+import { laborRateService, bopRateService } from '@/services/rates';
 import CustomerModal from '@/components/modals/CustomerModal';
 import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
 import BOMRegistry from '@/components/quotations/BOMRegistry';
@@ -13,7 +13,6 @@ import RawMaterial from '@/components/quotations/RawMaterial';
 import MachiningLogic from '@/components/quotations/MachiningLogic';
 import BroughtOutParts from '@/components/quotations/BoughtOutParts';
 import TechnicalSpecifications from '@/components/quotations/TechnicalSpecifications';
-import OperationalTooling from '@/components/quotations/OperationalTooling';
 import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
 import ValuationLedger from '@/components/quotations/ValuationLedger';
 
@@ -43,7 +42,7 @@ export default function NewQuotationPage() {
     quantity: 1,
     items: [
       {
-        id: Date.now(),
+        id: 1,
         part_name: 'Part 01',
         qty: 1,
         material: null,
@@ -55,7 +54,6 @@ export default function NewQuotationPage() {
         treatments: [],
         inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
         processes: [],
-        tooling: [],
         bought_out_items: [],
         design_files: []
       }
@@ -67,10 +65,10 @@ export default function NewQuotationPage() {
     customers: [],
     materials: [],
     labor: [],
-    tooling: []
+    bop: []
   });
 
-  const [activePhase, setActivePhase] = useState('scope'); // scope, material, machining, tooling
+  const [activePhase, setActivePhase] = useState('scope'); // scope, material, machining
 
   const [customerSearch, setCustomerSearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -99,7 +97,7 @@ export default function NewQuotationPage() {
 
   // Derived Active Item
   const activeQuote = formData.items[selectedItemIndex] || formData.items[0] || {
-    id: Date.now(),
+    id: 1,
     part_name: 'Part 01',
     qty: 1,
     material: null,
@@ -111,7 +109,6 @@ export default function NewQuotationPage() {
     treatments: [], // Dynamic array for HT, ST, etc.
     inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
     processes: [],
-    tooling: [],
     bought_out_items: [],
     design_files: []
   };
@@ -146,18 +143,16 @@ export default function NewQuotationPage() {
     const fetchMasterData = async () => {
       try {
         setIsLoading(true);
-        const [c, m, l, t, b] = await Promise.all([
+        const [c, m, l, b] = await Promise.all([
           customerService.listCustomers(100),
           materialService.listMaterials(100),
           laborRateService.listRates(100),
-          toolingRateService.listRates(100),
           bopRateService.listRates(100)
         ]);
         setLibraries({
           customers: c.documents,
           materials: m.documents,
           labor: l.documents,
-          tooling: t.documents,
           bop: b.documents
         });
       } catch (err) {
@@ -172,9 +167,9 @@ export default function NewQuotationPage() {
   // Calculation Logic (Consolidated Ledger)
   if (!mounted) {
      return (
-        <DashboardLayout title="Engineering Workspace">
+        <DashboardLayout title="Create Your Quotation">
            <div className="flex h-64 items-center justify-center">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 animate-pulse">Initializing Command Center...</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 animate-pulse">Setting up your workspace...</span>
            </div>
         </DashboardLayout>
      );
@@ -183,10 +178,9 @@ export default function NewQuotationPage() {
   const calculateTotals = () => {
     let materialTotal = 0;
     let laborTotal = 0;
-    let toolingTotal = 0;
     let bopTotal = 0;
     let treatmentTotal = 0;
-    let qualityTotal = 0;
+
     let projectEngineeringTotal = parseFloat(formData.design_cost || 0) + parseFloat(formData.assembly_cost || 0); 
 
     formData.items.forEach(item => {
@@ -204,18 +198,12 @@ export default function NewQuotationPage() {
           return acc + (parseFloat(p.hourly_rate || 0) * hours);
       }, 0);
 
-      // Tooling Component (Fixed total batch cost)
-      toolingTotal += item.tooling.reduce((acc, t) => acc + (parseFloat(t.rate || 0) * parseFloat(t.qty || 1)), 0);
+
 
       // External Treatments (Batch-level costs)
       treatmentTotal += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? quantity : 1)), 0);
 
-      // Quality & Documentation (per unit * quantity)
-      if (item.inspection?.cmm || item.inspection?.mtc) {
-          const cmmCost = parseFloat(item.inspection.cmm ? (item.inspection.cmm_cost || 0) : 0);
-          const mtcCost = parseFloat(item.inspection.mtc ? (item.inspection.mtc_cost || 0) : 0);
-          qualityTotal += (cmmCost + mtcCost) * quantity;
-      }
+
 
       // Design and Assembly are now handled project-wide outside the items loop
 
@@ -226,7 +214,7 @@ export default function NewQuotationPage() {
     // 3. Project Level Adjustments
     const commercialTotal = parseFloat(formData.packaging_cost || 0) + parseFloat(formData.transportation_cost || 0);
 
-    const subtotal = materialTotal + laborTotal + toolingTotal + bopTotal + treatmentTotal + qualityTotal + projectEngineeringTotal + commercialTotal;
+    const subtotal = materialTotal + laborTotal + bopTotal + treatmentTotal + projectEngineeringTotal + commercialTotal;
     const finalTotal = subtotal * (1 + (formData.markup / 100));
     
     return { 
@@ -234,10 +222,9 @@ export default function NewQuotationPage() {
       finalTotal, 
       materialCost: materialTotal, 
       laborCost: laborTotal, 
-      toolingCost: toolingTotal, 
       bopCost: bopTotal, 
       treatmentCost: treatmentTotal, 
-      qualityCost: qualityTotal,
+
       engineeringCost: projectEngineeringTotal,
       commercialCost: commercialTotal
     };
@@ -247,6 +234,76 @@ export default function NewQuotationPage() {
 
 
    const handleSave = async () => {
+      // Validation Logic
+      const missingFields = [];
+      if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
+     if (!formData.contact_person) missingFields.push("Contact Person Name");
+     if (!formData.contact_phone) missingFields.push("Contact Number");
+     if (!formData.quoting_engineer) missingFields.push("Estimating Staff");
+     if (!formData.revision_no) missingFields.push("Quotation Version");
+     if (!formData.inquiry_date) missingFields.push("Date Received");
+     if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
+     if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
+
+      if (formData.items.length === 0) {
+         missingFields.push("At least one BOM item");
+      } else {
+         formData.items.forEach((item, idx) => {
+            const partNum = idx + 1;
+            const pName = item.part_name || `Part ${partNum}`;
+
+            if (!item.part_name) missingFields.push(`${pName}: Component Name`);
+            if (!item.qty || item.qty <= 0) missingFields.push(`${pName}: Manufacturing Qty`);
+            
+            // Raw Material Validation
+            if (!item.material) {
+               missingFields.push(`${pName}: Material Selection`);
+            } else if (!item.material.base_rate || item.material.base_rate <= 0) {
+               missingFields.push(`${pName}: Material Base Rate`);
+            }
+
+            if (!item.shape) {
+               missingFields.push(`${pName}: Raw Material Profile/Shape`);
+            } else {
+               // Dimension Validation based on shape
+               const d = item.dimensions || {};
+               if (!d.l || parseFloat(d.l) <= 0) missingFields.push(`${pName}: Length (L)`);
+               
+               if (item.shape === 'rect') {
+                  if (!d.w || parseFloat(d.w) <= 0) missingFields.push(`${pName}: Width (W)`);
+                  if (!d.t || parseFloat(d.t) <= 0) missingFields.push(`${pName}: Thickness (T)`);
+               } else if (item.shape === 'round') {
+                  if (!d.dia || parseFloat(d.dia) <= 0) missingFields.push(`${pName}: Diameter (Dia)`);
+               } else if (item.shape === 'hex') {
+                  if (!d.af || parseFloat(d.af) <= 0) missingFields.push(`${pName}: Across Flat (AF)`);
+               }
+            }
+
+            // Machining Validation
+            if (item.processes && item.processes.length > 0) {
+               item.processes.forEach((proc, pIdx) => {
+                  if (!proc.process_name) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Type`);
+                  if (!proc.hourly_rate || proc.hourly_rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
+               });
+            }
+
+            // BOP Validation
+            if (item.bought_out_items && item.bought_out_items.length > 0) {
+               item.bought_out_items.forEach((bop, bIdx) => {
+                  const bName = bop.item_name === 'CUSTOM' ? 'Custom Item' : (bop.item_name || `BOP ${bIdx + 1}`);
+                  if (!bop.item_name) missingFields.push(`${pName}: Bought Out Material Descriptor (BOP ${bIdx + 1})`);
+                  if (!bop.qty || bop.qty <= 0) missingFields.push(`${pName}: BOP "${bName}" Volume/Quantity`);
+                  if (!bop.rate || bop.rate <= 0) missingFields.push(`${pName}: BOP "${bName}" Procurement Rate`);
+               });
+            }
+         });
+      }
+
+      if (missingFields.length > 0) {
+         alert("PLEASE COMPLETE THESE SECTIONS:\n\n" + missingFields.map(f => `• ${f}`).join("\n"));
+         return;
+      }
+
       try {
          // Destructure only valid schema fields from formData
          const { 
@@ -305,20 +362,20 @@ export default function NewQuotationPage() {
 
   return (
     <DashboardLayout 
-      title="Engineering Valuation Workspace"
+      title="Create Your Quotation"
       primaryAction={
         <div className="flex gap-3">
            <button 
              onClick={handleDiscard}
              className="px-5 h-9 flex items-center justify-center text-[11px] font-black uppercase tracking-tight text-zinc-500 hover:text-zinc-950 transition-colors"
            >
-             Discard
+             Cancel
            </button>
            <button 
              onClick={handleSave}
              className="px-6 h-9 flex items-center justify-center rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 hover:bg-zinc-900 transition-all active:scale-95 border border-zinc-800"
            >
-             Commit Valuation
+             Save & Finish
            </button>
         </div>
       }
@@ -368,21 +425,12 @@ export default function NewQuotationPage() {
                panelIndex={4}
             />
 
-            <OperationalTooling 
-               activePhase={activePhase}
-               setActivePhase={setActivePhase}
-               formData={formData}
-               setFormData={setFormData}
-               libraries={libraries}
-               panelIndex={5}
-            />
-
              <TechnicalSpecifications 
                 activePhase={activePhase}
                 setActivePhase={setActivePhase}
                 formData={formData}
                 setFormData={setFormData}
-                panelIndex={6}
+                panelIndex={5}
              />
 
             <BroughtOutParts
@@ -391,7 +439,7 @@ export default function NewQuotationPage() {
                formData={formData}
                setFormData={setFormData}
                libraries={libraries}
-               panelIndex={7}
+               panelIndex={6}
             />
 
              <CommercialAdjustments 
@@ -399,7 +447,7 @@ export default function NewQuotationPage() {
                 setActivePhase={setActivePhase}
                 formData={formData}
                 setFormData={setFormData}
-                panelIndex={8}
+                panelIndex={7}
              />
          </div>
 

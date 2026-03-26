@@ -8,9 +8,9 @@ const SHAPES = [
 
 const DimensionInput = ({ label, field, value, allowance, onChange }) => (
   <div className="flex-1 min-w-[120px]">
-     <label className="text-[8px] font-black text-zinc-400 uppercase block mb-1.5 flex justify-between">
-        <span>{label}</span>
-        <span className="text-emerald-600">+ Allowance</span>
+     <label className="text-[8px] font-black text-zinc-400 uppercase block mb-1.5 flex justify-between items-center">
+        <span className="flex items-center gap-1">{label} <span className="text-red-500 font-extrabold">*</span></span>
+        <span className="text-emerald-700">+ Allowance</span>
      </label>
      <div className="flex gap-1">
         <input 
@@ -23,7 +23,7 @@ const DimensionInput = ({ label, field, value, allowance, onChange }) => (
         <input 
           type="number" 
           placeholder="+ mm"
-          className="w-[40%] h-9 bg-emerald-50 border border-emerald-100 border-l-0 rounded-r-lg px-2 text-[11px] font-bold text-emerald-700 outline-none focus:ring-1 focus:ring-emerald-500 transition-all font-mono placeholder:text-emerald-300"
+          className="w-[40%] h-9 bg-emerald-50/50 border border-emerald-200 border-l-0 rounded-r-lg px-2 text-[11px] font-black text-emerald-800 outline-none focus:ring-1 focus:ring-emerald-500 transition-all font-mono placeholder:text-emerald-400"
           value={allowance ?? ""}
           onChange={(e) => onChange(field, e.target.value, true)}
         />
@@ -100,11 +100,11 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
         {/* Step Indicator Sidebar */}
         <div className="w-16 bg-zinc-50 border-r border-zinc-100 flex flex-col items-center justify-center gap-1.5 py-4">
            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter italic">Step</span>
-           <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-black transition-all duration-500 ${step === 3 ? 'bg-emerald-600 text-white' : 'bg-zinc-950 text-white'}`}>
+           <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-black transition-all duration-500 ${step === 3 ? 'bg-emerald-700 text-white shadow-lg shadow-emerald-600/20' : 'bg-zinc-950 text-white'}`}>
               {step}
            </div>
            {step === 3 && (
-              <svg className="h-3.5 w-3.5 text-emerald-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+              <svg className="h-3.5 w-3.5 text-emerald-700 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
            )}
         </div>
 
@@ -112,16 +112,16 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
         <div className="flex-1 p-5 flex flex-wrap items-center gap-6">
            {/* Section 0: Part Profile */}
            <div className="w-48 border-r border-zinc-100 pr-6">
-              <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest block mb-0.5">Component</span>
+              <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest block mb-0.5">Part Name</span>
               <h4 className="text-[14px] font-black text-zinc-950 truncate">{item.part_name}</h4>
               <span className="text-[9px] font-bold text-zinc-400 font-mono italic">REF: {item.id}</span>
            </div>
 
             {/* Step 1: Material Selection */}
-            <div className={`flex-1 min-w-[240px] transition-all duration-500 ${step > 1 && !isOpen ? 'opacity-80 scale-[0.99]' : ''}`}>
+            <div className={`flex-[1.5] min-w-[320px] transition-all duration-500 ${step > 1 && !isOpen ? 'opacity-80 scale-[0.99]' : ''}`}>
                <div className={`relative group ${isOpen ? 'z-[100]' : 'z-0'}`}>
-                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">01. Choose Engineering Grade</span>
-                 <div className="flex gap-2">
+                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2 flex items-center gap-1">01. Pick Material Grade <span className="text-red-500 font-extrabold">*</span></span>
+                 <div className="flex gap-3">
                     <div className="relative flex-1">
                       <input 
                         type="text"
@@ -138,6 +138,22 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                       </button>
                     </div>
+
+                    {item.material && (
+                       <div className="w-28 animate-in slide-in-from-left-2 duration-300">
+                          <div className="relative">
+                             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-700 text-[10px] font-black">₹</span>
+                             <input 
+                               type="number"
+                               className="w-full h-11 pl-6 pr-2 rounded-xl bg-emerald-50/50 border border-emerald-200 focus:ring-1 focus:ring-emerald-500 focus:bg-white outline-none transition-all font-black text-[13px] font-mono text-emerald-800 placeholder:text-emerald-400"
+                               placeholder="Rate"
+                               value={item.material.base_rate ?? ""}
+                               onChange={(e) => onUpdate({ material: { ...item.material, base_rate: parseFloat(e.target.value) || 0 } })}
+                             />
+                             <span className="absolute -top-4 right-0 text-[8px] font-black text-emerald-700 uppercase tracking-tighter">Buying Price / kg</span>
+                          </div>
+                       </div>
+                    )}
                  </div>
 
                  {isOpen && (
@@ -159,11 +175,17 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                            </button>
                         </div>
                         
-                        {libraries.materials.filter(m => m.grade.toLowerCase().includes(search.toLowerCase())).length === 0 ? (
+                        {libraries.materials.filter(m => 
+                          m.grade.toLowerCase().includes(search.toLowerCase()) || 
+                          (m.name && m.name.toLowerCase().includes(search.toLowerCase()))
+                        ).length === 0 ? (
                            <div className="px-4 py-8 text-center">
                               <span className="text-[10px] font-bold text-zinc-300 uppercase italic">No library matches found</span>
                            </div>
-                        ) : libraries.materials.filter(m => m.grade.toLowerCase().includes(search.toLowerCase())).map(m => (
+                        ) : libraries.materials.filter(m => 
+                          m.grade.toLowerCase().includes(search.toLowerCase()) || 
+                          (m.name && m.name.toLowerCase().includes(search.toLowerCase()))
+                        ).map(m => (
                            <button 
                              key={m.$id}
                              onClick={() => { onUpdate({material: m}); setSearch(""); setIsOpen(false); }}
@@ -174,8 +196,8 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                                  <span className="text-[9px] text-zinc-400 font-normal opacity-70 italic tracking-tight">{m.name}</span>
                               </div>
                               <div className="flex items-center gap-3">
-                                 <span className="text-emerald-600 font-black">₹{m.base_rate} <span className="text-[8px] font-normal text-zinc-400">/ kg</span></span>
-                                 <div className="h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                 <span className="text-emerald-700 font-black italic">₹{m.base_rate} <span className="text-[8px] font-normal text-zinc-400 not-italic">/ kg</span></span>
+                                 <div className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity">
                                     <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                                  </div>
                               </div>
@@ -191,11 +213,11 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                           <div className="h-4 w-4 rounded-full bg-amber-500 flex items-center justify-center">
                              <svg className="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M12 4v16m8-8H4" /></svg>
                           </div>
-                          <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">Manual Material Configuration</span>
+                          <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">Manual Material Setup</span>
                        </div>
                        <div className="flex flex-wrap gap-4">
                           <div className="flex-1 min-w-[200px]">
-                             <label className="text-[8px] font-black text-amber-600 uppercase mb-1 block">Grade / Designation</label>
+                             <label className="text-[8px] font-black text-amber-600 uppercase mb-1 block">Material Grade</label>
                              <input 
                                 type="text"
                                 className="w-full h-9 px-3 rounded-lg border border-amber-200 bg-white text-[12px] font-bold outline-none focus:ring-1 focus:ring-amber-500 transition-all"
@@ -205,7 +227,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                              />
                           </div>
                           <div className="w-36">
-                             <label className="text-[8px] font-black text-amber-600 uppercase mb-1 block">Parent Category</label>
+                             <label className="text-[8px] font-black text-amber-600 uppercase mb-1 block">Category</label>
                              <select 
                                 className="w-full h-9 px-3 rounded-lg border border-amber-200 bg-white text-[11px] font-bold outline-none focus:ring-1 focus:ring-amber-500 transition-all font-mono"
                                 value={item.material.category || ""}
@@ -245,13 +267,13 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                                 }}
                              />
                           </div>
-                          <div className="w-28">
+                          <div className="w-28 opacity-50 pointer-events-none">
                              <label className="text-[8px] font-black text-amber-600 uppercase mb-1 block">Base Rate (₹/kg)</label>
                              <input 
                                 type="number"
-                                className="w-full h-9 px-3 rounded-lg border border-amber-200 bg-white text-[12px] font-black outline-none focus:ring-1 focus:ring-amber-500 transition-all font-mono"
+                                className="w-full h-9 px-3 rounded-lg border border-amber-200 bg-white text-[12px] font-black outline-none font-mono"
                                 value={item.material.base_rate}
-                                onChange={(e) => onUpdate({ material: { ...item.material, base_rate: parseFloat(e.target.value) || 0 } })}
+                                readOnly
                              />
                           </div>
                        </div>
@@ -263,7 +285,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
            {/* Step 2: Shape Selection */}
            {(item.material || step >= 2) && (
               <div className={`transition-all duration-500 animate-in fade-in slide-in-from-left-4 ${step > 2 ? 'opacity-80 scale-[0.99]' : ''}`}>
-                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">02. Select Profile</span>
+                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2 flex items-center gap-1">02. Select Shape <span className="text-red-500 font-extrabold">*</span></span>
                  <div className="flex gap-2">
                     {SHAPES.map(s => (
                        <button 
@@ -284,7 +306,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
               <div className="flex-1 flex gap-6 items-center animate-in fade-in slide-in-from-left-4">
                  <div className="flex-1 flex flex-wrap gap-4 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100">
                     <DimensionInput 
-                      label="Length (mm)" 
+                      label="Length" 
                       field="l" 
                       value={item.dimensions?.l} 
                       allowance={item.allowances?.l} 
@@ -294,14 +316,14 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                     {item.shape === 'rect' && (
                        <>
                           <DimensionInput 
-                            label="Width (mm)" 
+                            label="Width" 
                             field="w" 
                             value={item.dimensions?.w} 
                             allowance={item.allowances?.w} 
                             onChange={handleDimUpdate} 
                           />
                           <DimensionInput 
-                            label="Thickness (mm)" 
+                            label="Thickness / Height" 
                             field="t" 
                             value={item.dimensions?.t} 
                             allowance={item.allowances?.t} 
@@ -311,7 +333,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                     )}
                     {item.shape === 'round' && (
                        <DimensionInput 
-                         label="Diameter (mm)" 
+                         label="Diameter" 
                          field="dia" 
                          value={item.dimensions?.dia} 
                          allowance={item.allowances?.dia} 
@@ -320,7 +342,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                     )}
                     {item.shape === 'hex' && (
                        <DimensionInput 
-                         label="Across Flat (mm)" 
+                         label="Across Flat" 
                          field="af" 
                          value={item.dimensions?.af} 
                          allowance={item.allowances?.af} 
@@ -329,12 +351,14 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                     )}
                  </div>
 
-                 <div className="text-right border-l border-zinc-100 pl-6 pr-4 py-2 flex flex-col justify-center">
-                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Valuation</span>
+                 <div className="text-right border-l border-zinc-100 pl-6 pr-4 py-2 flex flex-col justify-center min-w-[140px]">
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Sub-Total Cost</span>
                     <div className="text-[18px] font-black text-zinc-950 leading-tight">
                        ₹{((item.material_weight || 0) * (item.material?.base_rate || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
-                    <span className="text-[11px] font-bold text-zinc-500 font-mono">{(item.material_weight || 0).toFixed(3)}kg</span>
+                    <div className="flex flex-col gap-0">
+                       <span className="text-[10px] font-bold text-zinc-500 font-mono">{(item.material_weight || 0).toFixed(3)}kg @ ₹{item.material?.base_rate || 0}</span>
+                    </div>
                  </div>
               </div>
            )}
@@ -368,11 +392,11 @@ const RawMaterial = ({
        >
           <div className="flex items-center gap-3">
              <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${activePhase === 'material' ? 'bg-zinc-950 border-zinc-950 text-white shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'material' ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>BOM Raw Material Ledger</h3>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'material' ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Material & Weight Selection</h3>
           </div>
           <div className="flex items-center gap-4">
              {activePhase !== 'material' && (
-                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100/50 italic animate-in fade-in zoom-in duration-300">
+                <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/50 px-2.5 py-1 rounded-md border border-emerald-200/50 italic animate-in fade-in zoom-in duration-300">
                    MATERIAL SETUP PENDING
                 </span>
              )}

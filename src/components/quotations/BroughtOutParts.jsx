@@ -16,7 +16,7 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
              onUpdate({ item_name: e.target.value, rate: ref?.rate || 0, unit: ref?.unit || 'pcs' });
           }}
         >
-          <option value="">Select Item from Library...</option>
+           <option value="">Search Parts to Buy...</option>
           {libraries.bop?.map(b => (
              <option key={b.$id} value={b.item_name}>{b.item_name} {b.supplier ? `(${b.supplier})` : ''}</option>
           ))}
@@ -55,11 +55,11 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
         </div>
       </td>
       <td className="px-6 py-4 text-right">
-        <div className="font-black text-zinc-950 font-mono text-[13px]">
+        <div className="font-black text-zinc-950 font-mono text-[13px] leading-tight">
           ₹{(parseFloat(item.rate || 0) * (item.qty || 1) * quantity).toFixed(2)}
         </div>
-        <div className="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter italic whitespace-nowrap">
-           {quantity} UNT * {item.qty} {unitLabel} @ ₹{item.rate}
+        <div className="text-[9px] text-zinc-400 font-bold font-mono italic tracking-tighter opacity-80 mt-0.5 whitespace-nowrap">
+           ₹{(parseFloat(item.rate || 0) * (item.qty || 1)).toFixed(2)} / UNIT
         </div>
       </td>
       <td className="px-4 py-4 text-center">
@@ -96,7 +96,7 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
           </div>
           <div>
             <h4 className="text-[13px] font-black text-zinc-950 uppercase tracking-tight">{part.part_name}</h4>
-            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.15em] italic font-mono leading-none">External Procurement Registry</span>
+             <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.15em] italic font-mono leading-none">Buying List for this Part</span>
           </div>
         </div>
         <button 
@@ -111,10 +111,10 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
         <table className="w-full text-left text-sm border-collapse table-fixed">
           <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
             <tr>
-              <th className="px-6 py-4 w-[40%]">Brought Out Material Descriptor</th>
-              <th className="px-6 py-4 text-center w-[15%]">Volume Required</th>
-              <th className="px-6 py-4 text-center w-[20%]">Procurement Rate</th>
-              <th className="px-6 py-4 text-right w-[20%]">Batch Total (₹)</th>
+               <th className="px-6 py-4 w-[40%]">Item Description <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-6 py-4 text-center w-[15%]">Qty Needed <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-6 py-4 text-center w-[20%]">Buying Price <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-6 py-4 text-right w-[20%]">Total Cost (₹)</th>
               <th className="px-6 py-3 text-center w-[5%]"></th>
             </tr>
           </thead>
@@ -139,11 +139,16 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
           {part.bought_out_items?.length > 0 && (
             <tfoot>
               <tr className="bg-zinc-50/20 border-t border-zinc-100">
-                <td colSpan="3" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Procurement Subtotal</td>
+                 <td colSpan="3" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Purchased Cost</td>
                 <td className="px-6 py-4 text-right">
-                  <span className="text-[14px] font-black text-zinc-950 font-mono">
-                    ₹{part.bought_out_items.reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1) * (part.qty || 1)), 0).toFixed(2)}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[14px] font-black text-zinc-950 font-mono leading-tight">
+                      ₹{part.bought_out_items.reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1) * (part.qty || 1)), 0).toFixed(2)}
+                    </span>
+                    <span className="text-[10px] font-bold text-zinc-400 font-mono italic tracking-tighter opacity-80 mt-1">
+                      ₹{part.bought_out_items.reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1)), 0).toFixed(2)} / UNIT TOTAL
+                    </span>
+                  </div>
                 </td>
                 <td></td>
               </tr>
@@ -181,7 +186,7 @@ const BroughtOutParts = ({
        >
           <div className="flex items-center gap-3">
              <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-zinc-950 border-zinc-950 text-white scale-110 shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Brought Out Material Registry (BOP)</h3>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Additional Purchased Items</h3>
           </div>
           <div className="flex items-center gap-4">
              {formData.items.some(it => it.bought_out_items?.length > 0) && !isExpanded && (

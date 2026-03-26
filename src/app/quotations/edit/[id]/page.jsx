@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { quotationService } from '@/services/quotations';
 import { customerService } from '@/services/customers';
 import { materialService } from '@/services/materials';
-import { laborRateService, toolingRateService, bopRateService } from '@/services/rates';
+import { laborRateService, bopRateService } from '@/services/rates';
 import CustomerModal from '@/components/modals/CustomerModal';
 import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
 import BOMRegistry from '@/components/quotations/BOMRegistry';
@@ -14,7 +14,6 @@ import RawMaterial from '@/components/quotations/RawMaterial';
 import MachiningLogic from '@/components/quotations/MachiningLogic';
 import BroughtOutParts from '@/components/quotations/BoughtOutParts';
 import TechnicalSpecifications from '@/components/quotations/TechnicalSpecifications';
-import OperationalTooling from '@/components/quotations/OperationalTooling';
 import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
 import ValuationLedger from '@/components/quotations/ValuationLedger';
 
@@ -57,7 +56,7 @@ export default function EditQuotationPage() {
     customers: [],
     materials: [],
     labor: [],
-    tooling: []
+    bop: []
   });
 
   useEffect(() => {
@@ -68,11 +67,10 @@ export default function EditQuotationPage() {
         setIsLoading(true);
         
         // 1. Fetch Master Data
-        const [c, m, l, t, b] = await Promise.all([
+        const [c, m, l, b] = await Promise.all([
           customerService.listCustomers(100),
           materialService.listMaterials(100),
           laborRateService.listRates(100),
-          toolingRateService.listRates(100),
           bopRateService.listRates(100)
         ]);
         
@@ -80,7 +78,6 @@ export default function EditQuotationPage() {
           customers: c.documents,
           materials: m.documents,
           labor: l.documents,
-          tooling: t.documents,
           bop: b.documents
         };
         setLibraries(libs);
@@ -96,6 +93,27 @@ export default function EditQuotationPage() {
            console.error("Failed to parse items:", e);
         }
 
+        const sanitizedItems = (parsedItems.length > 0 ? parsedItems : [{
+           id: 1,
+           part_name: 'Part 01',
+           qty: 1,
+           material: null,
+           material_weight: 0,
+           wastage: 3,
+           inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
+           processes: [],
+           treatments: [],
+           bought_out_items: [],
+           design_files: []
+        }]).map(item => ({
+           ...item,
+           processes: item.processes || [],
+           treatments: item.treatments || [],
+           bought_out_items: item.bought_out_items || [],
+           design_files: item.design_files || [],
+           inspection: item.inspection || { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 }
+        }));
+        
         const mappedCustomer = libs.customers.find(cust => cust.$id === quote.customer_id) || null;
 
         setFormData({
@@ -117,23 +135,7 @@ export default function EditQuotationPage() {
           assembly_cost: quote.assembly_cost || 0,
           production_mode: quote.production_mode || 'Batch',
           quantity: quote.quantity || 1,
-          items: parsedItems.length > 0 ? parsedItems : [{
-              id: Date.now(),
-              part_name: 'Part 01',
-              qty: 1,
-              material: null,
-              material_weight: 0,
-              wastage: 3,
-              hardness: '',
-              tolerance: '',
-              surface_finish: '',
-              treatments: [],
-              inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
-              processes: [],
-              tooling: [],
-              bought_out_items: [],
-              design_files: []
-          }]
+          items: sanitizedItems
         });
 
         if (mappedCustomer) {
@@ -153,7 +155,7 @@ export default function EditQuotationPage() {
 
   // Derived Active Item
   const activeQuote = formData.items[selectedItemIndex] || formData.items[0] || {
-    id: Date.now(),
+    id: 1,
     part_name: 'Part 01',
     qty: 1,
     material: null,
@@ -165,7 +167,6 @@ export default function EditQuotationPage() {
     treatments: [],
     inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
     processes: [],
-    tooling: [],
     bought_out_items: [],
     design_files: []
   };
@@ -183,10 +184,9 @@ export default function EditQuotationPage() {
   const calculateTotals = () => {
     let materialTotal = 0;
     let laborTotal = 0;
-    let toolingTotal = 0;
     let bopTotal = 0;
     let treatmentTotal = 0;
-    let qualityTotal = 0;
+
     let projectEngineeringTotal = parseFloat(formData.design_cost || 0) + parseFloat(formData.assembly_cost || 0); 
 
     formData.items.forEach(item => {
@@ -202,21 +202,17 @@ export default function EditQuotationPage() {
           return acc + (parseFloat(p.hourly_rate || 0) * hours);
       }, 0);
 
-      toolingTotal += (item.tooling || []).reduce((acc, t) => acc + (parseFloat(t.rate || 0) * parseFloat(t.qty || 1)), 0);
+
 
       treatmentTotal += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? quantity : 1)), 0);
 
-      if (item.inspection?.cmm || item.inspection?.mtc) {
-          const cmmCost = parseFloat(item.inspection.cmm ? (item.inspection.cmm_cost || 0) : 0);
-          const mtcCost = parseFloat(item.inspection.mtc ? (item.inspection.mtc_cost || 0) : 0);
-          qualityTotal += (cmmCost + mtcCost) * quantity;
-      }
+
 
       bopTotal += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * quantity), 0);
     });
     
     const commercialTotal = parseFloat(formData.packaging_cost || 0) + parseFloat(formData.transportation_cost || 0);
-    const subtotal = materialTotal + laborTotal + toolingTotal + bopTotal + treatmentTotal + qualityTotal + projectEngineeringTotal + commercialTotal;
+    const subtotal = materialTotal + laborTotal + bopTotal + treatmentTotal + projectEngineeringTotal + commercialTotal;
     const finalTotal = subtotal * (1 + (formData.markup / 100));
     
     return { 
@@ -224,10 +220,9 @@ export default function EditQuotationPage() {
       finalTotal, 
       materialCost: materialTotal, 
       laborCost: laborTotal, 
-      toolingCost: toolingTotal, 
       bopCost: bopTotal, 
       treatmentCost: treatmentTotal, 
-      qualityCost: qualityTotal,
+
       engineeringCost: projectEngineeringTotal,
       commercialCost: commercialTotal
     };
@@ -236,6 +231,76 @@ export default function EditQuotationPage() {
   const totals = calculateTotals();
 
   const handleUpdate = async () => {
+    // Validation Logic
+    const missingFields = [];
+    if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
+    if (!formData.contact_person) missingFields.push("Contact Person Name");
+    if (!formData.contact_phone) missingFields.push("Contact Number");
+    if (!formData.quoting_engineer) missingFields.push("Estimating Staff");
+    if (!formData.revision_no) missingFields.push("Quotation Version");
+    if (!formData.inquiry_date) missingFields.push("Date Received");
+    if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
+    if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
+
+    if (formData.items.length === 0) {
+       missingFields.push("At least one BOM item");
+    } else {
+       formData.items.forEach((item, idx) => {
+          const partNum = idx + 1;
+          const pName = item.part_name || `Part ${partNum}`;
+
+          if (!item.part_name) missingFields.push(`${pName}: Component Name`);
+          if (!item.qty || item.qty <= 0) missingFields.push(`${pName}: Manufacturing Qty`);
+          
+          // Raw Material Validation
+          if (!item.material) {
+             missingFields.push(`${pName}: Material Selection`);
+          } else if (!item.material.base_rate || item.material.base_rate <= 0) {
+             missingFields.push(`${pName}: Material Base Rate`);
+          }
+
+          if (!item.shape) {
+             missingFields.push(`${pName}: Raw Material Profile/Shape`);
+          } else {
+             // Dimension Validation based on shape
+             const d = item.dimensions || {};
+             if (!d.l || parseFloat(d.l) <= 0) missingFields.push(`${pName}: Length (L)`);
+             
+             if (item.shape === 'rect') {
+                if (!d.w || parseFloat(d.w) <= 0) missingFields.push(`${pName}: Width (W)`);
+                if (!d.t || parseFloat(d.t) <= 0) missingFields.push(`${pName}: Thickness (T)`);
+             } else if (item.shape === 'round') {
+                if (!d.dia || parseFloat(d.dia) <= 0) missingFields.push(`${pName}: Diameter (Dia)`);
+             } else if (item.shape === 'hex') {
+                if (!d.af || parseFloat(d.af) <= 0) missingFields.push(`${pName}: Across Flat (AF)`);
+             }
+          }
+
+          // Machining Validation
+          if (item.processes && item.processes.length > 0) {
+             item.processes.forEach((proc, pIdx) => {
+                if (!proc.process_name) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Type`);
+                if (!proc.hourly_rate || proc.hourly_rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
+             });
+          }
+
+          // BOP Validation
+          if (item.bought_out_items && item.bought_out_items.length > 0) {
+             item.bought_out_items.forEach((bop, bIdx) => {
+                const bName = bop.item_name === 'CUSTOM' ? 'Custom Item' : (bop.item_name || `BOP ${bIdx + 1}`);
+                if (!bop.item_name) missingFields.push(`${pName}: Bought Out Material Descriptor (BOP ${bIdx + 1})`);
+                if (!bop.qty || bop.qty <= 0) missingFields.push(`${pName}: BOP "${bName}" Volume/Quantity`);
+                if (!bop.rate || bop.rate <= 0) missingFields.push(`${pName}: BOP "${bName}" Procurement Rate`);
+             });
+          }
+       });
+    }
+
+    if (missingFields.length > 0) {
+       alert("PLEASE COMPLETE THESE SECTIONS:\n\n" + missingFields.map(f => `• ${f}`).join("\n"));
+       return;
+    }
+
     try {
        const { 
           quotation_no, supplier_name, contact_person, contact_phone, 
@@ -290,9 +355,9 @@ export default function EditQuotationPage() {
 
   if (!mounted || isLoading) {
      return (
-        <DashboardLayout title="Engineering Workspace">
+        <DashboardLayout title="Edit Quotation">
            <div className="flex h-64 items-center justify-center">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 animate-pulse">Syncing with Central Repository...</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 animate-pulse">Loading data...</span>
            </div>
         </DashboardLayout>
      );
@@ -300,7 +365,7 @@ export default function EditQuotationPage() {
 
   return (
     <DashboardLayout 
-      title={`Editing Valuation: ${formData.quotation_no}`}
+      title={`Edit Quotation: ${formData.quotation_no}`}
       primaryAction={
         <div className="flex gap-3">
            <button 
@@ -362,21 +427,12 @@ export default function EditQuotationPage() {
                panelIndex={4}
             />
 
-            <OperationalTooling 
-               activePhase={activePhase}
-               setActivePhase={setActivePhase}
-               formData={formData}
-               setFormData={setFormData}
-               libraries={libraries}
-               panelIndex={5}
-            />
-
              <TechnicalSpecifications 
                 activePhase={activePhase}
                 setActivePhase={setActivePhase}
                 formData={formData}
                 setFormData={setFormData}
-                panelIndex={6}
+                panelIndex={5}
              />
 
             <BroughtOutParts
@@ -385,7 +441,7 @@ export default function EditQuotationPage() {
                formData={formData}
                setFormData={setFormData}
                libraries={libraries}
-               panelIndex={7}
+               panelIndex={6}
             />
 
              <CommercialAdjustments 
@@ -393,7 +449,7 @@ export default function EditQuotationPage() {
                 setActivePhase={setActivePhase}
                 formData={formData}
                 setFormData={setFormData}
-                panelIndex={8}
+                panelIndex={7}
              />
          </div>
 

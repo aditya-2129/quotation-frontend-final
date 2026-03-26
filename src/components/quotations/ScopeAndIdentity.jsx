@@ -25,14 +25,14 @@ const ScopeAndIdentity = ({
        >
           <div className="flex items-center gap-3">
              <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${activePhase === 'scope' ? 'bg-zinc-950 border-zinc-950 text-white shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'scope' ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Scope & Identity</h3>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'scope' ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Project Information</h3>
           </div>
           <div className="flex items-center gap-4">
              <button 
                onClick={(e) => { e.stopPropagation(); setIsQuickAddOpen(true); }}
                className="h-9 px-5 rounded-xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-tight shadow-xl shadow-zinc-950/20 transition-all hover:bg-zinc-900 active:scale-95 flex items-center justify-center border border-zinc-800"
              >
-               NEW CLIENT +
+               ADD CUSTOMER +
              </button>
              <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${activePhase === 'scope' ? 'rotate-180 text-zinc-950' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </div>
@@ -41,12 +41,15 @@ const ScopeAndIdentity = ({
           <div className="p-5 grid grid-cols-4 gap-x-6 gap-y-4 items-start">
              {/* Row 1: Personnel & Reach */}
              <div className="relative z-50">
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Organization Registry</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Organization / Customer
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <div className="relative group">
                    <input 
                      type="text"
                      className="w-full h-9.5 pl-4 pr-10 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] placeholder:text-zinc-400 placeholder:font-normal shadow-sm"
-                     placeholder="Search Registry..."
+                     placeholder="Search Customers..."
                      value={customerSearch || ""}
                      onFocus={() => setIsDropdownOpen(true)}
                      onChange={(e) => {
@@ -62,7 +65,7 @@ const ScopeAndIdentity = ({
                       <>
                          <div className="fixed inset-0 z-[60]" onClick={() => setIsDropdownOpen(false)} />
                          <div className="absolute left-0 right-0 top-12 z-[70] mt-1 bg-white border border-zinc-200 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="p-1 px-2 border-b border-zinc-50 bg-zinc-50/50 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Matching Registry Records</div>
+                            <div className="p-1 px-2 border-b border-zinc-50 bg-zinc-50/50 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Available Customer Records</div>
                             {libraries.customers
                                .filter(c => c.name.toLowerCase().includes((customerSearch || "").toLowerCase()))
                                .length === 0 ? (
@@ -72,7 +75,7 @@ const ScopeAndIdentity = ({
                                        onClick={() => setIsQuickAddOpen(true)}
                                        className="h-8 px-4 rounded bg-zinc-950 text-white text-[11px] font-black uppercase transition-all shadow-lg active:scale-95"
                                      >
-                                        REGISTER NEW CLIENT
+                                        ADD CUSTOMER
                                      </button>
                                   </div>
                                ) : (
@@ -83,13 +86,13 @@ const ScopeAndIdentity = ({
                                           key={c.$id}
                                           onClick={() => {
                                              setActiveQuote({...activeQuote, customer: c});
-                                             setFormData({
-                                                ...formData, 
-                                                supplier_name: c.name,
-                                                contact_person: c.contact_person || formData.contact_person,
-                                                contact_phone: c.phone || formData.contact_phone,
-                                                contact_email: c.email || formData.contact_email
-                                             });
+                                              setFormData(prev => ({
+                                                 ...prev, 
+                                                 supplier_name: c.name,
+                                                 contact_person: c.contact_person || prev.contact_person,
+                                                 contact_phone: c.phone || prev.contact_phone,
+                                                 contact_email: c.email || prev.contact_email
+                                              }));
                                              setCustomerSearch(c.name);
                                              setIsDropdownOpen(false);
                                           }}
@@ -109,7 +112,10 @@ const ScopeAndIdentity = ({
                 </div>
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Contact Person</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Contact Person Name
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                    <input 
                      type="text"
                      className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
@@ -119,7 +125,10 @@ const ScopeAndIdentity = ({
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Contact Number</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Contact Number
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <input 
                   type="text"
                   className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm font-mono"
@@ -129,7 +138,7 @@ const ScopeAndIdentity = ({
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Email Address</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Contact Email</label>
                 <input 
                   type="email"
                   className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
@@ -141,17 +150,23 @@ const ScopeAndIdentity = ({
 
              {/* Row 2: Management & Reference */}
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Quoting Engineer</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Estimating Engineer / Staff
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                    <input 
                      type="text"
                      className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
-                  placeholder="Engineer Name"
+                  placeholder="Staff Name"
                   value={formData.quoting_engineer || ""}
                   onChange={(e) => setFormData({...formData, quoting_engineer: e.target.value})}
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Revision Number</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Quotation Version
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <input 
                   type="text"
                   className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm font-mono"
@@ -169,7 +184,10 @@ const ScopeAndIdentity = ({
 
              {/* Row 3: Logistics & Timing */}
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Inquiry Date</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Date Received
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <input 
                   type="date"
                   className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
@@ -178,7 +196,10 @@ const ScopeAndIdentity = ({
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Target Delivery Date</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Expected Delivery Date
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <input 
                   type="date"
                   className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
@@ -187,7 +208,10 @@ const ScopeAndIdentity = ({
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Global Quantity</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Quantity to Make (Total)
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <input 
                   type="number"
                   className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-mono font-semibold text-black text-[13px] shadow-sm"
@@ -196,7 +220,10 @@ const ScopeAndIdentity = ({
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Production Mode</label>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Type of Project
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <select 
                   className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm appearance-none cursor-pointer"
                   value={formData.production_mode || "Batch"}

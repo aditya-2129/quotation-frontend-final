@@ -15,7 +15,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove 
             onUpdate({ process_name: e.target.value, hourly_rate: ref?.hourly_rate || 0 });
           }}
         >
-          <option value="">Choose Machine/Process...</option>
+           <option value="">Select Machine/Step...</option>
           {libraries.labor.map(l => <option key={l.$id} value={l.process_name}>{l.process_name}</option>)}
         </select>
       </td>
@@ -103,7 +103,7 @@ const PartMachiningBlock = ({ item, idx, libraries, onUpdate }) => {
              onClick={addProcess}
              className="h-8 px-4 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase tracking-tight hover:bg-emerald-700 transition-all flex items-center gap-2"
            >
-             ADD OPERATION +
+              ADD STEP +
            </button>
         </div>
       </div>
@@ -112,22 +112,22 @@ const PartMachiningBlock = ({ item, idx, libraries, onUpdate }) => {
         <table className="w-full text-left text-sm border-collapse">
           <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
             <tr>
-              <th className="px-6 py-3">Engineering Operation Type</th>
-              <th className="px-6 py-3 text-center">Cycle Time (Min/Pc)</th>
-              <th className="px-6 py-3 text-center">Setup Time (Mins)</th>
-              <th className="px-6 py-3 text-center">Machine Rate (₹/Hr)</th>
-              <th className="px-6 py-3 text-right">Batch Value</th>
+               <th className="px-6 py-3">Machine / Step Name <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-6 py-3 text-center">Time per Part (mins) <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-6 py-3 text-center">Preparation Time (mins)</th>
+               <th className="px-6 py-3 text-center">Cost per Hour (₹) <span className="text-red-500 font-extrabold">*</span></th>
+               <th className="px-6 py-3 text-right">Step Cost</th>
               <th className="px-6 py-3 text-center w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-50">
-            {item.processes.length === 0 ? (
+            {(item.processes || []).length === 0 ? (
               <tr>
                 <td colSpan="6" className="px-6 py-12 text-center">
                   <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em italic]">No machining steps defined for this component</span>
                 </td>
               </tr>
-            ) : item.processes.map(p => (
+            ) : item.processes?.map(p => (
               <MachiningProcessRow 
                 key={p.id} 
                 process={p} 
@@ -138,13 +138,13 @@ const PartMachiningBlock = ({ item, idx, libraries, onUpdate }) => {
               />
             ))}
           </tbody>
-          {item.processes.length > 0 && (
+          {(item.processes || []).length > 0 && (
              <tfoot>
                 <tr className="bg-zinc-50/20 border-t border-zinc-100">
-                   <td colSpan="4" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Part Machining Subtotal</td>
+                    <td colSpan="4" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Manufacturing Cost</td>
                    <td className="px-6 py-4 text-right">
                       <span className="text-[13px] font-black text-zinc-950 font-mono">
-                         ₹{item.processes.reduce((acc, p) => {
+                         ₹{(item.processes || []).reduce((acc, p) => {
                             const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * (item.qty || 1));
                             return acc + ((totalMinutes / 60) * (p.hourly_rate || 0));
                          }, 0).toFixed(2)}
@@ -186,7 +186,7 @@ const MachiningLogic = ({
        >
           <div className="flex items-center gap-3">
              <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-zinc-950 border-zinc-950 text-white translate-z-0 shadow-lg shadow-zinc-950/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Operational Machining Sequence</h3>
+             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-zinc-700'}`}>Manufacturing Steps</h3>
           </div>
           <div className="flex items-center gap-4">
              {!isExpanded && (

@@ -32,34 +32,7 @@ export const laborRateService = {
   }
 };
 
-export const toolingRateService = {
-  async listRates(limit = 100, offset = 0) {
-    try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.TOOLING_RATES,
-        [
-          Query.orderAsc("item_name"),
-          Query.limit(limit),
-          Query.offset(offset)
-        ]
-      );
-      return response;
-    } catch (error) {
-      console.error("Tooling Rate Service Error:", error);
-      throw error;
-    }
-  },
-  async createRate(data) {
-    return await databases.createDocument(DATABASE_ID, COLLECTIONS.TOOLING_RATES, ID.unique(), data);
-  },
-  async updateRate(id, data) {
-    return await databases.updateDocument(DATABASE_ID, COLLECTIONS.TOOLING_RATES, id, data);
-  },
-  async deleteRate(id) {
-    return await databases.deleteDocument(DATABASE_ID, COLLECTIONS.TOOLING_RATES, id);
-  }
-};
+
 
 export const bopRateService = {
   async listRates(limit = 100, offset = 0) {
