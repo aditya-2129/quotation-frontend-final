@@ -234,17 +234,24 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                                       <tr>
                                         <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Operation</th>
                                         <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-center">Setup (min)</th>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-center">Cycle (min)</th>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-right">Rate/hr</th>
+                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-center">Qty / Time</th>
+                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-right">Unit Rate</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
                                       {item.processes.map((proc, pIdx) => (
                                         <tr key={pIdx} className="bg-white">
-                                          <td className="px-4 py-2.5 font-semibold text-zinc-700">{proc.process_name || '—'}</td>
-                                          <td className="px-4 py-2.5 text-center font-mono text-zinc-600">{proc.setup_time || 0}</td>
+                                          <td className="px-4 py-2.5">
+                                            <div className="font-semibold text-zinc-700">{proc.process_name || '—'}</div>
+                                            {proc.dim1 && proc.dim2 && (
+                                              <div className="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter">
+                                                {proc.dim1} × {proc.dim2}
+                                              </div>
+                                            )}
+                                          </td>
+                                          <td className="px-4 py-2.5 text-center font-mono text-zinc-600">{proc.unit === 'hr' ? (proc.setup_time || 0) : '—'}</td>
                                           <td className="px-4 py-2.5 text-center font-mono text-zinc-600">{proc.cycle_time || 0}</td>
-                                          <td className="px-4 py-2.5 text-right font-mono font-bold text-zinc-700">₹{parseFloat(proc.hourly_rate || 0).toFixed(2)}</td>
+                                          <td className="px-4 py-2.5 text-right font-mono font-bold text-zinc-700">₹{parseFloat(proc.rate || proc.hourly_rate || 0).toFixed(2)} / {proc.unit || 'hr'}</td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -374,8 +381,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
 
                   <div className="space-y-3 relative z-10">
                     <LedgerRow label="Material" value={breakdown.materialCost} />
-                    <LedgerRow label="Manufacturing" value={breakdown.laborCost} />
-                    <LedgerRow label="Surface Finishing" value={breakdown.treatmentCost} />
+                    <LedgerRow label="Manufacturing" value={(parseFloat(breakdown.laborCost || 0)) + (parseFloat(breakdown.treatmentCost || 0))} />
                     <LedgerRow label="Purchased Items" value={breakdown.bopCost} />
                     <LedgerRow label="Design & Assembly" value={breakdown.engineeringCost} />
                     <LedgerRow label="Packing & Shipping" value={breakdown.commercialCost} />

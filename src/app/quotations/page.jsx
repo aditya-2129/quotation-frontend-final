@@ -171,6 +171,7 @@ export default function QuotationsPage() {
                          <ActionButtons 
                             onPreview={() => setPreviewId(row.$id)}
                             onDownload={() => handleDownload(row.$id)}
+                            downloadDisabled={row.status !== 'Completed'}
                             onEdit={() => router.push(`/quotations/edit/${row.$id}`)} 
                             onDelete={() => handleDelete(row)} 
                           />

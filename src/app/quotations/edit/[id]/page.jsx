@@ -14,8 +14,7 @@ import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
 import BOMRegistry from '@/components/quotations/BOMRegistry';
 import RawMaterial from '@/components/quotations/RawMaterial';
 import MachiningLogic from '@/components/quotations/MachiningLogic';
-import BroughtOutParts from '@/components/quotations/BoughtOutParts';
-import TechnicalSpecifications from '@/components/quotations/TechnicalSpecifications';
+import BroughtOutParts from '@/components/quotations/BroughtOutParts';
 import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
 import ValuationLedger from '@/components/quotations/ValuationLedger';
 const nextRevision = (rev) => {
@@ -108,7 +107,7 @@ export default function EditQuotationPage() {
         }
 
         const sanitizedItems = (parsedItems.length > 0 ? parsedItems : [{
-           id: 1,
+           id: Date.now(),
            part_name: 'Part 01',
            qty: 1,
            material: null,
@@ -118,7 +117,8 @@ export default function EditQuotationPage() {
            processes: [],
            treatments: [],
            bought_out_items: [],
-           design_files: []
+           design_files: [],
+           part_image: null
         }]).map(item => ({
            ...item,
            processes: item.processes || [],
@@ -168,9 +168,31 @@ export default function EditQuotationPage() {
     initializePage();
   }, [id]);
 
+  // Server-side Customer Search (handles large datasets)
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const delayDebounceFn = setTimeout(async () => {
+      if (customerSearch.trim().length >= 2) {
+        try {
+          const res = await customerService.listCustomers(50, 0, customerSearch);
+          setLibraries(prev => ({ ...prev, customers: res.documents }));
+        } catch (err) {
+          console.error("Search failed:", err);
+        }
+      } else if (customerSearch.trim().length === 0) {
+        // Restore initial list
+        const res = await customerService.listCustomers(100);
+        setLibraries(prev => ({ ...prev, customers: res.documents }));
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [customerSearch, mounted]);
+
   // Derived Active Item
   const activeQuote = formData.items[selectedItemIndex] || formData.items[0] || {
-    id: 1,
+    id: Date.now(),
     part_name: 'Part 01',
     qty: 1,
     material: null,
@@ -183,7 +205,8 @@ export default function EditQuotationPage() {
     inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
     processes: [],
     bought_out_items: [],
-    design_files: []
+    design_files: [],
+    part_image: null
   };
 
   const setActiveQuote = (update) => {
@@ -212,9 +235,14 @@ export default function EditQuotationPage() {
       }
 
       laborTotal += (item.processes || []).reduce((acc, p) => {
-          const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * quantity);
-          const hours = totalMinutes / 60;
-          return acc + (parseFloat(p.hourly_rate || 0) * hours);
+          const rate = parseFloat(p.rate || p.hourly_rate || 0);
+          const unit = p.unit || 'hr';
+          if (unit === 'hr') {
+            const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * quantity);
+            return acc + (rate * (totalMinutes / 60));
+          }
+          // Non-hourly: qty * val_per_part * rate
+          return acc + (quantity * parseFloat(p.cycle_time || 0) * rate);
       }, 0);
 
 
@@ -297,7 +325,8 @@ export default function EditQuotationPage() {
           if (item.processes && item.processes.length > 0) {
              item.processes.forEach((proc, pIdx) => {
                 if (!proc.process_name) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Type`);
-                if (!proc.hourly_rate || proc.hourly_rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
+                const rate = proc.rate || proc.hourly_rate;
+                if (!rate || rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
              });
           }
 
@@ -354,7 +383,8 @@ export default function EditQuotationPage() {
           part_number: formData.items[0]?.part_name || 'MULTIPLE',
           items: JSON.stringify(formData.items.map(i => ({ 
              ...i, 
-             design_files: (i.design_files || []).filter(f => f.$id) // Persist only uploaded assets
+             design_files: (i.design_files || []).filter(f => f.$id), // Persist only uploaded assets
+             part_image: i.part_image?.$id ? i.part_image : null
           }))),
           detailed_breakdown: JSON.stringify(totals),
           total_amount: totals.finalTotal,
@@ -407,7 +437,8 @@ export default function EditQuotationPage() {
            part_number: formData.items[0]?.part_name || 'DRAFT',
            items: JSON.stringify(formData.items.map(i => ({ 
               ...i, 
-              design_files: (i.design_files || []).filter(f => f.$id) 
+              design_files: (i.design_files || []).filter(f => f.$id),
+              part_image: i.part_image?.$id ? i.part_image : null
            }))),
            detailed_breakdown: JSON.stringify(totals),
            total_amount: totals.finalTotal,
@@ -519,21 +550,13 @@ export default function EditQuotationPage() {
                panelIndex={4}
             />
 
-             <TechnicalSpecifications 
-                activePhase={activePhase}
-                setActivePhase={setActivePhase}
-                formData={formData}
-                setFormData={setFormData}
-                panelIndex={5}
-             />
-
             <BroughtOutParts
                activePhase={activePhase}
                setActivePhase={setActivePhase}
                formData={formData}
                setFormData={setFormData}
                libraries={libraries}
-               panelIndex={6}
+               panelIndex={5}
             />
 
              <CommercialAdjustments 
@@ -541,7 +564,7 @@ export default function EditQuotationPage() {
                 setActivePhase={setActivePhase}
                 formData={formData}
                 setFormData={setFormData}
-                panelIndex={7}
+                panelIndex={6}
              />
          </div>
 

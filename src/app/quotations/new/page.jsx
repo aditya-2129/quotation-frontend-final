@@ -15,8 +15,7 @@ import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
 import BOMRegistry from '@/components/quotations/BOMRegistry';
 import RawMaterial from '@/components/quotations/RawMaterial';
 import MachiningLogic from '@/components/quotations/MachiningLogic';
-import BroughtOutParts from '@/components/quotations/BoughtOutParts';
-import TechnicalSpecifications from '@/components/quotations/TechnicalSpecifications';
+import BroughtOutParts from '@/components/quotations/BroughtOutParts';
 import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
 import ValuationLedger from '@/components/quotations/ValuationLedger';
 
@@ -54,7 +53,7 @@ export default function NewQuotationPage() {
     project_image: null,
     items: [
       {
-        id: 1,
+        id: Date.now(),
         part_name: 'Part 01',
         qty: 1,
         material: null,
@@ -67,7 +66,8 @@ export default function NewQuotationPage() {
         inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
         processes: [],
         bought_out_items: [],
-        design_files: []
+        design_files: [],
+        part_image: null
       }
     ] 
   });
@@ -99,17 +99,18 @@ export default function NewQuotationPage() {
      if (!isLoading) {
         localStorage.setItem('draft_formData', JSON.stringify({
            ...formData,
-           items: formData.items.map(item => ({ 
-              ...item, 
-              design_files: (item.design_files || []).filter(f => f.$id) // Only persist uploaded assets
-           })) 
-        }));
+            items: formData.items.map(item => ({ 
+               ...item, 
+               design_files: (item.design_files || []).filter(f => f.$id), // Only persist uploaded assets
+               part_image: item.part_image?.$id ? item.part_image : null
+            })) 
+         }));
      }
   }, [formData, isLoading]);
 
   // Derived Active Item
   const activeQuote = formData.items[selectedItemIndex] || formData.items[0] || {
-    id: 1,
+    id: Date.now(),
     part_name: 'Part 01',
     qty: 1,
     material: null,
@@ -122,7 +123,8 @@ export default function NewQuotationPage() {
     inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
     processes: [],
     bought_out_items: [],
-    design_files: []
+    design_files: [],
+    part_image: null
   };
 
   const setActiveQuote = (update) => {
@@ -177,6 +179,28 @@ export default function NewQuotationPage() {
     fetchMasterData();
   }, []);
 
+  // Server-side Customer Search (handles large datasets)
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const delayDebounceFn = setTimeout(async () => {
+      if (customerSearch.trim().length >= 2) {
+        try {
+          const res = await customerService.listCustomers(50, 0, customerSearch);
+          setLibraries(prev => ({ ...prev, customers: res.documents }));
+        } catch (err) {
+          console.error("Search failed:", err);
+        }
+      } else if (customerSearch.trim().length === 0) {
+        // Restore initial list
+        const res = await customerService.listCustomers(100);
+        setLibraries(prev => ({ ...prev, customers: res.documents }));
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [customerSearch, mounted]);
+
   // Calculation Logic (Consolidated Ledger)
   if (!mounted) {
      return (
@@ -206,9 +230,14 @@ export default function NewQuotationPage() {
 
       // Labor Component (Total Batch Cost = (Setup Time + (Cycle Time * Quantity)) * Rate / 60)
       laborTotal += item.processes.reduce((acc, p) => {
-          const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * quantity);
-          const hours = totalMinutes / 60;
-          return acc + (parseFloat(p.hourly_rate || 0) * hours);
+          const rate = parseFloat(p.rate || p.hourly_rate || 0);
+          const unit = p.unit || 'hr';
+          if (unit === 'hr') {
+            const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * quantity);
+            return acc + (rate * (totalMinutes / 60));
+          }
+          // Non-hourly: qty * val_per_part * rate
+          return acc + (quantity * parseFloat(p.cycle_time || 0) * rate);
       }, 0);
 
 
@@ -298,7 +327,8 @@ export default function NewQuotationPage() {
             if (item.processes && item.processes.length > 0) {
                item.processes.forEach((proc, pIdx) => {
                   if (!proc.process_name) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Type`);
-                  if (!proc.hourly_rate || proc.hourly_rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
+                  const rate = proc.rate; // Use the new 'rate' field
+                  if (!rate || rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
                });
             }
 
@@ -357,7 +387,8 @@ export default function NewQuotationPage() {
             part_number: formData.items[0]?.part_name || 'MULTIPLE',
             items: JSON.stringify(formData.items.map(i => ({ 
                ...i, 
-               design_files: (i.design_files || []).filter(f => f.$id) // Persist only uploaded assets
+               design_files: (i.design_files || []).filter(f => f.$id), // Persist only uploaded assets
+               part_image: i.part_image?.$id ? i.part_image : null
             }))),
             detailed_breakdown: JSON.stringify(totals),
             total_amount: totals.finalTotal,
@@ -416,7 +447,8 @@ export default function NewQuotationPage() {
             part_number: formData.items[0]?.part_name || 'DRAFT',
             items: JSON.stringify(formData.items.map(i => ({ 
                ...i, 
-               design_files: (i.design_files || []).filter(f => f.$id) 
+               design_files: (i.design_files || []).filter(f => f.$id),
+               part_image: i.part_image?.$id ? i.part_image : null
             }))),
             detailed_breakdown: JSON.stringify(totals),
             total_amount: totals.finalTotal,
@@ -521,21 +553,13 @@ export default function NewQuotationPage() {
                panelIndex={4}
             />
 
-             <TechnicalSpecifications 
-                activePhase={activePhase}
-                setActivePhase={setActivePhase}
-                formData={formData}
-                setFormData={setFormData}
-                panelIndex={5}
-             />
-
             <BroughtOutParts
                activePhase={activePhase}
                setActivePhase={setActivePhase}
                formData={formData}
                setFormData={setFormData}
                libraries={libraries}
-               panelIndex={6}
+               panelIndex={5}
             />
 
              <CommercialAdjustments 
@@ -543,7 +567,7 @@ export default function NewQuotationPage() {
                 setActivePhase={setActivePhase}
                 formData={formData}
                 setFormData={setFormData}
-                panelIndex={7}
+                panelIndex={6}
              />
          </div>
 

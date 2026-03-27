@@ -21,10 +21,18 @@ export default function BOPLibraryPage() {
     fetchData();
   }, [page]);
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (page !== 1) setPage(1);
+      else fetchData();
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const res = await bopRateService.listRates(limit, (page - 1) * limit);
+      const res = await bopRateService.listRates(limit, (page - 1) * limit, searchQuery);
       setItems(res.documents);
       setTotal(res.total);
     } catch (error) {
@@ -54,10 +62,7 @@ export default function BOPLibraryPage() {
       }
    };
 
-  const filteredItems = items.filter(i => 
-    i.item_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.supplier?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = items;
 
   return (
     <DashboardLayout 
@@ -96,7 +101,8 @@ export default function BOPLibraryPage() {
               <table className="w-full text-left text-sm border-collapse">
                  <thead className="bg-zinc-50 border-b border-zinc-200">
                     <tr>
-                       <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Part Descriptor & Measurement</th>
+                       <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Part Descriptor</th>
+                       <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Unit</th>
                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">OEM / Supplier</th>
                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Acquisition Rate (₹)</th>
                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Actions</th>
@@ -106,19 +112,20 @@ export default function BOPLibraryPage() {
                     {isLoading ? [1,2,3,4,5].map(i => (
                        <tr key={i} className="animate-pulse">
                           <td className="px-6 py-5"><div className="h-4 w-48 bg-zinc-100 rounded" /></td>
+                          <td className="px-6 py-5"><div className="h-4 w-12 bg-zinc-100 rounded mx-auto" /></td>
                           <td className="px-6 py-5"><div className="h-4 w-20 bg-zinc-100 rounded mx-auto" /></td>
                           <td className="px-6 py-5 text-right"><div className="h-4 w-24 bg-zinc-100 rounded ml-auto" /></td>
                           <td className="px-6 py-5 text-right"><div className="h-8 w-8 bg-zinc-100 rounded ml-auto" /></td>
                        </tr>
                     )) : filteredItems.length === 0 ? (
-                       <tr><td colSpan="4" className="px-6 py-20 text-center text-zinc-400 italic font-medium uppercase tracking-widest text-[11px]">No catalog items registered in this procurement path.</td></tr>
+                       <tr><td colSpan="5" className="px-6 py-20 text-center text-zinc-400 italic font-medium uppercase tracking-widest text-[11px]">No catalog items registered in this procurement path.</td></tr>
                     ) : filteredItems.map(item => (
                        <tr key={item.$id} className="group hover:bg-zinc-50/80 transition-colors">
                           <td className="px-6 py-5">
-                             <div className="flex flex-col">
-                                <span className="text-zinc-950 font-bold italic">{item.item_name}</span>
-                                <span className="text-[11px] font-mono text-zinc-500 uppercase">Per {item.unit || 'Standard Unit'}</span>
-                             </div>
+                             <span className="text-zinc-950 font-bold italic">{item.item_name}</span>
+                          </td>
+                          <td className="px-6 py-5 text-center">
+                             <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">{item.unit || 'pcs'}</span>
                           </td>
                           <td className="px-6 py-5 text-center">
                              <span className="inline-flex px-2 py-0.5 rounded border border-zinc-200 bg-white text-[10px] font-bold text-zinc-600 uppercase tracking-tight">
@@ -195,7 +202,7 @@ function RateModal({ data, onClose, onSuccess, onError }) {
   const [formData, setFormData] = useState({
     name: data?.item_name || '',
     rate: data?.rate || 0,
-    unit: data?.unit || 'pc',
+    unit: data?.unit || 'pcs',
     supplier: data?.supplier || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -21,10 +21,18 @@ export default function LaborRatesPage() {
     fetchData();
   }, [page]);
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (page !== 1) setPage(1);
+      else fetchData();
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const res = await laborRateService.listRates(limit, (page - 1) * limit);
+      const res = await laborRateService.listRates(limit, (page - 1) * limit, searchQuery);
       setRates(res.documents);
       setTotal(res.total);
     } catch (error) {
@@ -54,9 +62,7 @@ export default function LaborRatesPage() {
       }
    };
 
-  const filteredRates = rates.filter(r => 
-    r.process_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredRates = rates;
 
   return (
     <DashboardLayout 
@@ -96,8 +102,8 @@ export default function LaborRatesPage() {
                  <thead className="bg-zinc-50 border-b border-zinc-200">
                     <tr>
                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Process / Skill Descriptor</th>
-                       <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Category</th>
-                       <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Hourly Rate (₹)</th>
+                       <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Unit</th>
+                       <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Base Rate (₹)</th>
                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Actions</th>
                     </tr>
                  </thead>
@@ -118,14 +124,14 @@ export default function LaborRatesPage() {
                                 <span className="text-zinc-950 font-bold">{rate.process_name}</span>
                              </div>
                           </td>
-                          <td className="px-6 py-5 text-center">
-                             <span className="inline-flex px-2 py-0.5 rounded border border-zinc-200 bg-white text-[10px] font-bold text-zinc-600 uppercase tracking-tight">
-                                Industrial Skill
-                             </span>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                             <span className="text-sm font-mono font-bold text-emerald-700 italic">₹{parseFloat(rate.hourly_rate).toFixed(2)}</span>
-                          </td>
+                           <td className="px-6 py-5 text-center">
+                              <span className="inline-flex px-2 py-0.5 rounded border border-zinc-200 bg-white text-[10px] font-bold text-zinc-600 uppercase tracking-tight">
+                                 {rate.unit || 'hr'}
+                              </span>
+                           </td>
+                           <td className="px-6 py-5 text-right">
+                              <span className="text-sm font-mono font-bold text-emerald-700 italic">₹{parseFloat(rate.rate || rate.hourly_rate || 0).toFixed(2)}</span>
+                           </td>
                            <td className="px-6 py-5 text-right">
                               <ActionButtons onEdit={() => openModal(rate)} onDelete={() => handleDelete(rate)} />
                            </td>
@@ -192,7 +198,8 @@ export default function LaborRatesPage() {
 function RateModal({ data, onClose, onSuccess, onError }) {
   const [formData, setFormData] = useState({
     name: data?.process_name || '',
-    rate: data?.hourly_rate || 0
+    rate: data?.rate || data?.hourly_rate || 0,
+    unit: data?.unit || 'hr'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -200,7 +207,11 @@ function RateModal({ data, onClose, onSuccess, onError }) {
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      const payload = { process_name: formData.name, hourly_rate: parseFloat(formData.rate) };
+      const payload = { 
+        process_name: formData.name, 
+        rate: parseFloat(formData.rate),
+        unit: formData.unit 
+      };
       if (data) await laborRateService.updateRate(data.$id, payload);
       else await laborRateService.createRate(payload);
        onSuccess();
@@ -225,7 +236,23 @@ function RateModal({ data, onClose, onSuccess, onError }) {
               <input required className="w-full h-10 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-bold outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
            </div>
            <div>
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Hourly Rate (₹) *</label>
+              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Rate Calculation Unit *</label>
+              <select 
+                required 
+                className="w-full h-10 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-bold outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white text-sm"
+                value={formData.unit} 
+                onChange={(e) => setFormData({...formData, unit: e.target.value})}
+              >
+                <option value="hr">Per Hour (hr)</option>
+                <option value="sq_cm">Per Sq. Centimeter (sq_cm)</option>
+                <option value="per_hole">Per Hole (per_hole)</option>
+                <option value="per_rim">Per Rim (per_rim)</option>
+                <option value="per_tap">Per Tap (per_tap)</option>
+                <option value="pcs">Per Piece (pcs)</option>
+              </select>
+           </div>
+           <div>
+              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Unit Rate (₹) *</label>
               <input required type="number" step="0.01" className="w-full h-10 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-mono font-bold outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white" value={formData.rate} onChange={(e) => setFormData({...formData, rate: e.target.value})} />
            </div>
            <div className="flex gap-3 pt-4 border-t border-zinc-100">

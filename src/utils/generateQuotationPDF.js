@@ -212,12 +212,12 @@ export async function generateQuotationPDF(quote) {
         autoTable(doc, {
           startY: y,
           margin: { left: margin, right: margin },
-          head: [['Operation', 'Setup (min)', 'Cycle (min)', 'Rate / hr']],
+          head: [['Operation', 'Setup (min)', 'Qty / Time', 'Unit Rate']],
           body: item.processes.map(p => [
-            p.process_name || '-',
-            String(p.setup_time || '0'),
+            p.dim1 && p.dim2 ? `${p.process_name || '-'}\n(${p.dim1} x ${p.dim2})` : (p.process_name || '-'),
+            p.unit === 'hr' ? String(p.setup_time || '0') : '-',
             String(p.cycle_time || '0'),
-            `Rs. ${fmtNum(p.hourly_rate)}`
+            `Rs. ${fmtNum(p.rate || p.hourly_rate)} / ${p.unit || 'hr'}`
           ]),
           columnStyles: { 3: { halign: 'right' } },
           ...tableBaseStyles
@@ -311,8 +311,7 @@ export async function generateQuotationPDF(quote) {
 
   const summaryData = [
     ['Raw Material Cost', fmt(breakdown.materialCost)],
-    ['Manufacturing / Labour', fmt(breakdown.laborCost)],
-    ['Surface Finishing', fmt(breakdown.treatmentCost)],
+    ['Manufacturing', fmt((parseFloat(breakdown.laborCost || 0)) + (parseFloat(breakdown.treatmentCost || 0)))],
     ['Purchased Items (BOP)', fmt(breakdown.bopCost)],
     ['Design & Assembly', fmt(breakdown.engineeringCost)],
     ['Packing & Shipping', fmt(breakdown.commercialCost)],

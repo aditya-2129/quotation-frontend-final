@@ -9,7 +9,11 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
           value={item.item_name || ""}
           onChange={(e) => {
              const ref = libraries.bop.find(b => b.item_name === e.target.value);
-             onUpdate({ item_name: e.target.value, rate: ref?.rate || 0 });
+             onUpdate({ 
+               item_name: e.target.value, 
+               rate: ref?.rate || 0,
+               unit: ref?.unit || 'pcs'
+             });
           }}
         >
           <option value="">Select Item from Library...</option>
@@ -28,11 +32,31 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
         )}
       </td>
       <td className="px-6 py-4 text-center">
+        {item.item_name === 'CUSTOM' ? (
+           <input 
+             placeholder="pcs"
+             className="h-9 w-16 px-2 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-[10px] font-black outline-none focus:bg-white uppercase font-mono"
+             value={item.unit || ""}
+             onChange={(e) => onUpdate({ unit: e.target.value })}
+           />
+        ) : (
+          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">
+            {item.unit || 'pcs'}
+          </span>
+        )}
+      </td>
+      <td className="px-6 py-4 text-center">
         <input 
           type="number" 
-          className="h-10 w-24 px-3 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-xs outline-none focus:bg-white font-mono font-black"
+          min="0"
+          step={(!item.unit || item.unit.toLowerCase() === 'pcs' || item.unit.toLowerCase() === 'pc') ? "1" : "0.01"}
+          className="h-10 w-24 px-3 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-[11px] outline-none focus:bg-white font-mono font-black"
           value={item.qty ?? 1}
-          onChange={(e) => onUpdate({ qty: parseFloat(e.target.value) || 1 })}
+          onChange={(e) => {
+            const val = Math.max(0, parseFloat(e.target.value) || 0);
+            const isPcs = !item.unit || item.unit.toLowerCase() === 'pcs' || item.unit.toLowerCase() === 'pc';
+            onUpdate({ qty: isPcs ? Math.round(val) : val });
+          }}
         />
       </td>
       <td className="px-6 py-4 text-center">
@@ -40,9 +64,10 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold">₹</span>
           <input 
             type="number" 
+            min="0"
             className="h-10 w-28 pl-6 pr-2 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-xs outline-none focus:bg-white font-mono font-black"
             value={item.rate ?? 0}
-            onChange={(e) => onUpdate({ rate: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => onUpdate({ rate: Math.max(0, parseFloat(e.target.value) || 0) })}
           />
         </div>
       </td>
@@ -104,6 +129,7 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
           <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
             <tr>
               <th className="px-6 py-4">Brought Out Material Descriptor <span className="text-red-500 font-extrabold">*</span></th>
+              <th className="px-6 py-4 text-center">Unit</th>
               <th className="px-6 py-4 text-center">Qty / Part <span className="text-red-500 font-extrabold">*</span></th>
               <th className="px-6 py-4 text-center">Unit Cost (₹) <span className="text-red-500 font-extrabold">*</span></th>
               <th className="px-6 py-4 text-right">Batch Total (₹)</th>
@@ -113,7 +139,7 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
           <tbody className="divide-y divide-zinc-50">
             {!part.bought_out_items || part.bought_out_items.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center">
+                <td colSpan="6" className="px-6 py-12 text-center">
                   <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest italic">No externally procured items allocated to this engineered component.</span>
                 </td>
               </tr>
@@ -131,7 +157,7 @@ const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
           {part.bought_out_items?.length > 0 && (
             <tfoot>
               <tr className="bg-zinc-50/20 border-t border-zinc-100">
-                <td colSpan="3" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Procurement Subtotal</td>
+                <td colSpan="4" className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Procurement Subtotal</td>
                 <td className="px-6 py-4 text-right">
                   <span className="text-[14px] font-black text-zinc-950 font-mono">
                     ₹{part.bought_out_items.reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1) * (part.qty || 1)), 0).toFixed(2)}

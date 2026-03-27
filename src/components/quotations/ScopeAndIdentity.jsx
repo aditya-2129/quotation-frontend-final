@@ -19,27 +19,29 @@ const ScopeAndIdentity = ({
   panelIndex = 1
 }) => {
   return (
-     <section className={`bg-white rounded-2xl border transition-all duration-300 ${activePhase === 'scope' ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200' : 'border-zinc-200'}`}>
-       <header 
-         className={`px-6 py-5 border-b flex justify-between items-center group rounded-t-2xl cursor-pointer transition-colors ${activePhase === 'scope' ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
-         onClick={() => setActivePhase(activePhase === 'scope' ? '' : 'scope')}
-       >
+     <section className={`bg-white rounded-xl border transition-all duration-300 ${activePhase === 'scope' ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200' : 'border-zinc-200'}`}>
+        <header 
+          className={`h-[52px] px-5 border-b flex justify-between items-center group rounded-t-xl cursor-pointer transition-colors ${activePhase === 'scope' ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
+          onClick={() => setActivePhase(activePhase === 'scope' ? '' : 'scope')}
+        >
           <div className="flex items-center gap-3">
-             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${activePhase === 'scope' ? 'bg-brand-primary border-brand-primary text-zinc-950 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'scope' ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Project Information</h3>
+             <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black border transition-all duration-300 ${activePhase === 'scope' ? 'bg-brand-primary border-brand-primary text-zinc-950 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
+             <h3 className={`text-[12px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'scope' ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Project Information</h3>
           </div>
           <div className="flex items-center gap-4">
              <button 
+               type="button"
                onClick={(e) => { e.stopPropagation(); setIsQuickAddOpen(true); }}
-               className="h-9 px-5 rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-tight shadow-xl shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center border border-brand-primary/30"
+               className="h-8 w-40 rounded-xl bg-brand-primary text-zinc-950 text-[10.5px] font-black uppercase tracking-tight shadow-xl shadow-brand-primary/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 border border-brand-primary/20"
              >
+               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
                ADD CUSTOMER +
              </button>
              <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${activePhase === 'scope' ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </div>
        </header>
        <div className={`transition-all duration-300 ${activePhase === 'scope' ? 'max-h-[3000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          <div className="p-4 grid grid-cols-4 gap-x-6 gap-y-3 items-start">
+          <div className="p-3 grid grid-cols-4 gap-x-4 gap-y-2.5 items-start">
              {/* Row 1: Personnel & Reach */}
              <div className="relative z-50">
                 <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
@@ -49,7 +51,7 @@ const ScopeAndIdentity = ({
                 <div className="relative group">
                    <input 
                      type="text"
-                     className="w-full h-9.5 pl-4 pr-10 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-brand-primary focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
+                     className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                      placeholder="Search Customers..."
                      value={customerSearch || ""}
                      onFocus={() => setIsDropdownOpen(true)}
@@ -58,55 +60,78 @@ const ScopeAndIdentity = ({
                         setIsDropdownOpen(true);
                      }}
                    />
-                   <div className="absolute right-3 top-3 text-zinc-400 group-focus-within:text-brand-primary transition-colors pointer-events-none">
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeWidth={2} stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                   </div>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-brand-primary transition-colors pointer-events-none">
+                       <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeWidth={2.5} stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
 
                    {isDropdownOpen && (
                       <>
                          <div className="fixed inset-0 z-[60]" onClick={() => setIsDropdownOpen(false)} />
-                         <div className="absolute left-0 right-0 top-12 z-[70] mt-1 bg-white border border-zinc-200 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="p-1 px-2 border-b border-zinc-50 bg-zinc-50/50 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Available Customer Records</div>
-                            {libraries.customers
-                               .filter(c => c.name.toLowerCase().includes((customerSearch || "").toLowerCase()))
-                               .length === 0 ? (
-                                  <div className="p-6 text-center">
-                                     <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">No Match Found</div>
-                                     <button 
-                                       onClick={() => setIsQuickAddOpen(true)}
-                                       className="h-8 px-4 rounded bg-brand-primary text-zinc-950 text-[11px] font-black uppercase transition-all shadow-lg shadow-brand-primary/20 active:scale-95"
-                                     >
-                                        ADD CUSTOMER
-                                     </button>
-                                  </div>
-                               ) : (
-                                  libraries.customers
-                                     .filter(c => c.name.toLowerCase().includes((customerSearch || "").toLowerCase()))
-                                     .map(c => (
-                                        <button 
-                                          key={c.$id}
-                                          onClick={() => {
-                                             setActiveQuote({...activeQuote, customer: c});
-                                              setFormData(prev => ({
-                                                 ...prev, 
-                                                 supplier_name: c.name,
-                                                 contact_person: c.contact_person || prev.contact_person,
-                                                 contact_phone: c.phone || prev.contact_phone,
-                                                 contact_email: c.email || prev.contact_email
-                                              }));
-                                             setCustomerSearch(c.name);
-                                             setIsDropdownOpen(false);
-                                          }}
-                                          className="w-full text-left px-4 py-3 text-[13px] font-semibold text-zinc-900 hover:bg-zinc-50 hover:text-black transition-colors border-b border-zinc-50 last:border-0"
-                                        >
-                                           <div className="flex items-center gap-3">
-                                              <span className="h-6 w-6 rounded bg-zinc-100 flex items-center justify-center text-[10px] text-zinc-500 font-bold">{c.name.charAt(0)}</span>
-                                              {c.name}
+                         <div className="absolute left-0 right-0 top-full mt-1.5 z-[70] bg-white border border-zinc-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/5">
+                            <div className="sticky top-0 bg-zinc-50 p-2 px-3 border-b border-zinc-100 text-[9px] font-black text-zinc-400 uppercase tracking-[0.15em] flex justify-between items-center z-10">
+                               <span>Available Customer Records</span>
+                               <span className="h-1.5 w-1.5 rounded-full bg-brand-primary animate-pulse" />
+                            </div>
+                            <div className="divide-y divide-zinc-50">
+                               {(() => {
+                                  const s = (customerSearch || "").toLowerCase();
+                                  const filtered = libraries.customers.filter(c => 
+                                     (c.name || "").toLowerCase().includes(s) || 
+                                     (c.contact_person || "").toLowerCase().includes(s) ||
+                                     (c.email || "").toLowerCase().includes(s) ||
+                                     (c.phone || "").toLowerCase().includes(s)
+                                  );
+
+                                  if (filtered.length === 0) {
+                                     return (
+                                        <div className="p-8 text-center bg-zinc-50/20">
+                                           <div className="h-10 w-10 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                              <svg className="h-5 w-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
                                            </div>
-                                        </button>
-                                     ))
-                               )
-                            }
+                                           <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">No matching records</div>
+                                           <button 
+                                             onClick={() => setIsQuickAddOpen(true)}
+                                             className="h-8 px-5 rounded-lg bg-brand-primary text-zinc-950 text-[10px] font-black uppercase transition-all shadow-lg shadow-brand-primary/25 hover:scale-105 active:scale-95"
+                                           >
+                                              + Add New Customer
+                                           </button>
+                                        </div>
+                                     );
+                                  }
+
+                                  return filtered.map(c => (
+                                     <button 
+                                       key={c.$id}
+                                       onClick={() => {
+                                          setActiveQuote({...activeQuote, customer: c});
+                                          setFormData(prev => ({
+                                             ...prev, 
+                                             supplier_name: c.name,
+                                             contact_person: c.contact_person || prev.contact_person,
+                                             contact_phone: c.phone || prev.contact_phone,
+                                             contact_email: c.email || prev.contact_email
+                                          }));
+                                          setCustomerSearch(c.name);
+                                          setIsDropdownOpen(false);
+                                       }}
+                                       className="w-full text-left px-4 py-3.5 hover:bg-zinc-50 transition-all group/item relative overflow-hidden"
+                                     >
+                                        <div className="flex items-center gap-3 relative z-10">
+                                           <span className="h-8 w-8 rounded-lg bg-zinc-100 flex items-center justify-center text-[12px] text-zinc-500 font-black group-hover/item:bg-brand-primary group-hover/item:text-zinc-950 transition-colors shadow-sm">{c.name.charAt(0)}</span>
+                                           <div className="flex flex-col">
+                                              <span className="text-[13px] font-bold text-zinc-900 group-hover/item:text-black transition-colors">{c.name}</span>
+                                              {c.contact_person && (
+                                                 <span className="text-[9px] font-medium text-zinc-400 group-hover/item:text-zinc-500">Contact: {c.contact_person}</span>
+                                              )}
+                                           </div>
+                                           <div className="ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                              <svg className="h-4 w-4 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                           </div>
+                                        </div>
+                                     </button>
+                                  ));
+                               })()}
+                            </div>
                          </div>
                       </>
                    )}
@@ -119,7 +144,7 @@ const ScopeAndIdentity = ({
                 </label>
                    <input 
                      type="text"
-                     className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
+                     className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   placeholder="Personnel Name"
                   value={formData.contact_person || ""}
                   onChange={(e) => setFormData({...formData, contact_person: e.target.value})}
@@ -132,7 +157,7 @@ const ScopeAndIdentity = ({
                 </label>
                 <input 
                   type="text"
-                  className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm font-mono"
+                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm font-mono"
                   placeholder="+91..."
                   value={formData.contact_phone || ""}
                   onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
@@ -142,26 +167,19 @@ const ScopeAndIdentity = ({
                 <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Contact Email</label>
                 <input 
                   type="email"
-                  className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
+                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   placeholder="engineering@client.com"
                   value={formData.contact_email || ""}
                   onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
                 />
              </div>
 
-             {/* Row 2: Management & Reference */}
+             {/* Row 2: Reference & Timeline */}
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
-                   Estimating Engineer / Staff
-                   <span className="text-red-500 font-black">*</span>
-                </label>
-                   <input 
-                     type="text"
-                     className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
-                  placeholder="Staff Name"
-                  value={formData.quoting_engineer || ""}
-                  onChange={(e) => setFormData({...formData, quoting_engineer: e.target.value})}
-                />
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Quotation ID</label>
+                <div className="h-8.5 flex items-center px-4 bg-zinc-100/30 rounded-lg text-amber-700 font-mono text-[12.5px] font-semibold border border-amber-200/50 shadow-sm-inset transition-all tracking-tight">
+                   {formData.quotation_no || 'GENERATING...'}
+                </div>
              </div>
              <div>
                 <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
@@ -170,20 +188,12 @@ const ScopeAndIdentity = ({
                 </label>
                 <input 
                   type="text"
-                  className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm font-mono"
+                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm font-mono"
                   placeholder="Rev 00"
                   value={formData.revision_no || ""}
                   onChange={(e) => setFormData({...formData, revision_no: e.target.value})}
                 />
              </div>
-             <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Quotation ID</label>
-                <div className="h-9.5 flex items-center px-4 bg-zinc-100/30 rounded-lg text-amber-700 font-mono text-[13px] font-semibold border border-amber-200/50 shadow-sm-inset transition-all tracking-tight">
-                   {formData.quotation_no || 'GENERATING...'}
-                </div>
-             </div>
-
-             {/* Row 3: Logistics & Timing */}
              <div>
                 <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Date Received
@@ -191,7 +201,7 @@ const ScopeAndIdentity = ({
                 </label>
                 <input 
                   type="date"
-                  className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
+                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   value={formData.inquiry_date || ""}
                   onChange={(e) => setFormData({...formData, inquiry_date: e.target.value})}
                 />
@@ -203,9 +213,24 @@ const ScopeAndIdentity = ({
                 </label>
                 <input 
                   type="date"
-                  className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm"
+                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   value={formData.delivery_date || ""}
                   onChange={(e) => setFormData({...formData, delivery_date: e.target.value})}
+                />
+             </div>
+
+             {/* Row 3: Admin & Logistics */}
+             <div>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Estimating Engineer / Staff
+                   <span className="text-red-500 font-black">*</span>
+                </label>
+                <input 
+                   type="text"
+                   className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
+                   placeholder="Staff Name"
+                   value={formData.quoting_engineer || ""}
+                   onChange={(e) => setFormData({...formData, quoting_engineer: e.target.value})}
                 />
              </div>
              <div>
@@ -215,7 +240,7 @@ const ScopeAndIdentity = ({
                 </label>
                 <input 
                   type="number"
-                  className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-mono font-semibold text-black text-[13px] shadow-sm"
+                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-mono font-semibold text-black text-[13px] shadow-sm"
                   value={formData.quantity ?? 0}
                   onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
                 />
@@ -226,7 +251,7 @@ const ScopeAndIdentity = ({
                    <span className="text-red-500 font-black">*</span>
                 </label>
                 <select 
-                  className="w-full h-9.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[13px] shadow-sm appearance-none cursor-pointer"
+                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm appearance-none cursor-pointer"
                   value={formData.production_mode || "Batch"}
                   onChange={(e) => setFormData({...formData, production_mode: e.target.value})}
                 >
@@ -244,8 +269,8 @@ const ScopeAndIdentity = ({
                    <span className="ml-2 text-[8px] font-medium text-zinc-400 normal-case italic">(Clear technical image or 3D snapshot required)</span>
                 </label>
                 
-                <div className="flex items-start gap-6">
-                   <div className="relative group/upload h-32 w-48 rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center transition-all hover:bg-white hover:border-brand-primary/50 overflow-hidden shadow-sm-inset text-center">
+                <div className="flex items-start gap-4">
+                   <div className="relative group/upload h-28 w-44 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center transition-all hover:bg-white hover:border-brand-primary/50 overflow-hidden shadow-sm-inset text-center">
                       {formData.project_image ? (
                          <div className="absolute inset-0 group/img">
                             <img 

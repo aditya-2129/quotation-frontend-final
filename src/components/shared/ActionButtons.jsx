@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ActionButtons({ onPreview, onDownload, onEdit, onDelete }) {
+export default function ActionButtons({ onPreview, onDownload, onEdit, onDelete, downloadDisabled }) {
   return (
     <div className="flex justify-end gap-1.5">
       {onPreview && (
@@ -14,9 +14,14 @@ export default function ActionButtons({ onPreview, onDownload, onEdit, onDelete 
       )}
       {onDownload && (
         <button 
-           onClick={onDownload} 
-           className="h-8.5 w-8.5 inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm"
-           title="Download PDF"
+           onClick={downloadDisabled ? undefined : onDownload} 
+           disabled={downloadDisabled}
+           className={`h-8.5 w-8.5 inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white transition-all shadow-sm ${
+             downloadDisabled 
+             ? 'opacity-20 cursor-not-allowed text-zinc-300' 
+             : 'text-zinc-400 hover:text-emerald-600 hover:border-emerald-200'
+           }`}
+           title={downloadDisabled ? "Finalize quotation to unlock PDF export" : "Download PDF"}
         >
            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
         </button>

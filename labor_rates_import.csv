@@ -1,0 +1,29 @@
+process_name,rate,unit,currency
+VMC,0,hr,INR
+CNC,0,hr,INR
+Milling,0,hr,INR
+Lathe,0,hr,INR
+Grinding,0,sq_cm,INR
+Cylindrical Grinding,0,hr,INR
+Wire Cutting,0,sq_cm,INR
+M.T.R (Drilling),0,per_hole,INR
+M.T.R (Reaming),0,per_rim,INR
+Jig Boring (Drilling 3-6mm),0,per_hole,INR
+Jig Boring (Drilling 6-12mm),0,per_hole,INR
+Jig Boring (Drilling 12-20mm),0,per_hole,INR
+Jig Boring (Drilling 20-25mm),0,per_hole,INR
+Jig Boring (Drilling Above 25mm),0,per_hole,INR
+Jig Boring (Reaming),0,per_rim,INR
+Tapping M2,0,per_tap,INR
+Tapping M2.5,0,per_tap,INR
+Tapping M3,0,per_tap,INR
+Tapping M4,0,per_tap,INR
+Tapping M5,0,per_tap,INR
+Tapping M6,0,per_tap,INR
+Tapping M8,0,per_tap,INR
+Tapping M10,0,per_tap,INR
+Tapping M12,0,per_tap,INR
+Tapping M14,0,per_tap,INR
+Tapping M16,0,per_tap,INR
+Tapping M20,0,per_tap,INR
+Laser Cutting,0,hr,INR

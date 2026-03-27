@@ -5,16 +5,25 @@ const { DATABASE_ID, COLLECTIONS } = APPWRITE_CONFIG;
 
 export const materialService = {
   // List all materials
-  async listMaterials(limit = 100, offset = 0) {
+  async listMaterials(limit = 100, offset = 0, search = '') {
     try {
+      const queries = [
+        Query.orderAsc("name"),
+        Query.limit(limit),
+        Query.offset(offset)
+      ];
+
+      if (search) {
+        queries.push(Query.or([
+          Query.contains("name", [search]),
+          Query.contains("grade", [search])
+        ]));
+      }
+
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.MATERIALS,
-        [
-          Query.orderAsc("name"),
-          Query.limit(limit),
-          Query.offset(offset)
-        ]
+        queries
       );
       return response;
     } catch (error) {

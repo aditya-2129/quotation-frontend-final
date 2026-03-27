@@ -2,7 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
+const Sidebar = ({ isCollapsed, setIsCollapsed, isHovered, setIsHovered }) => {
+  const showFull = !isCollapsed || isHovered;
   const pathname = usePathname();
   
   const menuItems = [
@@ -10,19 +11,23 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { name: 'Quotations', href: '/quotations', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
     { name: 'Customers', href: '/customers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     { name: 'Materials List', href: '/materials', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
-    { name: 'Manufacturing Costs', href: '/labor-rates', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { name: 'Extra Parts List', href: '/bop-library', icon: 'M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z' },
+    { name: 'Labor & Processes', href: '/labor-rates', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
+    { name: 'Extra Parts List', href: '/bop-library', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
   ];
 
   return (
-    <aside className={`fixed left-0 top-0 z-20 h-full border-r border-zinc-200 bg-white transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+    <aside 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`fixed left-0 top-0 z-40 h-full border-r border-zinc-200 bg-white shadow-xl transition-all duration-300 ease-in-out ${showFull ? 'w-64' : 'w-20'}`}
+    >
       <div className="flex h-16 items-center justify-between border-b border-zinc-100 px-4">
-        {!isCollapsed && (
+        {showFull && (
           <div className="flex w-full items-center justify-center py-2 h-12">
             <img src="/KE_Logo.png" alt="KRUPA ENGINEERING" className="h-full w-auto object-contain max-w-[160px]" />
           </div>
         )}
-        {isCollapsed && (
+        {!showFull && (
           <div className="mx-auto h-10 w-10 overflow-hidden rounded-lg bg-white flex items-center justify-center p-1 border border-zinc-200 shadow-sm">
             <img src="/KE_Logo.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
@@ -44,17 +49,17 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <Link
               key={item.name}
               href={item.href}
-              title={isCollapsed ? item.name : ''}
+              title={!showFull ? item.name : ''}
               className={`group flex items-center transition-all duration-300 ${
                 isActive 
                   ? 'bg-brand-primary text-zinc-950 shadow-lg shadow-brand-primary/40 font-black' 
                   : 'text-zinc-600 hover:bg-brand-primary/10 hover:text-brand-primary'
-              } ${isCollapsed ? 'justify-center rounded-lg p-2.5' : 'rounded-xl px-4 py-3 text-[13.5px]'}`}
+              } ${!showFull ? 'justify-center rounded-lg p-2.5' : 'rounded-xl px-4 py-3 text-[13.5px]'}`}
             >
               <svg
                 className={`${
                   isActive ? 'text-zinc-950' : 'text-zinc-400 group-hover:text-brand-primary'
-                } ${isCollapsed ? 'h-6 w-6' : 'mr-3 h-5.5 w-5.5'}`}
+                } ${!showFull ? 'h-6 w-6' : 'mr-3 h-5.5 w-5.5'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -62,7 +67,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
               </svg>
-              {!isCollapsed && <span className="overflow-hidden whitespace-nowrap">{item.name}</span>}
+              {showFull && <span className="overflow-hidden whitespace-nowrap">{item.name}</span>}
             </Link>
           );
         })}

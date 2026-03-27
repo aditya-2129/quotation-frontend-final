@@ -4,16 +4,22 @@ import { APPWRITE_CONFIG } from '@/constants/appwrite';
 const { DATABASE_ID, COLLECTIONS } = APPWRITE_CONFIG;
 
 export const laborRateService = {
-  async listRates(limit = 100, offset = 0) {
+  async listRates(limit = 100, offset = 0, search = '') {
     try {
+      const queries = [
+        Query.orderAsc("process_name"),
+        Query.limit(limit),
+        Query.offset(offset)
+      ];
+
+      if (search) {
+        queries.push(Query.contains("process_name", [search]));
+      }
+
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.LABOR_RATES,
-        [
-          Query.orderAsc("process_name"),
-          Query.limit(limit),
-          Query.offset(offset)
-        ]
+        queries
       );
       return response;
     } catch (error) {
@@ -35,16 +41,25 @@ export const laborRateService = {
 
 
 export const bopRateService = {
-  async listRates(limit = 100, offset = 0) {
+  async listRates(limit = 100, offset = 0, search = '') {
     try {
+      const queries = [
+        Query.orderAsc("item_name"),
+        Query.limit(limit),
+        Query.offset(offset)
+      ];
+
+      if (search) {
+        queries.push(Query.or([
+          Query.contains("item_name", [search]),
+          Query.contains("supplier", [search])
+        ]));
+      }
+
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.BOP_LIBRARY,
-        [
-          Query.orderAsc("item_name"),
-          Query.limit(limit),
-          Query.offset(offset)
-        ]
+        queries
       );
       return response;
     } catch (error) {

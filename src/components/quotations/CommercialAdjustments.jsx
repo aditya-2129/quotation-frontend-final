@@ -57,53 +57,54 @@ const CommercialAdjustments = ({
   ];
 
   return (
-    <section className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-zinc-300 shadow-xl ring-1 ring-zinc-200/50' : 'border-zinc-200 shadow-sm'}`}>
+    <section className={`bg-white rounded-xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-zinc-300 shadow-xl ring-1 ring-zinc-200/50' : 'border-zinc-200 shadow-sm'}`}>
        <header 
          onClick={() => setActivePhase(isExpanded ? '' : 'commercial')}
-         className={`px-6 py-5 border-b cursor-pointer flex justify-between items-center group transition-colors ${isExpanded ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
+         className={`h-[52px] px-5 border-b cursor-pointer flex justify-between items-center group transition-colors ${isExpanded ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
        >
           <div className="flex items-center gap-3">
-             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black border transition-all duration-300 ${isExpanded ? 'bg-brand-primary border-brand-primary text-zinc-950 scale-110 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
-             <h3 className={`text-[13px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Extra Costs & Shipping</h3>
+             <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black border transition-all duration-300 ${isExpanded ? 'bg-brand-primary border-brand-primary text-zinc-950 scale-110 shadow-lg shadow-brand-primary/20' : 'bg-white border-zinc-200 text-zinc-400'}`}>{panelIndex}</span>
+             <h3 className={`text-[12px] font-black uppercase tracking-[0.2em] transition-colors ${isExpanded ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Extra Costs & Shipping</h3>
           </div>
           <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
        </header>
 
-       <div className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[2000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          <div className="p-4">
-             <div className="border border-zinc-200 rounded-xl overflow-hidden shadow-sm bg-white">
+        <div className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[2000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+           <div className="p-3">
+              <div className="border border-zinc-200 rounded-xl overflow-hidden shadow-sm bg-white">
                 <table className="w-full text-left border-collapse">
                    <thead className="bg-zinc-50/50 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
                       <tr>
-                         <th className="px-4 py-3 w-12 text-center">Ref</th>
-                         <th className="px-4 py-3">Cost Category / Phase</th>
-                         <th className="px-4 py-3">Description / Remarks</th>
-                         <th className="px-4 py-3 text-right">Amount (₹)</th>
+                         <th className="px-3 py-2 w-12 text-center">Ref</th>
+                         <th className="px-3 py-2">Cost Category / Phase</th>
+                         <th className="px-3 py-2">Description / Remarks</th>
+                         <th className="px-3 py-2 text-right">Amount (₹)</th>
                       </tr>
                    </thead>
                    <tbody className="divide-y divide-zinc-50">
                       {costItems.map((item, idx) => (
                          <tr key={item.id} className="group hover:bg-zinc-50/30 transition-colors">
-                            <td className="px-4 py-4 text-center">
-                               <div className="h-8 w-8 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-brand-primary group-hover:text-zinc-950 group-hover:border-brand-primary transition-all shadow-sm">
+                            <td className="px-3 py-2.5 text-center">
+                               <div className="h-7 w-7 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-brand-primary group-hover:text-zinc-950 group-hover:border-brand-primary transition-all shadow-sm">
                                   {item.icon}
                                </div>
                             </td>
-                            <td className="px-4 py-4">
+                            <td className="px-3 py-2.5">
                                <div className="flex flex-col">
                                   <span className="text-[10px] font-black text-brand-primary uppercase tracking-tighter leading-none mb-1 italic opacity-70">{item.phase}</span>
-                                  <span className="text-[13px] font-extrabold text-zinc-950 uppercase tracking-tight">{item.label}</span>
+                                  <span className="text-[12.5px] font-extrabold text-zinc-950 uppercase tracking-tight">{item.label}</span>
                                </div>
                             </td>
-                            <td className="px-4 py-4">
-                               <span className="text-[11px] font-semibold text-zinc-500 italic leading-relaxed">{item.notes}</span>
+                            <td className="px-3 py-2.5">
+                               <span className="text-[10.5px] font-semibold text-zinc-500 italic leading-relaxed">{item.notes}</span>
                             </td>
-                            <td className="px-4 py-4 text-right">
-                               <div className="relative group/input inline-block min-w-[160px]">
-                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-zinc-400 font-black">₹</span>
+                            <td className="px-3 py-2.5 text-right">
+                               <div className="relative group/input inline-block min-w-[140px]">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10.5px] text-zinc-400 font-black">₹</span>
                                   <input 
                                     type="number" 
-                                    className="w-full h-10 pl-8 pr-3 rounded-lg bg-zinc-50 border border-zinc-200 text-right text-[14px] font-black font-mono outline-none focus:bg-white focus:ring-1 focus:ring-brand-primary transition-all shadow-sm group-hover/input:border-brand-primary"
+                                    step="0.01"
+                                    className="w-full h-8.5 pl-8 pr-3 rounded-lg bg-zinc-50 border border-zinc-200 text-right text-[13px] font-black font-mono outline-none focus:bg-white focus:ring-1 focus:ring-brand-primary transition-all shadow-sm group-hover/input:border-brand-primary"
                                     placeholder="0.00"
                                     value={formData[item.field] || ''}
                                     onChange={(e) => updateProject({ [item.field]: parseFloat(e.target.value) || 0 })}

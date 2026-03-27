@@ -100,18 +100,20 @@ export default function ToolingRatePage() {
                   <thead className="bg-zinc-50 border-b border-zinc-200">
                     <tr>
                       <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Process / Skill</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Rate (₹/hr)</th>
-                      <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right"></th>
+                       <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Unit</th>
+                       <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Rate (₹)</th>
+                       <th className="px-5 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200">
                     {isLoading ? [1,2,3,4].map(i => <SkeletonRow key={i} />) : laborRates.length === 0 ? (
-                      <tr><td colSpan="3" className="px-5 py-20 text-center text-zinc-400 italic">No processes defined.</td></tr>
+                      <tr><td colSpan="4" className="px-5 py-20 text-center text-zinc-400 italic">No processes defined.</td></tr>
                     ) : laborRates.map(rate => (
                       <tr key={rate.$id} className="group hover:bg-zinc-50/80 transition-colors">
                         <td className="px-5 py-3.5 font-bold text-zinc-900 leading-tight">{rate.process_name}</td>
+                        <td className="px-5 py-3.5 text-right font-bold text-zinc-500 text-xs uppercase">{rate.unit || 'hr'}</td>
                         <td className="px-5 py-3.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap text-xs">
-                           ₹{parseFloat(rate.hourly_rate).toFixed(2)}
+                           ₹{parseFloat(rate.rate || rate.hourly_rate).toFixed(2)}
                         </td>
                          <td className="px-5 py-3.5 text-right">
                             <ActionButtons onEdit={() => openEditModal('labor', rate)} onDelete={() => handleDelete('labor', rate)} />
@@ -245,7 +247,7 @@ function RateModal({ type, data, onClose, onSuccess, onError }) {
   const [formData, setFormData] = useState({
     name: data?.process_name || data?.item_name || '',
     rate: data?.hourly_rate || data?.rate || 0,
-    unit: data?.unit || 'pcs',
+    unit: data?.unit || (type === 'labor' ? 'hr' : 'pcs'),
     supplier: data?.supplier || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -255,7 +257,11 @@ function RateModal({ type, data, onClose, onSuccess, onError }) {
     try {
       setIsSubmitting(true);
       if (type === 'labor') {
-        const payload = { process_name: formData.name, hourly_rate: parseFloat(formData.rate) };
+        const payload = { 
+          process_name: formData.name, 
+          rate: parseFloat(formData.rate),
+          unit: formData.unit
+        };
         if (data) await laborRateService.updateRate(data.$id, payload);
         else await laborRateService.createRate(payload);
 
@@ -304,17 +310,30 @@ function RateModal({ type, data, onClose, onSuccess, onError }) {
                        onChange={(e) => setFormData({...formData, rate: e.target.value})}
                     />
                  </div>
-                 {type !== 'labor' && (
-                    <div>
-                       <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Unit</label>
-                       <input 
-                          placeholder="e.g. pcs"
-                          className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white"
-                          value={formData.unit}
-                          onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                       />
-                    </div>
-                 )}
+                  <div>
+                     <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Unit</label>
+                     {type === 'labor' ? (
+                        <select
+                           className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white text-xs font-bold"
+                           value={formData.unit}
+                           onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                        >
+                           <option value="hr">Hour (hr)</option>
+                           <option value="sq_cm">Sq. Cm</option>
+                           <option value="per_hole">Per Hole</option>
+                           <option value="per_rim">Per Rim</option>
+                           <option value="per_tap">Per Tap</option>
+                           <option value="pcs">Pieces (pcs)</option>
+                        </select>
+                     ) : (
+                        <input 
+                           placeholder="e.g. pcs"
+                           className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white"
+                           value={formData.unit}
+                           onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                        />
+                     )}
+                  </div>
               </div>
               {type === 'bop' && (
                 <div>

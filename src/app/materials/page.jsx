@@ -21,7 +21,7 @@ export default function MaterialsPage() {
   const fetchMaterials = async () => {
     try {
       setIsLoading(true);
-      const response = await materialService.listMaterials(limit, (page - 1) * limit);
+      const response = await materialService.listMaterials(limit, (page - 1) * limit, searchQuery);
       setMaterials(response.documents);
       setTotal(response.total);
     } catch (error) {
@@ -34,6 +34,14 @@ export default function MaterialsPage() {
   useEffect(() => {
     fetchMaterials();
   }, [page]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (page !== 1) setPage(1);
+      else fetchMaterials();
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const openAddModal = () => {
     setSelectedMaterial(null);
@@ -67,12 +75,7 @@ export default function MaterialsPage() {
       }
    };
 
-  const filteredMaterials = materials.filter(m => 
-    m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.grade?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.shape?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.density?.toString().includes(searchQuery)
-  );
+  const filteredMaterials = materials;
 
   return (
     <DashboardLayout 
@@ -116,8 +119,8 @@ export default function MaterialsPage() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
-                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Material Name</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Grade</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Material Grade</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Category Name</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Form Factor</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Density</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Base Rate (per kg)</th>
@@ -151,8 +154,8 @@ export default function MaterialsPage() {
                 ) : (
                   filteredMaterials.map((m) => (
                     <tr key={m.$id} className="group hover:bg-zinc-50/80 transition-colors">
-                      <td className="px-6 py-4 font-bold text-zinc-950">{m.name}</td>
-                      <td className="px-6 py-4 text-[11px] font-mono font-bold text-zinc-500 uppercase italic">{m.grade || '—'}</td>
+                      <td className="px-6 py-4 font-black text-zinc-950 uppercase tracking-tight">{m.grade || '—'}</td>
+                      <td className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase italic tracking-widest">{m.name}</td>
                       <td className="px-6 py-4 text-center">
                          <span className="inline-flex px-2 py-0.5 rounded border border-zinc-200 bg-white text-[10px] font-bold text-zinc-600 uppercase tracking-tight">
                             {m.shape?.replace('_', ' ')}
@@ -259,6 +262,48 @@ function MaterialModal({ onClose, onSuccess, onError, material }) {
     { id: 'casting', label: 'Casting' },
     { id: 'extruded_section', label: 'Extruded Section' }
   ];
+  
+  const DENSITY_MAP = {
+    'STEEL': 7.850,
+    'MS': 7.850,
+    'MILD STEEL': 7.850,
+    'ALLOY STEEL': 7.850,
+    'EN8': 7.850,
+    'EN9': 7.850,
+    'EN19': 7.850,
+    'EN24': 7.850,
+    'STAINLESS STEEL': 8.000,
+    'SS': 8.000,
+    'SS304': 8.000,
+    'SS316': 8.000,
+    'ALUMINIUM': 2.700,
+    'AL': 2.700,
+    'COPPER': 8.960,
+    'BRASS': 8.500,
+    'TITANIUM': 4.500,
+    'PLASTIC': 1.050,
+    'ABS': 1.050,
+    'ACRYLIC': 1.180,
+    'NYLON': 1.150,
+    'CAST IRON': 7.200,
+    'CI': 7.200
+  };
+
+  useEffect(() => {
+    // Only auto-update if density is currently 0 or near 0 to avoid overwriting manual corrections
+    if (parseFloat(formData.density) > 0 && parseFloat(formData.density) !== 7.85 && parseFloat(formData.density) !== 2.7) return; 
+
+    const searchStr = formData.name.toUpperCase().trim();
+    const searchGradeStr = formData.grade.toUpperCase().trim();
+
+    // Check mapping
+    for (const key in DENSITY_MAP) {
+      if (searchStr.includes(key) || searchGradeStr.includes(key)) {
+        setFormData(prev => ({ ...prev, density: DENSITY_MAP[key] }));
+        break;
+      }
+    }
+  }, [formData.name, formData.grade]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -278,7 +323,6 @@ function MaterialModal({ onClose, onSuccess, onError, material }) {
       }
        onSuccess();
      } catch (error) {
-       console.error("Material Save Error:", error);
        onError(error.message || "Failed to update material record.");
        setIsSubmitting(false);
      }
@@ -299,22 +343,23 @@ function MaterialModal({ onClose, onSuccess, onError, material }) {
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
            <div className="grid grid-cols-2 gap-5">
               <div className="col-span-2">
-                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Material Name *</label>
+                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Material Grade / Specification *</label>
                  <input 
                     required
-                    placeholder="e.g. Aluminium"
-                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-bold focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                 />
-              </div>
-              <div>
-                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Grade / Specification</label>
-                 <input 
-                    placeholder="e.g. 6061-T6"
-                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all"
+                    placeholder="e.g. 6061-T6, EN8, SS304"
+                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-black focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all placeholder:font-normal"
                     value={formData.grade}
                     onChange={(e) => setFormData({...formData, grade: e.target.value})}
+                 />
+              </div>
+              <div className="col-span-2">
+                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Category Name (Material Group) *</label>
+                 <input 
+                    required
+                    placeholder="e.g. Aluminium, Alloy Steel, Stainless Steel"
+                    className="w-full h-11 px-4 rounded-lg bg-zinc-50 border border-zinc-200 font-bold text-zinc-500 italic focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all placeholder:font-normal"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                  />
               </div>
               <div>
@@ -329,7 +374,22 @@ function MaterialModal({ onClose, onSuccess, onError, material }) {
                  </select>
               </div>
               <div>
-                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Density (g/cm³) *</label>
+                 <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Density (g/cm³) *</label>
+                    {(formData.name || formData.grade) && parseFloat(formData.density) === 0 && (
+                       <a 
+                          href={`https://www.google.com/search?q=${encodeURIComponent(formData.grade || formData.name)} material density g/cm3`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 underline flex items-center gap-1"
+                       >
+                          <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 21l-7-7m0 0l7-7m-7 7h18" />
+                          </svg>
+                          Find Density
+                       </a>
+                    )}
+                 </div>
                  <input 
                     required
                     type="number"

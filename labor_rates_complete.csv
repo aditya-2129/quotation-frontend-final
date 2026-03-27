@@ -1,0 +1,87 @@
+process_name,rate,unit,currency
+VMC (Vertical Machining Center),600,hr,INR
+CNC Turning,450,hr,INR
+HMC (Horizontal Machining Center),1200,hr,INR
+5-Axis CNC Machining,2500,hr,INR
+CNC Mill-Turn (Complex),1800,hr,INR
+Swiss-Type Turning,800,hr,INR
+Live Tooling Lathe Work,650,hr,INR
+Milling (Conventional),250,hr,INR
+Lathe (Conventional),200,hr,INR
+Vertical Turret Lathe (VTL),800,hr,INR
+Surface Grinding,50,sq_cm,INR
+Cylindrical Grinding,400,hr,INR
+Internal Grinding,450,hr,INR
+Centreless Grinding,350,hr,INR
+Jig Grinding,1500,hr,INR
+Wire Cut EDM,120,sq_cm,INR
+EDM Sinking (Sparking),500,hr,INR
+Drilling (M.T.R) (3-6mm),8,per_hole,INR
+Drilling (M.T.R) (6-12mm),12,per_hole,INR
+Drilling (M.T.R) (12-20mm),20,per_hole,INR
+Drilling (M.T.R) (20-25mm),30,per_hole,INR
+Drilling (M.T.R) (Above 25mm),50,per_hole,INR
+Reaming (M.T.R) (3-6mm),12,per_rim,INR
+Reaming (M.T.R) (6-12mm),18,per_rim,INR
+Reaming (M.T.R) (12-20mm),30,per_rim,INR
+Reaming (M.T.R) (20-25mm),45,per_rim,INR
+Reaming (M.T.R) (Above 25mm),70,per_rim,INR
+Countersink / Counterbore,8,per_hole,INR
+Spot Facing,12,per_hole,INR
+Jig Boring (Drilling 3-6mm),50,per_hole,INR
+Jig Boring (Drilling 6-12mm),80,per_hole,INR
+Jig Boring (Drilling 12-20mm),120,per_hole,INR
+Jig Boring (Drilling 20-25mm),180,per_hole,INR
+Jig Boring (Drilling Above 25mm),250,per_hole,INR
+Jig Boring (Reaming),40,per_rim,INR
+Radial Drilling,300,hr,INR
+Horizontal Boring,800,hr,INR
+Gun Drilling (Deep Hole),1500,hr,INR
+Tapping M2 to M3,5,per_tap,INR
+Tapping M4 to M6,8,per_tap,INR
+Tapping M8 to M12,15,per_tap,INR
+Tapping M14 to M20,30,per_tap,INR
+Re-Tapping / Thread Cleaning,10,per_tap,INR
+External Threading (Manual),20,per_tap,INR
+External Threading (CNC),45,per_tap,INR
+Thread Milling (CNC),250,hr,INR
+Helicoil / Thread Insert,50,pcs,INR
+Laser Cutting,800,hr,INR
+Water Jet Cutting,1500,hr,INR
+Plasma Cutting,600,hr,INR
+Gas Cutting (Oxy-Fuel),400,hr,INR
+Sawing / Billet Preparation,200,hr,INR
+Press Brake / Bending,500,hr,INR
+Plate / Pipe Rolling,600,hr,INR
+Shearing / Cutting,300,hr,INR
+TIG Welding (Aluminum/SS),600,hr,INR
+MIG / Mag Welding,500,hr,INR
+ARC / Spot Welding,400,hr,INR
+Hardening / Heat Treat,100,pcs,INR
+Case Hardening,150,pcs,INR
+Nitriding / QP,200,pcs,INR
+Blackening / Phosphating,25,pcs,INR
+Zinc Plating (Blue/Yellow),40,pcs,INR
+Chrome Plating / Hard Chrome,150,pcs,INR
+Anodizing (Clear/Color),60,pcs,INR
+Hard Anodizing,120,pcs,INR
+Electroless Nickel (ENP),150,sq_cm,INR
+Passivation (SS),40,sq_cm,INR
+Electropolishing (Mirror Finish),200,sq_cm,INR
+Powder Coating,100,pcs,INR
+Painting (Epoxy/PU),150,pcs,INR
+Sand / Shot Blasting,50,pcs,INR
+Tumbling / Vibratory Finishing,150,hr,INR
+Honing / Lapping,800,hr,INR
+Slotting / Broaching,400,hr,INR
+Gear Hobbing / Cutting,1200,hr,INR
+Knurling,15,pcs,INR
+Tool & Cutter Sharpening,200,pcs,INR
+Deburring / Bench Work,150,hr,INR
+Polishing / Buffing,250,hr,INR
+Assembly / Fitting,300,hr,INR
+CAD Core Design,1000,hr,INR
+CAM / CNC Programming,600,hr,INR
+CMM Inspection & Report,800,hr,INR
+NDT Testing (Dye/Mag),500,pcs,INR
+Packing & Forwarding,200,hr,INR

@@ -15,7 +15,12 @@ export const customerService = {
 
       // Note: search in appwrite requires an existing search index on the attribute
       if (searchQuery) {
-        queries.push(Query.contains("name", searchQuery));
+        queries.push(Query.or([
+          Query.contains("name", [searchQuery]),
+          Query.contains("contact_person", [searchQuery]),
+          Query.contains("email", [searchQuery]),
+          Query.contains("phone", [searchQuery])
+        ]));
       }
 
       const response = await databases.listDocuments(

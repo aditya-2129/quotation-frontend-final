@@ -36,7 +36,15 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
-  }, [page, searchQuery]);
+  }, [page]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+       if (page !== 1) setPage(1);
+       else fetchCustomers();
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const openEditModal = (customer) => {
      setSelectedCustomer(customer);
