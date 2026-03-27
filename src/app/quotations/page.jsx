@@ -7,6 +7,8 @@ import { assetService } from '@/services/assets';
 import { useRouter } from 'next/navigation';
 import ActionButtons from '@/components/shared/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import QuotationPreviewModal from '@/components/modals/QuotationPreviewModal';
+import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
 
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState([]);
@@ -16,6 +18,7 @@ export default function QuotationsPage() {
   const [page, setPage] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
+  const [previewId, setPreviewId] = useState(null);
   const router = useRouter();
   const limit = 25;
 
@@ -39,6 +42,16 @@ export default function QuotationsPage() {
 
   const handleDelete = (quote) => {
      setDeleteConfirm({ open: true, row: quote });
+  };
+
+  const handleDownload = async (quotationId) => {
+    try {
+      const fullQuote = await quotationService.getQuotation(quotationId);
+      await generateQuotationPDF(fullQuote);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      setErrorDetails({ open: true, message: "Failed to generate PDF. Please try again." });
+    }
   };
 
   const commitDelete = async () => {
@@ -154,12 +167,14 @@ export default function QuotationsPage() {
                       <td className="px-6 py-4 text-right font-mono font-bold text-brand-primary">
                         ₹{parseFloat(row.total_amount || 0).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                       <td className="px-6 py-4 text-right">
                          <ActionButtons 
-                           onEdit={() => router.push(`/quotations/edit/${row.$id}`)} 
-                           onDelete={() => handleDelete(row)} 
-                         />
-                      </td>
+                            onPreview={() => setPreviewId(row.$id)}
+                            onDownload={() => handleDownload(row.$id)}
+                            onEdit={() => router.push(`/quotations/edit/${row.$id}`)} 
+                            onDelete={() => handleDelete(row)} 
+                          />
+                       </td>
                     </tr>
                   ))
                 )}
@@ -213,7 +228,13 @@ export default function QuotationsPage() {
         title="REGISTRY ERROR"
         message={errorDetails.message}
         confirmText="CLOSE"
-        type="danger"
+         type="danger"
+       />
+
+      <QuotationPreviewModal 
+        isOpen={!!previewId}
+        onClose={() => setPreviewId(null)}
+        quotationId={previewId}
       />
     </DashboardLayout>
   );
