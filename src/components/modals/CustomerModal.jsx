@@ -36,10 +36,10 @@ export default function CustomerModal({ onClose, onSuccess, onError, customer })
                <h2 className="text-[14px] font-black text-zinc-950 uppercase tracking-[0.25em]">
                   {customer ? 'Edit Customer' : 'Add New Customer'}
                </h2>
-               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-2 flex items-center gap-2">
+               <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-2 flex items-center gap-2">
                   <div className="h-1 w-1 rounded-full bg-amber-500 animate-pulse" />
                   {customer ? 'Update the details for this customer.' : 'Fill in the details to add a new customer to your list.'}
-               </p>
+               </div>
             </header>
             
             <form onSubmit={handleSubmit} className="p-8 space-y-5">
