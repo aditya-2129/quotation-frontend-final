@@ -2,7 +2,7 @@ import React from 'react';
 
 const Header = ({ isCollapsed, title, primaryAction }) => {
   return (
-    <header className={`fixed top-0 right-0 z-30 h-16 border-b border-zinc-200 bg-white/80 backdrop-blur-md transition-all duration-300 ${isCollapsed ? 'left-20' : 'left-64'}`}>
+    <header className={`fixed top-0 right-0 z-[100] h-16 border-b border-zinc-200 bg-white/80 backdrop-blur-md transition-all duration-300 ${isCollapsed ? 'left-20' : 'left-64'}`}>
       <div className="flex h-full items-center justify-between px-8">
         <div className="flex items-center">
            <div className="w-64 shrink-0">

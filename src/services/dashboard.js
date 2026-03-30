@@ -17,8 +17,9 @@ export const dashboardService = {
                 customersCount,
                 materialsCount,
             ] = await Promise.all([
-                // All quotations (get total count + documents for revenue calc)
+                // All quotations (filter out cancelled)
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
+                    Query.notEqual("status", "Cancelled"),
                     Query.limit(5000),
                     Query.select(["total_amount", "status", "$createdAt"]),
                 ]),
@@ -47,7 +48,7 @@ export const dashboardService = {
                 ]),
             ]);
 
-            // Calculate total revenue
+            // Calculate total revenue (excluding cancelled)
             const totalRevenue = allQuotations.documents.reduce(
                 (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
                 0
@@ -107,6 +108,7 @@ export const dashboardService = {
                 DATABASE_ID,
                 COLLECTIONS.QUOTATIONS,
                 [
+                    Query.notEqual("status", "Cancelled"),
                     Query.orderDesc("$createdAt"),
                     Query.limit(limit),
                 ]

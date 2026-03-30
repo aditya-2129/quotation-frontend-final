@@ -29,14 +29,6 @@ const ScopeAndIdentity = ({
              <h3 className={`text-[12px] font-black uppercase tracking-[0.2em] transition-colors ${activePhase === 'scope' ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-brand-primary'}`}>Project Information</h3>
           </div>
           <div className="flex items-center gap-4">
-             <button 
-               type="button"
-               onClick={(e) => { e.stopPropagation(); setIsQuickAddOpen(true); }}
-               className="h-8 w-40 rounded-xl bg-brand-primary text-zinc-950 text-[10.5px] font-black uppercase tracking-tight shadow-xl shadow-brand-primary/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 border border-brand-primary/20"
-             >
-               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
-               ADD CUSTOMER +
-             </button>
              <svg className={`h-4.5 w-4.5 text-zinc-400 transition-transform duration-300 ${activePhase === 'scope' ? 'rotate-180 text-brand-primary' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </div>
        </header>
@@ -44,26 +36,41 @@ const ScopeAndIdentity = ({
           <div className="p-3 grid grid-cols-4 gap-x-4 gap-y-2.5 items-start">
              {/* Row 1: Personnel & Reach */}
              <div className="relative z-50">
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Organization / Customer
-                   <span className="text-red-500 font-black">*</span>
                 </label>
-                <div className="relative group">
-                   <input 
-                     type="text"
-                     className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
-                     placeholder="Search Customers..."
-                     value={customerSearch || ""}
-                     onFocus={() => setIsDropdownOpen(true)}
-                     onChange={(e) => {
-                        setCustomerSearch(e.target.value);
-                        setIsDropdownOpen(true);
-                     }}
-                   />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-brand-primary transition-colors pointer-events-none">
-                       <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeWidth={2.5} stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </div>
-
+                 <div className="relative group">
+                    <input 
+                      type="text"
+                      className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
+                      placeholder="Search or Type Customer..."
+                      value={customerSearch || ""}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      onChange={(e) => {
+                         const val = e.target.value;
+                         setCustomerSearch(val);
+                         setFormData(prev => ({ ...prev, supplier_name: val, customer: null }));
+                         setIsDropdownOpen(true);
+                      }}
+                    />
+                     <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        {customerSearch && (
+                           <button 
+                             type="button"
+                             onClick={() => {
+                                setCustomerSearch("");
+                                setFormData(prev => ({ ...prev, supplier_name: "", customer: null }));
+                                setIsDropdownOpen(false);
+                             }}
+                             className="text-zinc-300 hover:text-zinc-500 transition-colors"
+                           >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                           </button>
+                        )}
+                        <div className="text-zinc-400 group-focus-within:text-brand-primary transition-colors pointer-events-none">
+                           <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeWidth={2.5} stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                     </div>
                    {isDropdownOpen && (
                       <>
                          <div className="fixed inset-0 z-[60]" onClick={() => setIsDropdownOpen(false)} />
@@ -138,12 +145,13 @@ const ScopeAndIdentity = ({
                 </div>
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Contact Person Name
                    <span className="text-red-500 font-black">*</span>
                 </label>
                    <input 
                      type="text"
+                     required
                      className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   placeholder="Personnel Name"
                   value={formData.contact_person || ""}
@@ -151,22 +159,28 @@ const ScopeAndIdentity = ({
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Contact Number
                    <span className="text-red-500 font-black">*</span>
                 </label>
                 <input 
-                  type="text"
+                  type="tel"
+                  required
+                  maxLength="10"
                   className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm font-mono"
-                  placeholder="+91..."
+                  placeholder="10-digit number..."
                   value={formData.contact_phone || ""}
-                  onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                  onChange={(e) => setFormData({...formData, contact_phone: e.target.value.replace(/\D/g, '')})}
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5">Contact Email</label>
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Contact Email
+                   <span className="text-red-500 font-black">*</span>
+                </label>
                 <input 
                   type="email"
+                  required
                   className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   placeholder="engineering@client.com"
                   value={formData.contact_email || ""}
@@ -182,37 +196,35 @@ const ScopeAndIdentity = ({
                 </div>
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Quotation Version
                    <span className="text-red-500 font-black">*</span>
                 </label>
-                <input 
-                  type="text"
-                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm font-mono"
-                  placeholder="Rev 00"
-                  value={formData.revision_no || ""}
-                  onChange={(e) => setFormData({...formData, revision_no: e.target.value})}
-                />
+                <div className="h-8.5 flex items-center px-4 bg-zinc-100/50 rounded-lg text-zinc-950 font-mono text-[12.5px] font-bold border border-zinc-200/50 shadow-sm transition-all tracking-tight cursor-not-allowed">
+                   {formData.revision_no || 'Rev 1'}
+                </div>
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Date Received
                    <span className="text-red-500 font-black">*</span>
                 </label>
                 <input 
                   type="date"
+                  required
                   className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   value={formData.inquiry_date || ""}
                   onChange={(e) => setFormData({...formData, inquiry_date: e.target.value})}
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Expected Delivery Date
                    <span className="text-red-500 font-black">*</span>
                 </label>
                 <input 
                   type="date"
+                  required
                   className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
                   value={formData.delivery_date || ""}
                   onChange={(e) => setFormData({...formData, delivery_date: e.target.value})}
@@ -221,32 +233,35 @@ const ScopeAndIdentity = ({
 
              {/* Row 3: Admin & Logistics */}
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
-                   Estimating Engineer / Staff
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Project Incharge
                    <span className="text-red-500 font-black">*</span>
                 </label>
                 <input 
                    type="text"
+                   required
                    className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
-                   placeholder="Staff Name"
+                   placeholder="HOD / Lead Name"
                    value={formData.quoting_engineer || ""}
                    onChange={(e) => setFormData({...formData, quoting_engineer: e.target.value})}
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Quantity to Make (Total)
                    <span className="text-red-500 font-black">*</span>
                 </label>
                 <input 
                   type="number"
+                  required
+                  min="1"
                   className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-mono font-semibold text-black text-[13px] shadow-sm"
-                  value={formData.quantity ?? 0}
-                  onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
+                  value={formData.quantity ?? 1}
+                  onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 1})}
                 />
              </div>
              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Type of Project
                    <span className="text-red-500 font-black">*</span>
                 </label>
@@ -263,7 +278,7 @@ const ScopeAndIdentity = ({
 
              {/* Row 4: Project Snapshot / Model Image */}
              <div className="col-span-4 mt-4 pt-4 border-t border-zinc-100">
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-3 flex items-center gap-1">
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-3 flex items-center gap-1">
                    PROJECT MODEL / SNAPSHOT 
                    <span className="text-red-500 font-black">*</span>
                    <span className="ml-2 text-[8px] font-medium text-zinc-400 normal-case italic">(Clear technical image or 3D snapshot required)</span>

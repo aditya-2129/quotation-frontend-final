@@ -152,9 +152,15 @@
                     "type": "string",
                     "required": false,
                     "array": false,
-                    "size": 255,
                     "default": "Draft",
-                    "encrypt": false
+                    "format": "enum",
+                    "elements": [
+                        "Draft",
+                        "Pending",
+                        "Completed",
+                        "Cancelled",
+                        "Approved"
+                    ]
                 },
                 {
                     "key": "total_amount",

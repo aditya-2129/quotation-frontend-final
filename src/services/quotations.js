@@ -11,6 +11,7 @@ export const quotationService = {
                 DATABASE_ID,
                 COLLECTIONS.QUOTATIONS,
                 [
+                    Query.notEqual('status', 'Cancelled'),
                     Query.orderDesc("$createdAt"),
                     Query.limit(limit),
                     Query.offset(offset)
@@ -42,8 +43,8 @@ export const quotationService = {
             return `QTN-${nextNum}`;
         } catch (error) {
             console.error("Failed to generate ID:", error);
-            // Fallback to random if DB fetch fails
-            return `QTN-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+            // Return a clear indicator if fetch fails rather than random noise
+            return `QTN-00001 (Offline)`;
         }
     },
 
@@ -97,10 +98,12 @@ export const quotationService = {
     // Delete a quotation
     async deleteQuotation(id) {
         try {
-            await databases.deleteDocument(
+            // Soft delete: Update status to 'Cancelled' instead of purging
+            await databases.updateDocument(
                 DATABASE_ID,
                 COLLECTIONS.QUOTATIONS,
-                id
+                id,
+                { status: 'Cancelled' }
             );
             return true;
         } catch (error) {
@@ -109,3 +112,4 @@ export const quotationService = {
         }
     }
 };
+

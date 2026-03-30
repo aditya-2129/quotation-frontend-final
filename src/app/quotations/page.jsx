@@ -59,28 +59,14 @@ export default function QuotationsPage() {
     if (!quote) return;
 
     try { 
-       // 1. Check for files and delete them
-       let parsedItems = [];
-       try {
-          parsedItems = JSON.parse(quote.items || '[]');
-       } catch (e) {
-          console.error("Failed to parse items for cleanup:", e);
-       }
-
-       if (parsedItems.length > 0) {
-          const fileIds = parsedItems.flatMap(item => (item.design_files || []).map(f => f.$id)).filter(Boolean);
-          if (fileIds.length > 0) {
-             await Promise.all(fileIds.map(id => assetService.deleteFile(id)));
-          }
-       }
-
-       // 2. Delete the database record
+       // For soft delete, we keep the assets for the audit trail.
+       // Only the database status is changed so it doesn't appear in lists.
        await quotationService.deleteQuotation(quote.$id); 
        fetchQuotations(); 
     }
     catch (e) { 
-       console.error("Deletion cycle failed:", e);
-       setErrorDetails({ open: true, message: e.message || "Failed to purge record from registry." });
+       console.error("Cancel cycle failed:", e);
+       setErrorDetails({ open: true, message: e.message || "Failed to update record status." });
     } finally {
        setDeleteConfirm({ open: false, row: null });
     }
@@ -159,6 +145,7 @@ export default function QuotationsPage() {
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest leading-none ${
                           row.status === 'Completed' ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20' : 
                           row.status === 'Pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                          row.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
                           'bg-zinc-50 text-zinc-500 border border-zinc-200'
                         }`}>
                           {row.status || 'Draft'}
@@ -215,10 +202,10 @@ export default function QuotationsPage() {
         isOpen={deleteConfirm.open}
         onClose={() => setDeleteConfirm({ open: false, row: null })}
         onConfirm={commitDelete}
-        title="Purge Valuation?"
-        message={`This will permanently remove ${deleteConfirm.row?.quotation_no || 'this record'} and all associated design assets. RESTORATION IS NOT POSSIBLE.`}
-        confirmText="PURGE RECORD"
-        cancelText="KEEP RECORD"
+        title="Cancel Valuation?"
+        message={`This will mark ${deleteConfirm.row?.quotation_no || 'this record'} as 'Cancelled'. It will be removed from your active list but will remain in the database for audit history.`}
+        confirmText="CANCEL VALUATION"
+        cancelText="KEEP ACTIVE"
         type="danger"
       />
 

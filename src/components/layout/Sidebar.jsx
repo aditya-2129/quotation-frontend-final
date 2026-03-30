@@ -19,7 +19,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isHovered, setIsHovered }) => {
     <aside 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`fixed left-0 top-0 z-40 h-full border-r border-zinc-200 bg-white shadow-xl transition-all duration-300 ease-in-out ${showFull ? 'w-64' : 'w-20'}`}
+      className={`fixed left-0 top-0 z-[110] h-full border-r border-zinc-200 bg-white shadow-xl transition-all duration-300 ease-in-out ${showFull ? 'w-64' : 'w-20'}`}
     >
       <div className="flex h-16 items-center justify-between border-b border-zinc-100 px-4">
         {showFull && (

@@ -20,7 +20,7 @@ import ValuationLedger from '@/components/quotations/ValuationLedger';
 const nextRevision = (rev) => {
   const match = (rev || "").match(/Rev (\d+)/i);
   const num = match ? parseInt(match[1]) + 1 : 1;
-  return `Rev ${String(num).padStart(2, '0')}`;
+  return `Rev ${num}`;
 };
 
 export default function EditQuotationPage() {
@@ -50,7 +50,7 @@ export default function EditQuotationPage() {
     contact_phone: '',
     contact_email: '',
     quoting_engineer: '',
-    revision_no: 'Rev 00',
+    revision_no: 'Rev 1',
     inquiry_date: new Date().toISOString().split('T')[0],
     delivery_date: '',
     status: 'Draft',
@@ -138,7 +138,7 @@ export default function EditQuotationPage() {
           contact_phone: quote.contact_phone || '',
           contact_email: quote.contact_email || '',
           quoting_engineer: quote.quoting_engineer || '',
-          revision_no: quote.status === 'Completed' ? nextRevision(quote.revision_no) : (quote.revision_no || 'Rev 00'),
+          revision_no: quote.status === 'Completed' ? nextRevision(quote.revision_no) : (quote.revision_no || 'Rev 1'),
           inquiry_date: quote.inquiry_date || '',
           delivery_date: quote.delivery_date || '',
           status: quote.status || 'Draft',
@@ -280,7 +280,8 @@ export default function EditQuotationPage() {
     if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
     if (!formData.contact_person) missingFields.push("Contact Person Name");
     if (!formData.contact_phone) missingFields.push("Contact Number");
-    if (!formData.quoting_engineer) missingFields.push("Estimating Staff");
+    if (!formData.contact_email) missingFields.push("Contact Email");
+    if (!formData.quoting_engineer) missingFields.push("Project Incharge");
     if (!formData.revision_no) missingFields.push("Quotation Version");
     if (!formData.inquiry_date) missingFields.push("Date Received");
     if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
@@ -351,6 +352,11 @@ export default function EditQuotationPage() {
     setIsUpdateConfirmOpen(true);
   };
 
+  const toTitleCase = (str) => {
+     if (!str) return '';
+     return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
   const commitUpdate = async () => {
     try {
        const { 
@@ -363,11 +369,11 @@ export default function EditQuotationPage() {
 
        const payload = {
           quotation_no,
-          supplier_name: formData.customer?.name || supplier_name || 'Unknown',
-          contact_person,
+          supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Unknown',
+          contact_person: toTitleCase(contact_person),
           contact_phone,
-          contact_email,
-          quoting_engineer,
+          contact_email: (contact_email || "").toLowerCase().trim(),
+          quoting_engineer: toTitleCase(quoting_engineer),
           revision_no,
           inquiry_date,
           delivery_date,
@@ -418,11 +424,11 @@ export default function EditQuotationPage() {
 
         const payload = {
            quotation_no,
-           supplier_name: formData.customer?.name || supplier_name || 'Anonymous Draft',
-           contact_person,
+           supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Anonymous Draft',
+           contact_person: toTitleCase(contact_person),
            contact_phone,
-           contact_email,
-           quoting_engineer,
+           contact_email: (contact_email || "").toLowerCase().trim(),
+           quoting_engineer: toTitleCase(quoting_engineer),
            revision_no,
            inquiry_date,
            delivery_date,

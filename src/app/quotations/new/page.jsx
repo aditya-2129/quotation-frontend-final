@@ -39,7 +39,7 @@ export default function NewQuotationPage() {
     contact_phone: '',
     contact_email: '',
     quoting_engineer: '',
-    revision_no: 'Rev 00',
+    revision_no: 'Rev 1',
     inquiry_date: new Date().toISOString().split('T')[0],
     delivery_date: '',
     status: 'Draft',
@@ -282,7 +282,8 @@ export default function NewQuotationPage() {
       if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
      if (!formData.contact_person) missingFields.push("Contact Person Name");
      if (!formData.contact_phone) missingFields.push("Contact Number");
-     if (!formData.quoting_engineer) missingFields.push("Estimating Staff");
+     if (!formData.contact_email) missingFields.push("Contact Email");
+     if (!formData.quoting_engineer) missingFields.push("Project Incharge");
      if (!formData.revision_no) missingFields.push("Quotation Version");
      if (!formData.inquiry_date) missingFields.push("Date Received");
      if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
@@ -353,6 +354,11 @@ export default function NewQuotationPage() {
       setIsSaveConfirmOpen(true);
    };
 
+   const toTitleCase = (str) => {
+      if (!str) return '';
+      return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+   };
+
    const commitSave = async () => {
       try {
          // Destructure only valid schema fields from formData
@@ -366,11 +372,11 @@ export default function NewQuotationPage() {
 
          const payload = {
             quotation_no,
-            supplier_name: formData.customer?.name || supplier_name || 'Unknown',
-            contact_person,
+            supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Unknown',
+            contact_person: toTitleCase(contact_person),
             contact_phone,
-            contact_email,
-            quoting_engineer,
+            contact_email: (contact_email || "").toLowerCase().trim(),
+            quoting_engineer: toTitleCase(quoting_engineer),
             revision_no,
             inquiry_date,
             delivery_date,
@@ -428,11 +434,11 @@ export default function NewQuotationPage() {
 
          const payload = {
             quotation_no,
-            supplier_name: formData.customer?.name || supplier_name || 'Anonymous Draft',
-            contact_person,
+            supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Anonymous Draft',
+            contact_person: toTitleCase(contact_person),
             contact_phone,
-            contact_email,
-            quoting_engineer,
+            contact_email: (contact_email || "").toLowerCase().trim(),
+            quoting_engineer: toTitleCase(quoting_engineer),
             revision_no,
             inquiry_date,
             delivery_date,

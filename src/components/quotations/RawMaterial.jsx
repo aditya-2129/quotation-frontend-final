@@ -17,6 +17,7 @@ const DimensionInput = ({ label, field, value, allowance, onChange }) => (
         <input 
           type="number" 
           step="0.01"
+          required
           placeholder="Size"
           className="w-[60%] h-8 bg-white border border-zinc-200 rounded-l-lg px-2 text-[11px] font-bold outline-none focus:ring-1 focus:ring-zinc-950 transition-all font-mono"
           value={value ?? ""}
