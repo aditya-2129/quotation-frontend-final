@@ -56,18 +56,13 @@ export default function NewQuotationPage() {
         id: Date.now(),
         part_name: 'Part 01',
         qty: 1,
-        material: null,
-        material_weight: 0,
-        wastage: 3,
-        hardness: '',
-        tolerance: '',
-        surface_finish: '',
-        treatments: [],
-        inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
         processes: [],
         bought_out_items: [],
         design_files: [],
-        part_image: null
+        part_image: null,
+        treatments: [],
+        material: null,
+        material_weight: 0
       }
     ] 
   });
@@ -113,18 +108,13 @@ export default function NewQuotationPage() {
     id: Date.now(),
     part_name: 'Part 01',
     qty: 1,
-    material: null,
-    material_weight: 0,
-    wastage: 3,
-    hardness: '',
-    tolerance: '',
-    surface_finish: '',
-    treatments: [], // Dynamic array for HT, ST, etc.
-    inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
     processes: [],
     bought_out_items: [],
     design_files: [],
-    part_image: null
+    part_image: null,
+    treatments: [],
+    material: null,
+    material_weight: 0
   };
 
   const setActiveQuote = (update) => {

@@ -21,20 +21,12 @@ const BOMRegistry = ({
           id: Date.now(),
           part_name: `Part ${String(prev.items.length + 1).padStart(2, '0')}`,
           qty: 1, // Default quantity
-          material: null,
-          material_weight: 0,
-          wastage: 3,
-          hardness: '',
-          tolerance: '',
-          surface_finish: '',
-          heat_treatment: { required: false, type: '', cost: 0 },
-          surface_treatment: { required: false, type: '', cost: 0 },
-          inspection: { cmm: false, mtc: false, cost: 0 },
           processes: [],
-          tooling: [],
           bought_out_items: [],
           design_files: [],
-          part_image: null
+          part_image: null,
+          material: null,
+          material_weight: 0
         }
       ]
     }));
@@ -139,23 +131,30 @@ const BOMRegistry = ({
                                   setIsUploading(true);
                                   try {
                                      const uploadedFile = await assetService.uploadFile(file);
+                                     const localPreviewUrl = URL.createObjectURL(file);
                                      const newItems = [...formData.items];
-                                     newItems[idx].part_image = uploadedFile;
+                                     newItems[idx].part_image = { ...uploadedFile, localPreview: localPreviewUrl };
                                      setFormData({...formData, items: newItems});
                                   } catch (err) {
                                      console.error("Image upload failed:", err);
-                                     if (onError) onError("Failed to upload part snapshot.");
+                                     if (onError) onError("Failed to upload part snapshot. " + err.message);
                                   } finally {
                                      setIsUploading(false);
+                                     if (e.target) e.target.value = null;
                                   }
                                }}
                              />
                              {item.part_image ? (
                                 <div className="relative group/img h-11 w-11 rounded-lg border border-zinc-200 bg-zinc-50 overflow-hidden shadow-sm-inset cursor-pointer" onClick={() => setPreviewFile(item.part_image)}>
                                    <img 
-                                     src={assetService.getFilePreview(item.part_image.$id)} 
+                                     src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")} 
                                      alt="Part" 
                                      className="h-full w-full object-cover transition-transform group-hover/img:scale-110" 
+                                     onError={(e) => {
+                                        if (e.target.src.includes('preview')) {
+                                           e.target.src = item.part_image.localPreview || assetService.getFileView(item.part_image.$id)?.toString();
+                                        }
+                                     }}
                                    />
                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
                                       <button 
@@ -179,7 +178,12 @@ const BOMRegistry = ({
                                    </div>
                                 </div>
                              ) : (
-                                <label htmlFor={`part-image-${item.id}`} className="h-11 w-11 rounded-lg border-2 border-dashed border-zinc-200 bg-zinc-50 flex flex-col items-center justify-center gap-0.5 text-zinc-300 hover:border-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer group/upload">
+                                <label htmlFor={`part-image-${item.id}`} className="relative h-11 w-11 rounded-lg border-2 border-dashed border-zinc-200 bg-zinc-50 flex flex-col items-center justify-center gap-0.5 text-zinc-300 hover:border-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer group/upload overflow-hidden">
+                                   {isUploading && (
+                                      <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center">
+                                         <div className="h-3 w-3 border-[1.5px] border-brand-primary border-t-transparent rounded-full animate-spin" />
+                                      </div>
+                                   )}
                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                     <span className="text-[6px] font-black uppercase tracking-tighter">PHOTO</span>
                                 </label>

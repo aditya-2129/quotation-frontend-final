@@ -110,15 +110,13 @@ export default function EditQuotationPage() {
            id: Date.now(),
            part_name: 'Part 01',
            qty: 1,
-           material: null,
-           material_weight: 0,
-           wastage: 3,
-           inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
            processes: [],
            treatments: [],
            bought_out_items: [],
            design_files: [],
-           part_image: null
+           part_image: null,
+           material: null,
+           material_weight: 0
         }]).map(item => ({
            ...item,
            processes: item.processes || [],
@@ -195,18 +193,13 @@ export default function EditQuotationPage() {
     id: Date.now(),
     part_name: 'Part 01',
     qty: 1,
-    material: null,
-    material_weight: 0,
-    wastage: 3,
-    hardness: '',
-    tolerance: '',
-    surface_finish: '',
-    treatments: [],
-    inspection: { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 },
     processes: [],
     bought_out_items: [],
     design_files: [],
-    part_image: null
+    part_image: null,
+    treatments: [],
+    material: null,
+    material_weight: 0
   };
 
   const setActiveQuote = (update) => {

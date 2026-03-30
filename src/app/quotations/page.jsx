@@ -47,7 +47,20 @@ export default function QuotationsPage() {
   const handleDownload = async (quotationId) => {
     try {
       const fullQuote = await quotationService.getQuotation(quotationId);
-      await generateQuotationPDF(fullQuote);
+      
+      let projectImageUrl = null;
+      if (fullQuote.project_image) {
+        try {
+          const parsedImage = JSON.parse(fullQuote.project_image);
+          if (parsedImage.$id) {
+            projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
+          }
+        } catch (e) {
+          console.warn("Failed to parse project image for PDF");
+        }
+      }
+
+      await generateQuotationPDF(fullQuote, projectImageUrl);
     } catch (err) {
       console.error("PDF generation failed:", err);
       setErrorDetails({ open: true, message: "Failed to generate PDF. Please try again." });

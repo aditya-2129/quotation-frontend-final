@@ -206,7 +206,12 @@ const PartMachiningBlock = ({ item, idx, libraries, onUpdate }) => {
           {item.part_image ? (
             <div className="h-9 w-9 rounded border border-zinc-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
                <img 
-                  src={assetService.getFilePreview(item.part_image.$id)} 
+                  src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")}
+                  onError={(e) => {
+                     if (e.target.src.includes('preview')) {
+                        e.target.src = item.part_image.localPreview || assetService.getFileView(item.part_image.$id)?.toString();
+                     }
+                  }} 
                   alt="Part" 
                   className="h-full w-full object-cover"
                />

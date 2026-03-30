@@ -18,6 +18,8 @@ const ScopeAndIdentity = ({
   setSelectedItemIndex,
   panelIndex = 1
 }) => {
+  const [isUploadingImg, setIsUploadingImg] = useState(false);
+
   return (
      <section className={`bg-white rounded-xl border transition-all duration-300 ${activePhase === 'scope' ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200' : 'border-zinc-200'}`}>
         <header 
@@ -289,22 +291,34 @@ const ScopeAndIdentity = ({
                       {formData.project_image ? (
                          <div className="absolute inset-0 group/img">
                             <img 
-                              src={formData.project_image.$id ? assetService.getFilePreview(formData.project_image.$id) : ""} 
+                              src={formData.project_image.localPreview || (formData.project_image.$id ? assetService.getFilePreview(formData.project_image.$id)?.toString() : "")} 
                               alt="Project Model" 
                               className="h-full w-full object-cover transition-transform group-hover/img:scale-105"
+                              onError={(e) => {
+                                 // If preview fails, fallback to direct view
+                                 if (e.target.src.includes('preview')) {
+                                    e.target.src = formData.project_image.localPreview || assetService.getFileView(formData.project_image.$id)?.toString();
+                                 }
+                              }}
                             />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                <button 
                                  type="button"
                                  onClick={() => setFormData({...formData, project_image: null})}
-                                 className="h-8 w-8 rounded-full bg-white text-red-500 flex items-center justify-center shadow-lg hover:scale-110 transition-all active:scale-95"
+                                 className="h-8 w-8 rounded-full bg-white text-red-500 flex items-center justify-center shadow-lg hover:scale-110 transition-all active:scale-95 z-20"
                                >
                                   <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                </button>
                             </div>
                          </div>
                       ) : (
-                         <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full p-2">
+                         <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full p-2 relative">
+                            {isUploadingImg && (
+                               <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center rounded-xl">
+                                  <div className="h-6 w-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin mb-2" />
+                                  <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Uploading...</span>
+                               </div>
+                            )}
                             <input 
                               type="file" 
                               className="hidden" 
@@ -312,11 +326,17 @@ const ScopeAndIdentity = ({
                               onChange={async (e) => {
                                  const file = e.target.files[0];
                                  if (!file) return;
+                                 setIsUploadingImg(true);
                                  try {
                                     const uploaded = await assetService.uploadFile(file);
-                                    setFormData({...formData, project_image: uploaded});
+                                    const localPreviewUrl = URL.createObjectURL(file);
+                                    setFormData({...formData, project_image: { ...uploaded, localPreview: localPreviewUrl }});
                                  } catch (err) {
                                     console.error("Upload failed:", err);
+                                    alert("Image upload failed: " + err.message);
+                                 } finally {
+                                    setIsUploadingImg(false);
+                                    if (e.target) e.target.value = null; // reset to allow re-upload
                                  }
                               }}
                             />

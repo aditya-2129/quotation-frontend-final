@@ -1,392 +1,37 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const BRAND = { r: 94, g: 192, b: 194 }; // #5EC0C2
-const DARK = { r: 24, g: 24, b: 27 };    // zinc-950
-const GREY = { r: 113, g: 113, b: 122 }; // zinc-500
-const LIGHT_GREY = { r: 228, g: 228, b: 231 }; // zinc-200
+// --- COMPANY CONFIGURATION ---
+const COMPANY = {
+  NAME: 'KAIVALYA ENGINEERING',
+  TAGLINE: 'Manufacturing & Supply of SPM, Precision Tools, Die & Components',
+  ADDRESS_L1: 'Gat No 103, Jyotiba Nagar',
+  ADDRESS_L2: 'Talawade, Pune - 411062',
+  PHONE: '+91 99224 42211',
+  EMAIL: 'sales@kaivalyaengineering.com',
+  GSTIN: '27AABCK1234D1Z5',
+  STATE: 'Maharashtra CODE:27'
+};
 
 /**
- * Generates and downloads a professional quotation PDF.
- * @param {Object} quote - The quotation document from Appwrite.
+ * Converts a number into Indian Words format (Rupees ... Only)
  */
-export async function generateQuotationPDF(quote) {
-  if (!quote) return;
+function numberToWords(num) {
+    if (num === 0) return "Zero";
+    const a = ["", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ", "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ", "Nineteen "];
+    const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
 
-  const doc = new jsPDF('p', 'mm', 'a4');
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
-  const contentWidth = pageWidth - margin * 2;
-  let y = margin;
+    const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return "";
 
-  // Parse data
-  let items = [];
-  let breakdown = {};
-  try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
-  try { breakdown = JSON.parse(quote.detailed_breakdown || '{}'); } catch (e) { breakdown = {}; }
-
-  // ─── Helper Functions ───────────────────────────────────────
-  // Use "Rs." instead of ₹ because default jsPDF fonts don't support Unicode ₹
-  const fmt = (v) => {
-    const num = parseFloat(v || 0);
-    return `Rs. ${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-  const fmtNum = (v) => parseFloat(v || 0).toFixed(2);
-
-  const addPageIfNeeded = (requiredSpace = 40) => {
-    if (y + requiredSpace > pageHeight - 20) {
-      drawFooter(doc, pageWidth, pageHeight);
-      doc.addPage();
-      y = margin;
-      return true;
-    }
-    return false;
-  };
-
-  const drawSectionHeader = (title) => {
-    addPageIfNeeded(20);
-    doc.setFillColor(BRAND.r, BRAND.g, BRAND.b);
-    doc.roundedRect(margin, y, contentWidth, 8, 1, 1, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text(title.toUpperCase(), margin + 4, y + 5.5);
-    y += 12;
-  };
-
-  const drawInfoRow = (label, value, x) => {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(GREY.r, GREY.g, GREY.b);
-    doc.text(label, x, y);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(DARK.r, DARK.g, DARK.b);
-    const displayVal = String(value ?? '');
-    doc.text(displayVal || '-', x, y + 4.5);
-  };
-
-  const drawFooter = (d, pw, ph) => {
-    d.setDrawColor(LIGHT_GREY.r, LIGHT_GREY.g, LIGHT_GREY.b);
-    d.line(margin, ph - 12, pw - margin, ph - 12);
-    d.setFont('helvetica', 'normal');
-    d.setFontSize(6.5);
-    d.setTextColor(GREY.r, GREY.g, GREY.b);
-    d.text(`Generated on ${new Date().toLocaleDateString('en-GB')}  |  ${quote.quotation_no || 'Quotation'}`, margin, ph - 8);
-    d.text(`Page ${d.internal.getNumberOfPages()}`, pw - margin, ph - 8, { align: 'right' });
-  };
-
-  const tableBaseStyles = {
-    styles: { fontSize: 8, cellPadding: 2.5, textColor: [DARK.r, DARK.g, DARK.b], lineColor: [LIGHT_GREY.r, LIGHT_GREY.g, LIGHT_GREY.b], lineWidth: 0.15 },
-    headStyles: { fillColor: [244, 244, 245], textColor: [GREY.r, GREY.g, GREY.b], fontStyle: 'bold', fontSize: 7 },
-    alternateRowStyles: { fillColor: [250, 250, 250] },
-    theme: 'grid',
-    didDrawPage: () => { y = margin; }
-  };
-
-  // ─── HEADER BAND ────────────────────────────────────────────
-  doc.setFillColor(DARK.r, DARK.g, DARK.b);
-  doc.rect(0, 0, pageWidth, 36, 'F');
-
-  // Brand accent line
-  doc.setFillColor(BRAND.r, BRAND.g, BRAND.b);
-  doc.rect(0, 36, pageWidth, 1.5, 'F');
-
-  // Try to load logo
-  try {
-    const logoImg = await loadImage('/KE_Logo.png');
-    doc.addImage(logoImg, 'PNG', margin, 6, 24, 24);
-  } catch (e) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
-    doc.text('KE', margin + 4, 22);
-  }
-
-  // Header text
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(255, 255, 255);
-  doc.text('PROJECT QUOTATION', margin + 30, 15);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
-  doc.text(quote.quotation_no || 'N/A', margin + 30, 22);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  doc.text(quote.supplier_name || '', margin + 30, 29);
-
-  doc.setFontSize(7.5);
-  doc.setTextColor(160, 160, 168);
-  const headerRight = `Status: ${quote.status || 'Draft'}  |  Rev: ${quote.revision_no || 'PART @1'}`;
-  doc.text(headerRight, pageWidth - margin, 15, { align: 'right' });
-
-  const dateStr = quote.$createdAt ? new Date(quote.$createdAt).toLocaleDateString('en-GB') : '-';
-  doc.text(`Date: ${dateStr}`, pageWidth - margin, 21, { align: 'right' });
-
-  y = 44;
-
-  // ─── SECTION 1: PROJECT INFORMATION ─────────────────────────
-  drawSectionHeader('Project Information');
-
-  const col1 = margin + 2;
-  const col2 = margin + contentWidth * 0.27;
-  const col3 = margin + contentWidth * 0.54;
-  const col4 = margin + contentWidth * 0.77;
-
-  // Row 1
-  drawInfoRow('Quotation ID', quote.quotation_no, col1);
-  drawInfoRow('Organization / Customer', quote.supplier_name, col2);
-  drawInfoRow('Contact Person', quote.contact_person, col3);
-  drawInfoRow('Contact Number', quote.contact_phone, col4);
-  y += 11;
-
-  // Row 2
-  drawInfoRow('Contact Email', quote.contact_email, col1);
-  drawInfoRow('Estimating Engineer', quote.quoting_engineer, col2);
-  drawInfoRow('Date Received', quote.inquiry_date ? new Date(quote.inquiry_date).toLocaleDateString('en-GB') : '-', col3);
-  drawInfoRow('Expected Delivery', quote.delivery_date ? new Date(quote.delivery_date).toLocaleDateString('en-GB') : '-', col4);
-  y += 11;
-
-  // Row 3
-  drawInfoRow('Total Quantity', String(quote.quantity || '-'), col1);
-  drawInfoRow('Production Mode', quote.production_mode, col2);
-  drawInfoRow('Quotation Version', quote.revision_no, col3);
-  drawInfoRow('Status', quote.status, col4);
-  y += 14;
-
-  // Thin separator
-  doc.setDrawColor(LIGHT_GREY.r, LIGHT_GREY.g, LIGHT_GREY.b);
-  doc.line(margin, y - 2, pageWidth - margin, y - 2);
-
-  // ─── SECTION 2: BOM / PARTS ─────────────────────────────────
-  if (items.length > 0) {
-    items.forEach((item, idx) => {
-      drawSectionHeader(`Part ${idx + 1}: ${item.part_name || 'Unnamed Part'}  (Qty: ${item.qty || 1})`);
-
-      // Material info
-      if (item.material) {
-        addPageIfNeeded(30);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(GREY.r, GREY.g, GREY.b);
-        doc.text('RAW MATERIAL', margin + 2, y);
-        y += 5;
-
-        drawInfoRow('Material', item.material.name || item.material.material_name, col1);
-        drawInfoRow('Grade', item.material.grade, col2);
-        drawInfoRow('Rate / kg', `Rs. ${fmtNum(item.material.base_rate)}`, col3);
-        drawInfoRow('Weight (kg)', fmtNum(item.material_weight), col4);
-        y += 11;
-
-        if (item.shape) {
-          const profileMap = { rect: 'Rectangular', round: 'Round Bar', hex: 'Hexagonal' };
-          drawInfoRow('Profile', profileMap[item.shape] || item.shape, col1);
-          if (item.dimensions) {
-            const dimParts = [];
-            if (item.dimensions.l) dimParts.push(`L:${item.dimensions.l}`);
-            if (item.dimensions.w) dimParts.push(`W:${item.dimensions.w}`);
-            if (item.dimensions.t) dimParts.push(`T:${item.dimensions.t}`);
-            if (item.dimensions.dia) dimParts.push(`D:${item.dimensions.dia}`);
-            if (item.dimensions.af) dimParts.push(`AF:${item.dimensions.af}`);
-            drawInfoRow('Dimensions (mm)', dimParts.join('  |  '), col2);
-          }
-          drawInfoRow('Wastage', `${item.wastage || 0}%`, col4);
-          y += 11;
-        }
-      }
-
-      // Machining Processes Table
-      if (item.processes && item.processes.length > 0) {
-        addPageIfNeeded(20 + item.processes.length * 8);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(GREY.r, GREY.g, GREY.b);
-        doc.text('MACHINING OPERATIONS', margin + 2, y);
-        y += 4;
-
-        autoTable(doc, {
-          startY: y,
-          margin: { left: margin, right: margin },
-          head: [['Operation', 'Setup (min)', 'Qty / Time', 'Unit Rate']],
-          body: item.processes.map(p => [
-            p.dim1 && p.dim2 ? `${p.process_name || '-'}\n(${p.dim1} x ${p.dim2})` : (p.process_name || '-'),
-            p.unit === 'hr' ? String(p.setup_time || '0') : '-',
-            String(p.cycle_time || '0'),
-            `Rs. ${fmtNum(p.rate || p.hourly_rate)} / ${p.unit || 'hr'}`
-          ]),
-          columnStyles: { 3: { halign: 'right' } },
-          ...tableBaseStyles
-        });
-        y = doc.lastAutoTable.finalY + 6;
-      }
-
-      // Treatments Table
-      if (item.treatments && item.treatments.length > 0) {
-        addPageIfNeeded(20 + item.treatments.length * 8);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(GREY.r, GREY.g, GREY.b);
-        doc.text('SURFACE FINISHING / TREATMENTS', margin + 2, y);
-        y += 4;
-
-        autoTable(doc, {
-          startY: y,
-          margin: { left: margin, right: margin },
-          head: [['Treatment', 'Per Unit', 'Cost']],
-          body: item.treatments.map(t => [
-            t.name || '-',
-            t.per_unit !== false ? 'Yes' : 'No',
-            `Rs. ${fmtNum(t.cost)}`
-          ]),
-          columnStyles: { 2: { halign: 'right' } },
-          ...tableBaseStyles
-        });
-        y = doc.lastAutoTable.finalY + 6;
-      }
-
-      // Inspection
-      if (item.inspection && (item.inspection.cmm || item.inspection.mtc)) {
-        addPageIfNeeded(18);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(GREY.r, GREY.g, GREY.b);
-        doc.text('QUALITY INSPECTION', margin + 2, y);
-        y += 5;
-        if (item.inspection.cmm) {
-          drawInfoRow('CMM Inspection', `Rs. ${fmtNum(item.inspection.cmm_cost)}`, col1);
-        }
-        if (item.inspection.mtc) {
-          drawInfoRow('MTC / Certificate', `Rs. ${fmtNum(item.inspection.mtc_cost)}`, col2);
-        }
-        y += 11;
-      }
-
-      // Bought Out Parts Table
-      if (item.bought_out_items && item.bought_out_items.length > 0) {
-        addPageIfNeeded(20 + item.bought_out_items.length * 8);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(GREY.r, GREY.g, GREY.b);
-        doc.text('PURCHASED / BOUGHT OUT PARTS', margin + 2, y);
-        y += 4;
-
-        autoTable(doc, {
-          startY: y,
-          margin: { left: margin, right: margin },
-          head: [['Item', 'Qty', 'Unit Rate', 'Total']],
-          body: item.bought_out_items.map(b => [
-            b.item_name || '-',
-            String(b.qty || 0),
-            `Rs. ${fmtNum(b.rate)}`,
-            `Rs. ${fmtNum(parseFloat(b.rate || 0) * (b.qty || 1))}`
-          ]),
-          columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } },
-          ...tableBaseStyles
-        });
-        y = doc.lastAutoTable.finalY + 6;
-      }
-
-      y += 2;
-    });
-  }
-
-  // ─── SECTION 3: COMMERCIAL ADJUSTMENTS ──────────────────────
-  drawSectionHeader('Commercial Adjustments & Logistics');
-
-  drawInfoRow('Design Cost', fmt(quote.design_cost), col1);
-  drawInfoRow('Assembly Cost', fmt(quote.assembly_cost), col2);
-  drawInfoRow('Packaging Cost', fmt(quote.packaging_cost), col3);
-  drawInfoRow('Transportation Cost', fmt(quote.transportation_cost), col4);
-  y += 14;
-
-  // ─── SECTION 4: PRICING BREAKDOWN ──────────────────────────
-  drawSectionHeader('Pricing Summary');
-
-  addPageIfNeeded(80);
-
-  const summaryData = [
-    ['Raw Material Cost', fmt(breakdown.materialCost)],
-    ['Manufacturing', fmt((parseFloat(breakdown.laborCost || 0)) + (parseFloat(breakdown.treatmentCost || 0)))],
-    ['Purchased Items (BOP)', fmt(breakdown.bopCost)],
-    ['Design & Assembly', fmt(breakdown.engineeringCost)],
-    ['Packing & Shipping', fmt(breakdown.commercialCost)],
-  ];
-
-  autoTable(doc, {
-    startY: y,
-    margin: { left: margin, right: margin },
-    head: [['Cost Component', 'Amount']],
-    body: summaryData,
-    styles: { fontSize: 9, cellPadding: 3.5, textColor: [DARK.r, DARK.g, DARK.b], lineColor: [LIGHT_GREY.r, LIGHT_GREY.g, LIGHT_GREY.b], lineWidth: 0.15 },
-    headStyles: { fillColor: [DARK.r, DARK.g, DARK.b], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
-    columnStyles: {
-      1: { halign: 'right', fontStyle: 'bold' }
-    },
-    theme: 'grid',
-    didDrawPage: () => { y = margin; }
-  });
-  y = doc.lastAutoTable.finalY + 3;
-
-  // Subtotal
-  addPageIfNeeded(45);
-  doc.setDrawColor(LIGHT_GREY.r, LIGHT_GREY.g, LIGHT_GREY.b);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 6;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(GREY.r, GREY.g, GREY.b);
-  doc.text('Manufacturing Cost (Subtotal)', margin + 2, y);
-  doc.setTextColor(DARK.r, DARK.g, DARK.b);
-  doc.text(fmt(breakdown.subtotal || quote.subtotal), pageWidth - margin, y, { align: 'right' });
-  y += 8;
-
-  doc.setTextColor(GREY.r, GREY.g, GREY.b);
-  doc.setFontSize(8);
-  doc.text(`Profit Margin: ${quote.markup || 0}%`, margin + 2, y);
-  y += 10;
-
-  // ─── FINAL TOTAL BOX ───────────────────────────────────────
-  doc.setFillColor(DARK.r, DARK.g, DARK.b);
-  doc.roundedRect(margin, y, contentWidth, 20, 2, 2, 'F');
-
-  // Accent bar inside box
-  doc.setFillColor(BRAND.r, BRAND.g, BRAND.b);
-  doc.rect(margin, y, 3, 20, 'F');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
-  doc.text('FINAL QUOTATION TOTAL', margin + 8, y + 8);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(255, 255, 255);
-  doc.text(fmt(quote.total_amount), pageWidth - margin - 6, y + 14, { align: 'right' });
-
-  if (quote.quantity > 1) {
-    doc.setFontSize(8);
-    doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
-    doc.text(`Unit Price: ${fmt(parseFloat(quote.total_amount || 0) / (quote.quantity || 1))}  |  Qty: ${quote.quantity}`, margin + 8, y + 15);
-  }
-
-  y += 26;
-
-  // ─── FOOTER ON ALL PAGES ────────────────────────────────────
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    drawFooter(doc, pageWidth, pageHeight);
-  }
-
-  // Download
-  const filename = `${quote.quotation_no || 'Quotation'}_${quote.supplier_name || 'Client'}.pdf`.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-  doc.save(filename);
+    let str = "";
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + " " + a[n[1][1]]) + "Crore " : "";
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + " " + a[n[2][1]]) + "Lakh " : "";
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + " " + a[n[3][1]]) + "Thousand " : "";
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + " " + a[n[4][1]]) + "Hundred " : "";
+    str += (n[5] != 0) ? ((str != "") ? "and " : "") + (a[Number(n[5])] || b[n[5][0]] + " " + a[n[5][1]]) : "";
+    
+    return str.trim() + " Only";
 }
 
 /**
@@ -394,6 +39,7 @@ export async function generateQuotationPDF(quote) {
  */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
+    if (!src) return reject("No source");
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -407,4 +53,441 @@ function loadImage(src) {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+export async function generateQuotationPDF(quote, projectImageUrl = null) {
+  if (!quote) return;
+
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 10; // 10mm margins for a tight industrial layout
+  const contentWidth = pageWidth - margin * 2;
+  
+  // Parse data
+  let items = [];
+  let breakdown = {};
+  try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
+  try { breakdown = JSON.parse(quote.detailed_breakdown || '{}'); } catch (e) { breakdown = {}; }
+
+  // ─── PAGE 1 HEADER ──────────────────────────────────────────
+  const drawPage1Header = async () => {
+      // 1. Header Box
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.4);
+      doc.rect(margin, margin, contentWidth, 25); // Main Header Box
+      
+      // Vertical line separating Right Side (GST Block)
+      const rightBlockWidth = 62;
+      const rightLineX = pageWidth - margin - rightBlockWidth;
+      doc.line(rightLineX, margin, rightLineX, margin + 25);
+      
+      // Inside Left Block
+      // Try to Load Logo
+      let logoWidth = 0;
+      try {
+        const logoImg = await loadImage('/KE_Logo.png');
+        // KAIVALYA ENGINEERING logo is wide. Using a proportional bounding box.
+        doc.addImage(logoImg, 'PNG', margin + 2, margin + 3, 48, 18);
+        logoWidth = 48;
+      } catch (e) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(COMPANY.NAME, margin + 5, margin + 15);
+        logoWidth = doc.getTextWidth(COMPANY.NAME) + 5;
+      }
+      
+      const textStartX = margin + logoWidth + 5;
+      
+      // Company Info (Address & Email) stacked to prevent overflow
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(0, 102, 51); // Dark green
+      doc.text(`${COMPANY.ADDRESS_L1}`, textStartX, margin + 8);
+      doc.text(`${COMPANY.ADDRESS_L2}`, textStartX, margin + 12.5);
+      doc.text(`Mo. ${COMPANY.PHONE}`, textStartX, margin + 17);
+      doc.text(`Email: ${COMPANY.EMAIL}`, textStartX, margin + 21.5);
+      
+      // Inside Right Block (GST)
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(0);
+      doc.text(".. Shri Swami Samarth ..", rightLineX + rightBlockWidth/2, margin + 5, { align: 'center' });
+      
+      // Purple "QUOTATION" Box
+      doc.setFillColor(128, 0, 128); // Purple
+      doc.rect(rightLineX + 2, margin + 7, rightBlockWidth - 4, 7, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(255);
+      doc.text("QUOTATION", rightLineX + rightBlockWidth/2, margin + 12, { align: 'center', charSpace: 1 });
+      
+      doc.setTextColor(0, 102, 51);
+      doc.setFontSize(9);
+      doc.text(`GSTN : ${COMPANY.GSTIN}`, rightLineX + 2, margin + 19);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`STATE : ${COMPANY.STATE}`, rightLineX + 2, margin + 23);
+      
+      // Tagline box below header
+      doc.setDrawColor(0);
+      doc.setFillColor(255);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.rect(margin, margin + 25, contentWidth, 7);
+      doc.text(COMPANY.TAGLINE, pageWidth / 2, margin + 30, { align: 'center' });
+      
+      // Customer details + Quote Details Box
+      const customerBoxY = margin + 32;
+      doc.rect(margin, customerBoxY, contentWidth, 25);
+      
+      // Inner Vertical Line
+      const quoteDetailsX = pageWidth - margin - 70;
+      doc.line(quoteDetailsX, customerBoxY, quoteDetailsX, customerBoxY + 25);
+      
+      // Left: Customer Info
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text("To", margin + 2, customerBoxY + 5);
+      doc.text(`M/s ${quote.supplier_name || ''}`, margin + 10, customerBoxY + 5);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      
+      let cY = customerBoxY + 10;
+      if (quote.contact_person) {
+          const addressLines = doc.splitTextToSize(`Attn: ${quote.contact_person}`, quoteDetailsX - margin - 12);
+          doc.text(addressLines, margin + 10, cY);
+          cY += (addressLines.length * 4.5);
+      }
+      doc.text(`Email: ${quote.contact_email || '-'}`, margin + 10, cY);
+      cY += 4.5;
+      doc.text(`Phone: ${quote.contact_phone || '-'}`, margin + 10, cY);
+      cY += 4.5;
+      doc.text(`GSTIN/UIN : ___________`, margin + 10, cY);
+      
+      // Right: Quote Info
+      doc.setFontSize(9);
+      doc.text(`SR. NO.    : ${quote.quotation_no}`, quoteDetailsX + 4, customerBoxY + 6);
+      doc.text(`DATE         : ${quote.inquiry_date ? new Date(quote.inquiry_date).toLocaleDateString('en-GB') : '-'}`, quoteDetailsX + 4, customerBoxY + 11);
+      doc.text(`REF NO.     : ___________`, quoteDetailsX + 4, customerBoxY + 16);
+      doc.text(`VALID FOR : 15 DAYS`, quoteDetailsX + 4, customerBoxY + 21);
+      
+      // Disclaimer Text
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(0, 51, 153);
+      doc.text("For any queries regarding the quotation, feel free to contact the concerned person.", pageWidth / 2, customerBoxY + 29, { align: 'center' });
+  };
+
+  // ─── EXECUTE PAGE 1 ───────────────────────────────────────────
+  await drawPage1Header();
+  
+  let jobWorkTitleY = margin + 32 + 25 + 10; // Increased spacing to prevent overlap with disclaimer
+  
+  // Job Work title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0);
+  doc.text("QUOTATION – JOB WORK", pageWidth / 2, jobWorkTitleY, { align: 'center' });
+  
+  let topTableLineY = jobWorkTitleY + 2;
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.4);
+  doc.line(margin, topTableLineY, pageWidth - margin, topTableLineY); // Top table line
+  doc.setLineWidth(0.15);
+  doc.line(margin, topTableLineY + 1, pageWidth - margin, topTableLineY + 1); // Double line effect
+
+  let y = topTableLineY + 3;
+  
+  const mainTableData = items.map((item, idx) => {
+      const partDesc = `${item.part_name}\n(Complete set as per model provided, Precision finished & work suitable)\nJob Material: ${item.material?.grade || 'As required'}`;
+      
+      // Calculate a proportion of the total cost for this part to emulate the "Unit Price" x Qty layout
+      let partCost = 0;
+      const q = parseFloat(item.qty || 1);
+      
+      if (item.material && item.material_weight) partCost += (item.material_weight * (item.material.base_rate || 0));
+      
+      const labor = (item.processes || []).reduce((acc, p) => {
+          const rate = parseFloat(p.rate || p.hourly_rate || 0);
+          const unit = p.unit || 'hr';
+          if (unit === 'hr') {
+            const time = parseFloat(p.setup_time || 0)/q + parseFloat(p.cycle_time || 0);
+            return acc + (rate * (time / 60));
+          }
+          return acc + (parseFloat(p.cycle_time || 0) * rate);
+      }, 0);
+      partCost += labor;
+
+      const treatments = (item.treatments || []).reduce((acc, t) => acc + parseFloat(t.cost || 0)/(t.per_unit !== false ? 1 : q), 0);
+      const bops = (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (parseFloat(b.qty || 1))), 0);
+      partCost += (treatments + bops);
+      
+      const commPerPart = ((parseFloat(quote.design_cost || 0) + parseFloat(quote.assembly_cost || 0) + parseFloat(quote.packaging_cost || 0) + parseFloat(quote.transportation_cost || 0)) / items.length) / q;
+      partCost += commPerPart;
+      
+      const finalUnitPrice = partCost * (1 + (quote.markup || 15)/100);
+      const rowTotal = finalUnitPrice * q;
+      
+      return [
+          idx + 1 + ".",
+          partDesc,
+          `${q}\nSet`,
+          finalUnitPrice.toFixed(2),
+          rowTotal.toFixed(2)
+      ];
+  });
+  
+  autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Sr. No.', 'Particular', 'Qty.', 'Unit Price', 'Total Price (INR)']],
+      body: mainTableData,
+      theme: 'plain',
+      styles: { fontSize: 9, textColor: [0,0,0], cellPadding: 2 },
+      headStyles: { fontStyle: 'bold' },
+      columnStyles: {
+          0: { cellWidth: 15 },
+          1: { cellWidth: 'auto' },
+          2: { halign: 'center', cellWidth: 20 },
+          3: { halign: 'right', cellWidth: 25 },
+          4: { halign: 'right', fontStyle: 'bold', cellWidth: 30 }
+      },
+      didDrawCell: function(data) {
+          if (data.row.index === 0 && data.section === 'head') {
+              doc.setDrawColor(0);
+              doc.setLineWidth(0.4);
+              doc.line(margin, data.cell.y + data.cell.height, pageWidth - margin, data.cell.y + data.cell.height);
+          }
+      }
+  });
+  
+  y = doc.lastAutoTable.finalY + 15;
+  
+  // Note Section & Summary
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text("Note –", margin, y);
+  
+  y += 15;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  const totalStr = `Grand Total (INR): ${breakdown.finalTotal ? breakdown.finalTotal.toFixed(2) : parseFloat(quote.total_amount).toFixed(2)}/-`;
+  doc.text(totalStr, margin, y);
+  
+  y += 6;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(9);
+  const amtInt = Math.floor(breakdown.finalTotal || parseFloat(quote.total_amount));
+  doc.text(`(Rupees ${numberToWords(amtInt)})`, margin, y);
+  
+  // Create footer space anchoring it to the bottom of the page
+  let footerStartY = pageHeight - margin - 98;
+  
+  if (y > footerStartY - 10) {
+      doc.addPage();
+      await drawPage1Header();
+      footerStartY = pageHeight - margin - 98;
+  }
+  
+  
+  y = footerStartY;
+  
+  // Fill the empty page gap structurally
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.4);
+  doc.line(margin, topTableLineY, margin, footerStartY); // Left outer border bounding main work area
+  doc.line(pageWidth - margin, topTableLineY, pageWidth - margin, footerStartY); // Right outer border
+  
+  const footerH = 60;
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.4);
+  
+  doc.line(margin, y, pageWidth - margin, y);
+  doc.line(margin, y + 1, pageWidth - margin, y + 1);
+  
+  y += 2;
+  
+  // Main Footer Rectangle
+  doc.rect(margin, y, contentWidth, footerH);
+  
+  // Split Line
+  const splitFooterX = pageWidth/2 + 20;
+  doc.line(splitFooterX, y, splitFooterX, y + footerH);
+  
+  // Left: T&C
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text("Terms & Conditions", margin + 2, y + 5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text("• E. & O.E.", margin + 2, y + 10);
+  doc.text("• Delivery Period: As mention on PO from the order date and advance.", margin + 2, y + 14);
+  doc.text("• Payment Terms: As mutually agreed and finalized with the company.", margin + 2, y + 18);
+  doc.text("• Taxes & Duties: GST @ 18% extra as applicable.", margin + 2, y + 22);
+  doc.text("• Freight: Charged extra at actuals.", margin + 2, y + 26);
+  
+  // We look forward text
+  doc.line(margin, y + 29, splitFooterX, y + 29); // Inner separator line
+  doc.setFont('helvetica', 'italic');
+  doc.text("We look forward to your valuable order and assure you of our best", margin + 2, y + 33);
+  doc.text("quality and timely service.", margin + 2, y + 37);
+  
+  // Signature
+  doc.setFont('helvetica', 'bold');
+  doc.text(`for ${COMPANY.NAME}`, margin + 2, y + 42);
+  doc.text("Authorized Signature", margin + 2, y + 58);
+  
+  // Right: Drawing Box
+  // For the actual web app implementation, handling an image here is tricky unless passed from the UI
+  // but if projectImageUrl is available, output it. Else leave blank for user stamp.
+  if (projectImageUrl) {
+      try {
+        const drawImg = await loadImage(projectImageUrl);
+        doc.addImage(drawImg, 'PNG', splitFooterX + 2, y + 2, contentWidth - (splitFooterX - margin) - 4, footerH - 4, undefined, 'FAST');
+      } catch (e) {
+          doc.text("Drawing / Reference Model", splitFooterX + 5, y + 30);
+      }
+  } else {
+     doc.setFont('helvetica', 'normal');
+     doc.setFontSize(8);
+     doc.setTextColor(150);
+     doc.text("[ Reference Drawing Area ]", splitFooterX + ((pageWidth - margin - splitFooterX)/2), y + Math.floor(footerH/2), { align: 'center' });
+  }
+  
+  // Thank you closing bar
+  y += footerH + 2;
+  doc.setDrawColor(0);
+  doc.rect(margin, y, contentWidth, 10);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(0);
+  doc.text(`We thank you for your valuable enquiry and trust this quotation subject to the Terms and conditions given above will find your \napproval. Your order will receive our prompt and careful attention.`, pageWidth / 2, y + 4, { align: 'center', maxWidth: contentWidth - 4 });
+  
+  // Final Footer Contact Row
+  y += 12;
+  autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['CONTACT PERSON NAME', 'CALL', 'EMAIL', 'DELIVERY']],
+      body: [
+          [quote.quoting_engineer || 'ESTIMATING ENGR', COMPANY.PHONE, COMPANY.EMAIL, 'AS PER PO']
+      ],
+      theme: 'grid',
+      styles: { fontSize: 8, textColor: [0,0,0], cellPadding: 2, halign: 'center', lineColor: [0,0,0], lineWidth: 0.4 },
+      headStyles: { fillColor: [230,230,230], fontStyle: 'bold', textColor: [0,0,0] }
+  });
+  
+  // ─── PAGE 2: MATERIAL & PROCESS DETAILS ───────────────────────
+  doc.addPage();
+  y = margin;
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text("QUOTATION – MATERIAL AND PROCESS DETAILS", pageWidth / 2, y, { align: 'center' });
+  y += 3;
+  
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, pageWidth - margin, y);
+  
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(`With reference to QUOTATION No. ${quote.quotation_no} following details`, margin, y);
+  
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text("Technical Details", margin, y);
+  y += 2;
+  
+  const materialCost = breakdown.materialCost || 0;
+  const machiningCost = breakdown.laborCost || 0;
+  const treatCost = breakdown.treatmentCost || 0;
+  const bomCost = breakdown.bopCost || 0;
+  const overheads = (parseFloat(quote.design_cost||0) + parseFloat(quote.assembly_cost||0) + parseFloat(quote.packaging_cost||0) + parseFloat(quote.transportation_cost||0));
+  const profitStr = `${quote.markup || 0}%`;
+  
+  const p2Data = [
+      ["1", "Material Cost", "As req", "", materialCost.toFixed(2), ""],
+      ["2", "Machining Cost", "", "", machiningCost.toFixed(2), ""],
+      ["3", "Special Machining", "", "", "0.00", ""], 
+      ["4", "Treatment", "", "", treatCost.toFixed(2), ""],
+      ["5", "BOM", "", "", bomCost.toFixed(2), ""],
+      ["6", "Miscellaneous Overheads", "", "", overheads.toFixed(2), ""],
+      ["7", "Assembly", "", "", parseFloat(quote.assembly_cost||0).toFixed(2), ""],
+      ["8", "Profit", "", "", profitStr, ""],
+      ["9", "", "", "", "", ""]
+  ];
+  
+  autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Sr. No.', 'Particular', 'Material', 'Detail', 'Cost', 'Remarks']],
+      body: p2Data,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 4, lineColor: [0,0,0], lineWidth: 0.2, textColor: [0,0,0] },
+      headStyles: { fillColor: [245,245,245], fontStyle: 'bold' },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 15 } }
+  });
+  
+  // ─── PAGE 3: TECHNICAL PROCESS DETAILS ────────────────────────
+  doc.addPage();
+  y = margin;
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text("QUOTATION - TECHNICAL PROCESS DETAILS", pageWidth / 2, y, { align: 'center' });
+  y += 3;
+  
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, pageWidth - margin, y);
+  
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(`With reference to QUOTATION No. ${quote.quotation_no} following details`, margin, y);
+  
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text("Technical Details", margin, y);
+  y += 2;
+  
+  const p3Data = [];
+  let partIndex = 1;
+  items.forEach(item => {
+      const mat = item.material ? item.material.grade : '—';
+      if (item.processes && item.processes.length > 0) {
+          item.processes.forEach((p, idx) => {
+             p3Data.push([
+                 idx === 0 ? String(partIndex) : "",
+                 idx === 0 ? item.part_name : "",
+                 idx === 0 ? mat : "",
+                 p.process_name || '-',
+                 `-`, 
+                 `-`
+             ]);
+          });
+      } else {
+          p3Data.push([ String(partIndex), item.part_name, mat, "-", "-", "-" ]);
+      }
+      partIndex++;
+  });
+  
+  while(p3Data.length < 5) p3Data.push(["", "", "", "", "", ""]);
+  
+  autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Sr. No.', 'Part Name', 'Material', 'Process', 'Cost', 'Remarks']],
+      body: p3Data,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 4, lineColor: [0,0,0], lineWidth: 0.2, textColor: [0,0,0] },
+      headStyles: { fillColor: [245,245,245], fontStyle: 'bold' },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 15 } }
+  });
+
+  // Final Output Download
+  const filename = `${quote.quotation_no || 'Quotation'}_${quote.supplier_name || 'Client'}.pdf`.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+  doc.save(filename);
 }

@@ -20,19 +20,22 @@ export const assetService = {
 
     getFilePreview(fileId) {
         try {
-            return storage.getFilePreview(BUCKETS.INQUIRY_FILES, fileId);
+            const result = storage.getFilePreview(BUCKETS.INQUIRY_FILES, fileId);
+            return result?.href || result?.toString() || `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${BUCKETS.INQUIRY_FILES}/files/${fileId}/preview?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
         } catch (error) {
             console.error("Appwrite Service Error [getFilePreview]:", error);
-            return null;
+            // Fallback manual URL
+            return `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${BUCKETS.INQUIRY_FILES}/files/${fileId}/preview?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
         }
     },
 
     getFileView(fileId) {
         try {
-            return storage.getFileView(BUCKETS.INQUIRY_FILES, fileId);
+            const result = storage.getFileView(BUCKETS.INQUIRY_FILES, fileId);
+            return result?.href || result?.toString() || `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${BUCKETS.INQUIRY_FILES}/files/${fileId}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
         } catch (error) {
             console.error("Appwrite Service Error [getFileView]:", error);
-            return null;
+            return `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${BUCKETS.INQUIRY_FILES}/files/${fileId}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
         }
     },
 

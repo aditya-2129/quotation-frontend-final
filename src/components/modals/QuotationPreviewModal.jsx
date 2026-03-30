@@ -166,7 +166,12 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                       <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-[0.12em] leading-none block mb-3">Project Model / Snapshot</span>
                       <div className="h-48 w-72 rounded-xl overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm">
                         <img 
-                          src={assetService.getFilePreview(projectImage.$id)} 
+                          src={projectImage.localPreview || (projectImage.$id ? assetService.getFilePreview(projectImage.$id)?.toString() : "")}
+                          onError={(e) => {
+                             if (e.target.src.includes('preview')) {
+                                e.target.src = projectImage.localPreview || assetService.getFileView(projectImage.$id)?.toString();
+                             }
+                          }} 
                           alt="Project Model" 
                           className="h-full w-full object-cover"
                         />
@@ -218,7 +223,6 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                                         {item.dimensions.af && <InfoField label="Across Flat (mm)" value={item.dimensions.af} mono />}
                                       </>
                                     )}
-                                    <InfoField label="Wastage %" value={`${item.wastage || 0}%`} mono />
                                   </div>
                                 )}
                               </div>
@@ -257,50 +261,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                                     </tbody>
                                   </table>
                                 </div>
-                              </div>
-                            )}
-
-                            {/* Treatments */}
-                            {item.treatments && item.treatments.length > 0 && (
-                              <div>
-                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Surface Finishing / Treatments</span>
-                                <div className="overflow-hidden rounded-lg border border-zinc-200">
-                                  <table className="w-full text-left text-[12px]">
-                                    <thead className="bg-zinc-100">
-                                      <tr>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Treatment</th>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-center">Per Unit</th>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-right">Cost</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-zinc-100">
-                                      {item.treatments.map((t, tIdx) => (
-                                        <tr key={tIdx} className="bg-white">
-                                          <td className="px-4 py-2.5 font-semibold text-zinc-700">{t.name || '—'}</td>
-                                          <td className="px-4 py-2.5 text-center">
-                                            <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold uppercase ${t.per_unit !== false ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'}`}>
-                                              {t.per_unit !== false ? 'Yes' : 'No'}
-                                            </span>
-                                          </td>
-                                          <td className="px-4 py-2.5 text-right font-mono font-bold text-zinc-700">₹{parseFloat(t.cost || 0).toFixed(2)}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Inspection */}
-                            {item.inspection && (item.inspection.cmm || item.inspection.mtc) && (
-                              <div>
-                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Quality Inspection</span>
-                                <div className="grid grid-cols-4 gap-4">
-                                  {item.inspection.cmm && <InfoField label="CMM Inspection" value={`₹${parseFloat(item.inspection.cmm_cost || 0).toFixed(2)}`} mono />}
-                                  {item.inspection.mtc && <InfoField label="MTC / Certificate" value={`₹${parseFloat(item.inspection.mtc_cost || 0).toFixed(2)}`} mono />}
-                                </div>
-                              </div>
-                            )}
+                              </div>                            )}
 
                             {/* Bought Out Parts */}
                             {item.bought_out_items && item.bought_out_items.length > 0 && (
@@ -368,31 +329,31 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
               </div>
 
               {/* Right Sidebar: Pricing Breakdown */}
-              <div className="w-[340px] shrink-0 bg-zinc-950 border-l border-zinc-800 p-6 overflow-y-auto flex flex-col">
+              <div className="w-[340px] shrink-0 bg-zinc-950 border-l border-zinc-800 p-5 flex flex-col">
                 <div className="relative">
                   <div className="absolute -top-2 -right-2 opacity-5 grayscale brightness-150 pointer-events-none rotate-12">
                     <img src="/KE_Logo.png" alt="" className="h-32 w-32 object-contain" />
                   </div>
                   
-                  <h3 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2 relative z-10">
+                  <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 relative z-10">
                     <span className="h-1.5 w-1.5 rounded-full bg-brand-primary shadow-[0_0_8px_rgba(94,192,194,0.8)]" />
                     Price Breakdown
                   </h3>
 
-                  <div className="space-y-3 relative z-10">
+                  <div className="space-y-2 relative z-10">
                     <LedgerRow label="Material" value={breakdown.materialCost} />
                     <LedgerRow label="Manufacturing" value={(parseFloat(breakdown.laborCost || 0)) + (parseFloat(breakdown.treatmentCost || 0))} />
                     <LedgerRow label="Purchased Items" value={breakdown.bopCost} />
                     <LedgerRow label="Design & Assembly" value={breakdown.engineeringCost} />
                     <LedgerRow label="Packing & Shipping" value={breakdown.commercialCost} />
                     
-                    <div className="h-px bg-zinc-800 my-4" />
+                    <div className="h-px bg-zinc-800 my-3" />
                     
                     <LedgerRow label="Manufacturing Cost" value={breakdown.subtotal || quote.subtotal} isBold />
                   </div>
 
-                  <div className="mt-8 pt-6 border-t border-zinc-800 relative z-10">
-                    <div className="flex justify-between items-center mb-4">
+                  <div className="mt-5 pt-4 border-t border-zinc-800 relative z-10">
+                    <div className="flex justify-between items-center mb-3">
                       <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Profit Margin</span>
                       <span className="text-white font-mono font-black text-[15px]">{quote.markup || 0}%</span>
                     </div>
@@ -405,7 +366,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                       <span className="text-3xl font-mono font-black tracking-tighter text-white leading-none">
                         ₹{parseFloat(quote.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </span>
-                      <div className="h-1 w-full bg-brand-primary/10 rounded-full mt-5 overflow-hidden border border-zinc-900/50">
+                      <div className="h-1 w-full bg-brand-primary/10 rounded-full mt-3 overflow-hidden border border-zinc-900/50">
                         <div className="h-full bg-brand-primary shadow-[0_0_10px_rgba(94,192,194,0.5)] transition-all duration-500 ease-out" style={{ width: `${Math.min(quote.markup || 0, 100)}%` }} />
                       </div>
                     </div>
@@ -414,8 +375,8 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
 
                 {/* Per Unit Pricing */}
                 {quote.quantity > 1 && (
-                  <div className="mt-8 pt-6 border-t border-zinc-800">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-3">Per Unit Analysis</span>
+                  <div className="mt-5 pt-4 border-t border-zinc-800">
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Per Unit Analysis</span>
                     <div className="flex justify-between items-baseline">
                       <span className="text-[11px] font-bold text-zinc-400">Unit Price</span>
                       <span className="text-xl font-mono font-black text-brand-primary">
@@ -430,7 +391,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                 )}
 
                 {/* Metadata Footer */}
-                <div className="mt-auto pt-6 border-t border-zinc-800">
+                <div className="mt-auto pt-4 border-t border-zinc-800">
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">Created</span>
@@ -439,10 +400,6 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                     <div className="flex justify-between">
                       <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">Last Modified</span>
                       <span className="text-[10px] font-mono text-zinc-500">{quote.$updatedAt ? new Date(quote.$updatedAt).toLocaleDateString('en-GB') : '—'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">Record ID</span>
-                      <span className="text-[10px] font-mono text-zinc-600 truncate max-w-[150px]">{quote.$id}</span>
                     </div>
                   </div>
                 </div>

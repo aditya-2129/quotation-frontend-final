@@ -47,67 +47,6 @@
     ],
     "tables": [
         {
-            "$id": "customers",
-            "$permissions": [
-                "create(\"any\")",
-                "read(\"any\")",
-                "update(\"any\")",
-                "delete(\"any\")"
-            ],
-            "databaseId": "machine-shop-database",
-            "name": "Customers",
-            "enabled": true,
-            "rowSecurity": false,
-            "columns": [
-                {
-                    "key": "name",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "contact_person",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "email",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "phone",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "location",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                }
-            ],
-            "indexes": []
-        },
-        {
             "$id": "quotation_history",
             "$permissions": [
                 "create(\"any\")",
@@ -146,21 +85,6 @@
                     "size": 255,
                     "default": null,
                     "encrypt": false
-                },
-                {
-                    "key": "status",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "default": "Draft",
-                    "format": "enum",
-                    "elements": [
-                        "Draft",
-                        "Pending",
-                        "Completed",
-                        "Cancelled",
-                        "Approved"
-                    ]
                 },
                 {
                     "key": "total_amount",
@@ -316,15 +240,6 @@
                     "max": 1000000
                 },
                 {
-                    "key": "transportation_cost",
-                    "type": "double",
-                    "required": false,
-                    "array": false,
-                    "default": 0,
-                    "min": 0,
-                    "max": 1000000
-                },
-                {
                     "key": "design_cost",
                     "type": "double",
                     "required": false,
@@ -350,58 +265,30 @@
                     "size": 10000,
                     "default": null,
                     "encrypt": false
-                }
-            ],
-            "indexes": []
-        },
-        {
-            "$id": "bop_library",
-            "$permissions": [
-                "create(\"any\")",
-                "read(\"any\")",
-                "update(\"any\")",
-                "delete(\"any\")"
-            ],
-            "databaseId": "machine-shop-database",
-            "name": "BOP Library",
-            "enabled": true,
-            "rowSecurity": false,
-            "columns": [
-                {
-                    "key": "item_name",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
                 },
                 {
-                    "key": "rate",
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": "Draft",
+                    "format": "enum",
+                    "elements": [
+                        "Draft",
+                        "Pending",
+                        "Completed",
+                        "Cancelled",
+                        "Approved"
+                    ]
+                },
+                {
+                    "key": "transportation_cost",
                     "type": "double",
-                    "required": true,
-                    "array": false,
-                    "default": null,
-                    "min": 0,
-                    "max": 10000000
-                },
-                {
-                    "key": "unit",
-                    "type": "string",
                     "required": false,
                     "array": false,
-                    "size": 50,
-                    "default": "pcs",
-                    "encrypt": false
-                },
-                {
-                    "key": "supplier",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
                     "default": null,
-                    "encrypt": false
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308
                 }
             ],
             "indexes": []
@@ -460,6 +347,119 @@
                     "array": false,
                     "size": 10,
                     "default": "INR",
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "bop_library",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "machine-shop-database",
+            "name": "BOP Library",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "item_name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "rate",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "min": 0,
+                    "max": 10000000
+                },
+                {
+                    "key": "unit",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": "pcs",
+                    "encrypt": false
+                },
+                {
+                    "key": "supplier",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "customers",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "machine-shop-database",
+            "name": "Customers",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "contact_person",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "email",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "phone",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "location",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
                     "encrypt": false
                 }
             ],
