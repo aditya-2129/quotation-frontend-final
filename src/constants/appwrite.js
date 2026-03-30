@@ -5,7 +5,8 @@ export const APPWRITE_CONFIG = {
         CUSTOMERS: "customers",
         MATERIALS: "materials_library",
         LABOR_RATES: "labor_rates",
-        BOP_LIBRARY: "bop_library"
+        BOP_LIBRARY: "bop_library",
+        USERS: "users"
     },
     BUCKETS: {
         INQUIRY_FILES: "inquiry_files"

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { dashboardService } from "@/services/dashboard";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Helpers ──────────────────────────────────────────────
 function timeAgo(dateStr) {
@@ -124,6 +125,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const router = useRouter();
+  const { isAdmin, isLoading: authLoading } = useAuth();
+
+  // Redirect non-admin users to quotations
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.replace('/quotations');
+    }
+  }, [authLoading, isAdmin, router]);
 
   useEffect(() => {
     (async () => {
