@@ -19,7 +19,7 @@ const DimensionInput = ({ label, field, value, allowance, onChange }) => (
           step="0.01"
           required
           placeholder="Size"
-          className="w-[60%] h-8 bg-white border border-zinc-200 rounded-l-lg px-2 text-[11px] font-bold outline-none focus:ring-1 focus:ring-zinc-950 transition-all font-mono"
+          className={`w-[60%] h-8 border rounded-l-lg px-2 text-[11px] font-bold outline-none transition-all font-mono ${!value && value !== 0 ? 'bg-zinc-100 text-zinc-300 border-zinc-200' : 'bg-white border-zinc-200 focus:ring-1 focus:ring-zinc-950'}`}
           value={value ?? ""}
           onChange={(e) => onChange(field, e.target.value)}
         />
@@ -127,9 +127,9 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
       <div className="flex items-stretch min-h-[50px]">
         {/* Step Indicator Sidebar */}
         <div className="w-12 bg-zinc-50 border-r border-zinc-100 flex flex-col items-center justify-center gap-1 py-2">
-           <span className="text-[8px] font-black text-zinc-400 uppercase tracking-tighter italic">Step</span>
+           <span className="text-[8px] font-black text-zinc-400 uppercase tracking-tighter italic">Part</span>
            <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-500 ${step === 3 ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-zinc-950 text-white shadow-md'}`}>
-              {step}
+              {String(idx + 1).padStart(2, '0')}
            </div>
            {step === 3 && (
               <svg className="h-3 w-3 text-brand-primary animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
@@ -353,8 +353,9 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                     {SHAPES.map(s => (
                        <button 
                          key={s.id}
+                         disabled={!item.material}
                          onClick={() => onUpdate({ shape: s.id })}
-                         className={`flex flex-col items-center justify-center h-14 w-18 rounded-xl border-2 transition-all ${item.shape === s.id ? 'border-brand-primary bg-brand-primary text-white shadow-lg shadow-brand-primary/20 scale-105' : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-brand-primary/30 hover:bg-brand-primary/5'}`}
+                         className={`flex flex-col items-center justify-center h-14 w-18 rounded-xl border-2 transition-all ${item.shape === s.id ? 'border-brand-primary bg-brand-primary text-white shadow-lg shadow-brand-primary/20 scale-105' : (!item.material ? 'border-zinc-100 bg-zinc-50 text-zinc-200 cursor-not-allowed opacity-50' : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-brand-primary/30 hover:bg-brand-primary/5')}`}
                        >
                           <svg className="h-4 w-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.icon} /></svg>
                           <span className="text-[7.5px] font-black uppercase text-center leading-tight">{s.name}</span>
@@ -365,7 +366,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
            )}
            {/* Step 3: Dimensions & Allowance */}
            {item.shape && (
-              <div className="flex-1 flex gap-4 items-center animate-in fade-in slide-in-from-left-4">
+              <div className={`flex-1 flex gap-4 items-center animate-in fade-in slide-in-from-left-4 ${!item.material ? 'opacity-50 pointer-events-none' : ''}`}>
                  <div className="flex-1 flex flex-wrap gap-3 bg-zinc-50/50 p-3 rounded-xl border border-zinc-100">
                     <DimensionInput 
                       label="Length" 

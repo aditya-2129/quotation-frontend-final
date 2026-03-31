@@ -7,6 +7,7 @@ import { quotationService } from '@/services/quotations';
 import { customerService } from '@/services/customers';
 import { materialService } from '@/services/materials';
 import { laborRateService, bopRateService } from '@/services/rates';
+import { userService } from '@/services/users';
 import CustomerModal from '@/components/modals/CustomerModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import ValidationModal from '@/components/modals/ValidationModal';
@@ -17,6 +18,11 @@ import MachiningLogic from '@/components/quotations/MachiningLogic';
 import BroughtOutParts from '@/components/quotations/BroughtOutParts';
 import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
 import ValuationLedger from '@/components/quotations/ValuationLedger';
+import SuccessModal from '@/components/modals/SuccessModal';
+import RejectionModal from '@/components/modals/RejectionModal';
+import { useAuth } from '@/context/AuthContext';
+import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
+import { assetService } from '@/services/assets';
 const nextRevision = (rev) => {
   const match = (rev || "").match(/Rev (\d+)/i);
   const num = match ? parseInt(match[1]) + 1 : 1;
@@ -27,6 +33,7 @@ export default function EditQuotationPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id;
+  const { isAdmin } = useAuth();
   
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +41,12 @@ export default function EditQuotationPage() {
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [isUpdateConfirmOpen, setIsUpdateConfirmOpen] = useState(false);
   const [isDraftConfirmOpen, setIsDraftConfirmOpen] = useState(false);
+  const [isApproveConfirmOpen, setIsApproveConfirmOpen] = useState(false);
+  const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [lastQuotationRef, setLastQuotationRef] = useState('');
+  const [savedQuotationData, setSavedQuotationData] = useState(null);
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
@@ -54,6 +66,8 @@ export default function EditQuotationPage() {
     inquiry_date: new Date().toISOString().split('T')[0],
     delivery_date: '',
     status: 'Draft',
+    project_name: '',
+    rejection_reason: '',
     markup: 15,
     packaging_cost: 0,
     transportation_cost: 0,
@@ -69,7 +83,8 @@ export default function EditQuotationPage() {
     customers: [],
     materials: [],
     labor: [],
-    bop: []
+    bop: [],
+    users: []
   });
 
   useEffect(() => {
@@ -80,18 +95,20 @@ export default function EditQuotationPage() {
         setIsLoading(true);
         
         // 1. Fetch Master Data
-        const [c, m, l, b] = await Promise.all([
+        const [c, m, l, b, u] = await Promise.all([
           customerService.listCustomers(100),
           materialService.listMaterials(100),
           laborRateService.listRates(100),
-          bopRateService.listRates(100)
+          bopRateService.listRates(100),
+          userService.listUsers(100)
         ]);
         
         const libs = {
           customers: c.documents,
           materials: m.documents,
           labor: l.documents,
-          bop: b.documents
+          bop: b.documents,
+          users: u.documents
         };
         setLibraries(libs);
 
@@ -117,14 +134,19 @@ export default function EditQuotationPage() {
            part_image: null,
            material: null,
            material_weight: 0
-        }]).map(item => ({
-           ...item,
-           processes: item.processes || [],
-           treatments: item.treatments || [],
-           bought_out_items: item.bought_out_items || [],
-           design_files: item.design_files || [],
-           inspection: item.inspection || { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 }
-        }));
+        }]).map(item => {
+           if (item.part_image && item.part_image.localPreview) {
+              delete item.part_image.localPreview;
+           }
+           return {
+             ...item,
+             processes: item.processes || [],
+             treatments: item.treatments || [],
+             bought_out_items: item.bought_out_items || [],
+             design_files: item.design_files || [],
+             inspection: item.inspection || { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 }
+           };
+        });
         
         const mappedCustomer = libs.customers.find(cust => cust.$id === quote.customer_id) || null;
 
@@ -136,10 +158,16 @@ export default function EditQuotationPage() {
           contact_phone: quote.contact_phone || '',
           contact_email: quote.contact_email || '',
           quoting_engineer: quote.quoting_engineer || '',
+          quoting_engineer_details: libs.users.find(u => u.name === quote.quoting_engineer) ? {
+             name: libs.users.find(u => u.name === quote.quoting_engineer).name,
+             email: libs.users.find(u => u.name === quote.quoting_engineer).email,
+             mobile: libs.users.find(u => u.name === quote.quoting_engineer).mobile
+          } : null,
           revision_no: quote.status === 'Completed' ? nextRevision(quote.revision_no) : (quote.revision_no || 'Rev 1'),
           inquiry_date: quote.inquiry_date || '',
           delivery_date: quote.delivery_date || '',
           status: quote.status || 'Draft',
+          rejection_reason: quote.rejection_reason || '',
           markup: quote.markup || 15,
           packaging_cost: quote.packaging_cost || 0,
           transportation_cost: quote.transportation_cost || 0,
@@ -147,7 +175,15 @@ export default function EditQuotationPage() {
           assembly_cost: quote.assembly_cost || 0,
           production_mode: quote.production_mode || 'Batch',
           quantity: quote.quantity || 1,
-          project_image: quote.project_image ? JSON.parse(quote.project_image) : null,
+          project_image: quote.project_image ? (() => {
+             try {
+                const parsed = JSON.parse(quote.project_image);
+                delete parsed.localPreview; // Remove dead blob URLs from previous sessions
+                return parsed;
+             } catch (e) {
+                return null;
+             }
+          })() : null,
           items: sanitizedItems
         });
 
@@ -271,6 +307,7 @@ export default function EditQuotationPage() {
     // Validation Logic
     const missingFields = [];
     if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
+    if (!formData.project_name) missingFields.push("Project Name");
     if (!formData.contact_person) missingFields.push("Contact Person Name");
     if (!formData.contact_phone) missingFields.push("Contact Number");
     if (!formData.contact_email) missingFields.push("Contact Email");
@@ -294,8 +331,13 @@ export default function EditQuotationPage() {
           // Raw Material Validation
           if (!item.material) {
              missingFields.push(`${pName}: Material Selection`);
-          } else if (!item.material.base_rate || item.material.base_rate <= 0) {
-             missingFields.push(`${pName}: Material Base Rate`);
+          } else {
+             if (!item.material.base_rate || item.material.base_rate <= 0) {
+                missingFields.push(`${pName}: Material Base Rate`);
+             }
+             if (!item.material_weight || item.material_weight <= 0) {
+                missingFields.push(`${pName}: Raw Material Weight Calculation (check dimensions)`);
+             }
           }
 
           if (!item.shape) {
@@ -318,9 +360,11 @@ export default function EditQuotationPage() {
           // Machining Validation
           if (item.processes && item.processes.length > 0) {
              item.processes.forEach((proc, pIdx) => {
-                if (!proc.process_name) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Type`);
+                const pLabel = proc.process_name || `Operation ${pIdx + 1}`;
+                if (!proc.process_name) missingFields.push(`${pName}: ${pLabel} Type`);
+                if (!proc.cycle_time || proc.cycle_time <= 0) missingFields.push(`${pName}: ${pLabel} Cycle Time / Qty`);
                 const rate = proc.rate || proc.hourly_rate;
-                if (!rate || rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
+                if (!rate || rate <= 0) missingFields.push(`${pName}: ${pLabel} Machine Rate`);
              });
           }
 
@@ -353,7 +397,7 @@ export default function EditQuotationPage() {
   const commitUpdate = async () => {
     try {
        const { 
-          quotation_no, supplier_name, contact_person, contact_phone, 
+          quotation_no, supplier_name, project_name, contact_person, contact_phone, 
           contact_email, quoting_engineer, revision_no, inquiry_date, 
           delivery_date, status, markup, packaging_cost, 
           transportation_cost, design_cost, assembly_cost,
@@ -363,6 +407,7 @@ export default function EditQuotationPage() {
        const payload = {
           quotation_no,
           supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Unknown',
+          project_name: toTitleCase(project_name),
           contact_person: toTitleCase(contact_person),
           contact_phone,
           contact_email: (contact_email || "").toLowerCase().trim(),
@@ -385,20 +430,54 @@ export default function EditQuotationPage() {
              design_files: (i.design_files || []).filter(f => f.$id), // Persist only uploaded assets
              part_image: i.part_image?.$id ? i.part_image : null
           }))),
-          detailed_breakdown: JSON.stringify(totals),
+          detailed_breakdown: JSON.stringify({ 
+             ...totals, 
+             quoting_engineer_details: formData.quoting_engineer_details 
+          }),
           total_amount: totals.finalTotal,
           subtotal: totals.subtotal,
           customer_id: formData.customer?.$id || ''
        };
 
-       await quotationService.updateQuotation(id, payload);
-       router.push('/quotations');
-    } catch (e) {
-       console.error("Update Error:", e);
-       setErrorDetails({ open: true, message: e.message || "Unknown persistence error" });
-    } finally {
-       setIsUpdateConfirmOpen(false);
-    }
+         const response = await quotationService.updateQuotation(id, payload);
+         // Once successfully completed, it will remove any historic rejection reason
+         if (formData.rejection_reason) {
+            await quotationService.updateQuotation(id, { rejection_reason: null });
+         }
+        
+        // Set data for success modal and PDF download
+        setLastQuotationRef(payload.quotation_no);
+        setSavedQuotationData(response);
+        setIsSuccessOpen(true);
+     } catch (e) {
+        console.error("Update Error:", e);
+        setErrorDetails({ open: true, message: e.message || "Unknown persistence error" });
+     } finally {
+        setIsUpdateConfirmOpen(false);
+     }
+  };
+
+  const handleDownloadPDFResult = async () => {
+     if (!savedQuotationData) return;
+     
+     try {
+        let projectImageUrl = null;
+        if (savedQuotationData.project_image) {
+           try {
+              const parsedImage = JSON.parse(savedQuotationData.project_image);
+              if (parsedImage.$id) {
+                 projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
+              }
+           } catch (e) {
+              console.warn("Failed to parse project image for PDF");
+           }
+        }
+        
+        await generateQuotationPDF(savedQuotationData, projectImageUrl);
+     } catch (err) {
+        console.error("PDF download failed:", err);
+        setErrorDetails({ open: true, message: "Export encountered an error. Please try again from the registry." });
+     }
   };
 
   const handleUpdateDraft = () => {
@@ -407,18 +486,18 @@ export default function EditQuotationPage() {
 
   const commitDraftUpdate = async () => {
      try {
-        const { 
-           quotation_no, supplier_name, contact_person, contact_phone, 
-           contact_email, quoting_engineer, revision_no, inquiry_date, 
-           delivery_date, markup, packaging_cost, 
-           transportation_cost, design_cost, assembly_cost,
-           production_mode, quantity
-        } = formData;
+        const {            quotation_no, supplier_name, project_name, contact_person, contact_phone, 
+            contact_email, quoting_engineer, revision_no, inquiry_date, 
+            delivery_date, markup, packaging_cost, 
+            transportation_cost, design_cost, assembly_cost,
+            production_mode, quantity
+         } = formData;
 
-        const payload = {
-           quotation_no,
-           supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Anonymous Draft',
-           contact_person: toTitleCase(contact_person),
+         const payload = {
+            quotation_no,
+            supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Anonymous Draft',
+            project_name: toTitleCase(project_name),
+            contact_person: toTitleCase(contact_person),
            contact_phone,
            contact_email: (contact_email || "").toLowerCase().trim(),
            quoting_engineer: toTitleCase(quoting_engineer),
@@ -464,6 +543,32 @@ export default function EditQuotationPage() {
      router.push('/quotations');
   };
 
+  const commitApprove = async () => {
+     try {
+        await quotationService.updateQuotation(id, { status: 'Approved' });
+        router.push('/quotations');
+     } catch (e) {
+        setErrorDetails({ open: true, message: e.message || "Failed to finalize approval." });
+     } finally {
+        setIsApproveConfirmOpen(false);
+     }
+  };
+
+  const confirmReject = async (reason) => {
+     try {
+        await quotationService.updateQuotation(id, { status: 'Rejected', rejection_reason: reason });
+        router.push('/quotations');
+     } catch (e) {
+        setErrorDetails({ open: true, message: e.message || "Failed to reject quotation." });
+     } finally {
+        setIsRejectionModalOpen(false);
+     }
+  };
+
+  const isApproved = formData.status === 'Approved';
+  const isReadOnly = isApproved && !isAdmin;
+  const showEditButtons = isAdmin || !isApproved;
+
   if (!mounted || isLoading) {
      return (
         <DashboardLayout title="Edit Quotation">
@@ -484,27 +589,79 @@ export default function EditQuotationPage() {
               onClick={handleCancel}
               className="px-4 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer pointer-events-auto"
             >
-              Cancel
+              {isReadOnly ? 'Back' : 'Cancel'}
             </button>
-            <div className="h-6 w-px bg-zinc-200" />
-            <button 
-              type="button"
-              onClick={handleUpdateDraft}
-              className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 rounded-xl transition-all cursor-pointer pointer-events-auto"
-            >
-              Save Draft
-            </button>
-            <button 
-              type="button"
-              onClick={handleUpdate}
-              className="px-8 h-10 flex items-center justify-center rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-brand-primary/25 hover:scale-[1.02] transition-all active:scale-95 border border-brand-primary/20 cursor-pointer pointer-events-auto"
-            >
-              Save Changes
-            </button>
+            {isAdmin && formData.status !== 'Approved' && formData.status !== 'Rejected' && (
+                <>
+                   <div className="h-6 w-px bg-zinc-200" />
+                   <button 
+                       type="button"
+                       onClick={() => setIsRejectionModalOpen(true)}
+                       className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-red-600 border border-red-200 hover:bg-red-50 rounded-xl transition-all cursor-pointer pointer-events-auto bg-white/50"
+                     >
+                       Reject
+                   </button>
+                   <button 
+                       type="button"
+                       onClick={() => setIsApproveConfirmOpen(true)}
+                       className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-emerald-600 border border-emerald-200 hover:bg-emerald-50 rounded-xl transition-all cursor-pointer pointer-events-auto bg-white/50"
+                     >
+                       Approve
+                   </button>
+                </>
+            )}
+            
+            {showEditButtons && (
+                <>
+                   <div className="h-6 w-px bg-zinc-200" />
+                   <button 
+                     type="button"
+                     onClick={handleUpdateDraft}
+                     className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 rounded-xl transition-all cursor-pointer pointer-events-auto"
+                   >
+                     Save Draft
+                   </button>
+                   <button 
+                     type="button"
+                     onClick={handleUpdate}
+                     className="px-8 h-10 flex items-center justify-center rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-brand-primary/25 hover:scale-[1.02] transition-all active:scale-95 border border-brand-primary/20 cursor-pointer pointer-events-auto"
+                   >
+                     Update & Submit
+                   </button>
+                </>
+            )}
         </div>
       }
     >
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      {formData.status === 'Rejected' && formData.rejection_reason && (
+          <div className="mb-6 animate-in fade-in slide-in-from-top-2 p-5 bg-red-50/80 border border-red-200/60 rounded-2xl flex items-start gap-4 shadow-sm shadow-red-100">
+             <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+             </div>
+             <div>
+                <h4 className="text-sm font-bold text-red-900 leading-tight">Quotation Rejected</h4>
+                <p className="text-[13px] font-medium text-red-700 mt-1">{formData.rejection_reason}</p>
+             </div>
+          </div>
+      )}
+
+      {isReadOnly && (
+          <div className="mb-6 animate-in fade-in p-5 bg-emerald-50/80 border border-emerald-200/60 rounded-2xl flex items-center gap-4 shadow-sm shadow-emerald-100">
+             <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+             </div>
+             <div>
+                <h4 className="text-sm font-bold text-emerald-900 leading-tight">Document Secured</h4>
+                <p className="text-[13px] font-medium text-emerald-700 mt-1">This quotation is formally approved and locked from further edits by standard engineers.</p>
+             </div>
+          </div>
+      )}
+
+      <div className={`grid grid-cols-1 xl:grid-cols-4 gap-6 transition-all duration-300 ${isReadOnly ? 'pointer-events-none opacity-[0.85] saturate-[0.85]' : ''}`}>
          <div className="xl:col-span-3 space-y-3">
             <ScopeAndIdentity 
                formData={formData}
@@ -625,6 +782,24 @@ export default function EditQuotationPage() {
      />
 
      <ConfirmationModal 
+        isOpen={isApproveConfirmOpen}
+        onClose={() => setIsApproveConfirmOpen(false)}
+        onConfirm={commitApprove}
+        title="Approve Quotation?"
+        message="This action will finalize the quotation and lock it from further modifications by standard engineers."
+        confirmText="APPROVE QUOTATION"
+        cancelText="WAIT"
+        type="brand"
+     />
+
+     <RejectionModal 
+        isOpen={isRejectionModalOpen}
+        onClose={() => setIsRejectionModalOpen(false)}
+        onConfirm={confirmReject}
+        quotationNo={formData.quotation_no}
+     />
+
+     <ConfirmationModal 
         isOpen={isUpdateConfirmOpen}
         onClose={() => setIsUpdateConfirmOpen(false)}
         onConfirm={commitUpdate}
@@ -650,6 +825,16 @@ export default function EditQuotationPage() {
         confirmText="CLOSE"
         type="danger"
      />
+
+      <SuccessModal 
+         isOpen={isSuccessOpen}
+         onClose={() => router.push('/quotations')}
+         onDownload={handleDownloadPDFResult}
+         onViewList={() => router.push('/quotations')}
+         quotationNo={lastQuotationRef}
+         title="Sent for Review"
+         message="The quotation has been updated and re-submitted for administrative review. You can now download the updated PDF document."
+      />
     </DashboardLayout>
   );
 }

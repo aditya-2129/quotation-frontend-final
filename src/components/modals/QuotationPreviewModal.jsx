@@ -39,7 +39,12 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
   if (quote) {
     try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
     try { breakdown = JSON.parse(quote.detailed_breakdown || '{}'); } catch (e) { breakdown = {}; }
-    try { projectImage = quote.project_image ? JSON.parse(quote.project_image) : null; } catch (e) { projectImage = null; }
+    try { 
+       projectImage = quote.project_image ? JSON.parse(quote.project_image) : null; 
+       if (projectImage && projectImage.localPreview) delete projectImage.localPreview;
+    } catch (e) { 
+       projectImage = null; 
+    }
   }
 
   const InfoField = ({ label, value, mono = false, highlight = false }) => (
@@ -99,11 +104,13 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
           </div>
           <div className="flex items-center gap-3">
             <span className={`inline-flex rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest ${
-              quote?.status === 'Completed' ? 'bg-brand-primary/15 text-brand-primary border border-brand-primary/30' :
+              quote?.status === 'Approved' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+              quote?.status === 'Completed' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+              quote?.status === 'Rejected' ? 'bg-red-500/15 text-red-500 border border-red-500/30' :
               quote?.status === 'Pending' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
               'bg-zinc-800 text-zinc-400 border border-zinc-700'
             }`}>
-              {quote?.status || 'Draft'}
+              {quote?.status === 'Completed' ? 'Review' : (quote?.status || 'Draft')}
             </span>
             <button 
               onClick={onClose}
@@ -148,12 +155,13 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                   <div className="grid grid-cols-4 gap-x-8 gap-y-5">
                     <InfoField label="Quotation ID" value={quote.quotation_no} mono highlight />
                     <InfoField label="Organization / Customer" value={quote.supplier_name} />
+                    <InfoField label="Project Name" value={quote.project_name} highlight />
                     <InfoField label="Contact Person" value={quote.contact_person} />
                     <InfoField label="Contact Number" value={quote.contact_phone} mono />
                     <InfoField label="Contact Email" value={quote.contact_email} />
-                    <InfoField label="Estimating Engineer" value={quote.quoting_engineer} />
+                    <InfoField label="Project Incharge" value={quote.quoting_engineer} />
                     <InfoField label="Quotation Version" value={quote.revision_no} mono />
-                    <InfoField label="Status" value={quote.status} highlight />
+                    <InfoField label="Status" value={quote.status === 'Completed' ? 'Review' : quote.status || 'Draft'} highlight />
                     <InfoField label="Date Received" value={quote.inquiry_date ? new Date(quote.inquiry_date).toLocaleDateString('en-GB') : ''} />
                     <InfoField label="Expected Delivery" value={quote.delivery_date ? new Date(quote.delivery_date).toLocaleDateString('en-GB') : ''} />
                     <InfoField label="Total Quantity" value={quote.quantity} mono />

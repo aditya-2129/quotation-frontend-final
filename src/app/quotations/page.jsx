@@ -9,8 +9,10 @@ import ActionButtons from '@/components/shared/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import QuotationPreviewModal from '@/components/modals/QuotationPreviewModal';
 import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
+import { useAuth } from '@/context/AuthContext';
 
 export default function QuotationsPage() {
+  const { isAdmin } = useAuth();
   const [quotations, setQuotations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -113,12 +115,13 @@ export default function QuotationsPage() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Quote Vector / ID</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Client Name</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Batch Date</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Status</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Valuation Total</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Registry Ops</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest">Quote Vector / ID</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest">Client Name</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest">Project Incharge</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-center">Batch Date</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-center">Status</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-right">Valuation Total</th>
+                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-right">Registry Ops</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
@@ -127,6 +130,7 @@ export default function QuotationsPage() {
                     <tr key={i} className="animate-pulse">
                        <td className="px-6 py-4"><div className="h-4 w-28 bg-zinc-100 rounded" /></td>
                        <td className="px-6 py-4"><div className="h-4 w-32 bg-zinc-100 rounded" /></td>
+                       <td className="px-6 py-4"><div className="h-4 w-24 bg-zinc-100 rounded" /></td>
                        <td className="px-6 py-4 text-center"><div className="h-4 w-16 bg-zinc-100 rounded mx-auto" /></td>
                        <td className="px-6 py-4 text-center"><div className="h-6 w-16 bg-zinc-100 rounded-full mx-auto" /></td>
                        <td className="px-6 py-4 text-right"><div className="h-4 w-20 bg-zinc-100 rounded ml-auto" /></td>
@@ -135,7 +139,7 @@ export default function QuotationsPage() {
                   ))
                 ) : quotations.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-20 text-center text-zinc-400 italic">
+                    <td colSpan="7" className="px-6 py-20 text-center text-zinc-400 italic">
                        No valuations found in central repository.
                     </td>
                   </tr>
@@ -151,17 +155,21 @@ export default function QuotationsPage() {
                       <td className="px-6 py-4 text-zinc-600 font-medium">
                          <span className="truncate max-w-[150px] inline-block">{row.supplier_name || 'N/A'}</span>
                       </td>
+                      <td className="px-6 py-4 text-zinc-600 font-medium">
+                         <span className="truncate max-w-[120px] inline-block text-[13px]">{row.quoting_engineer || 'Unassigned'}</span>
+                      </td>
                       <td className="px-6 py-4 text-center text-[10px] font-bold font-mono text-zinc-500">
                          {new Date(row.$createdAt).toLocaleDateString('en-GB')}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest leading-none ${
-                          row.status === 'Completed' ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20' : 
+                          row.status === 'Completed' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 
                           row.status === 'Pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                          row.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                          row.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                          row.status === 'Rejected' ? 'bg-red-50 text-red-600 border border-red-200' :
                           'bg-zinc-50 text-zinc-500 border border-zinc-200'
                         }`}>
-                          {row.status || 'Draft'}
+                          {row.status === 'Completed' ? 'Review' : (row.status || 'Draft')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-mono font-bold text-brand-primary">
@@ -171,9 +179,11 @@ export default function QuotationsPage() {
                          <ActionButtons 
                             onPreview={() => setPreviewId(row.$id)}
                             onDownload={() => handleDownload(row.$id)}
-                            downloadDisabled={row.status !== 'Completed'}
+                            downloadDisabled={!(row.status === 'Completed' || row.status === 'Approved')}
                             onEdit={() => router.push(`/quotations/edit/${row.$id}`)} 
+                            editDisabled={row.status === 'Approved' && !isAdmin}
                             onDelete={() => handleDelete(row)} 
+                            deleteDisabled={row.status === 'Approved' && !isAdmin}
                           />
                        </td>
                     </tr>

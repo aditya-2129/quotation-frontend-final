@@ -32,8 +32,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isHovered, setIsHovered, isAdmin
           </div>
         )}
         {!showFull && (
-          <div className="mx-auto h-10 w-10 overflow-hidden rounded-lg bg-white flex items-center justify-center p-1 border border-zinc-200 shadow-sm">
-            <img src="/KE_Logo.png" alt="Logo" className="h-full w-full object-contain" />
+          <div className="mx-auto h-12 w-12 overflow-hidden flex items-center justify-center">
+            <img src="/KE_Logo_Minimised_Sidebar.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
         )}
         <button 

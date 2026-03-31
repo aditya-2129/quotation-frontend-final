@@ -112,7 +112,8 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
           <input 
             type="number" 
             step="0.01"
-            className="h-8 w-full rounded-lg bg-zinc-50 border border-zinc-200 text-center text-[11px] outline-none focus:bg-white font-mono font-black"
+            disabled={!item.item_name || item.item_name === 'CUSTOM'}
+            className={`h-8 w-full rounded-lg border text-center text-[11px] outline-none font-mono font-black transition-all ${(!item.item_name || item.item_name === 'CUSTOM') ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 border-zinc-200 focus:bg-white focus:ring-2 focus:ring-brand-primary/20'}`}
             value={item.qty ?? 1}
             onChange={(e) => onUpdate({ qty: parseFloat(e.target.value) || 0 })}
           />
@@ -129,7 +130,8 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
             <input 
               type="number" 
               step="0.01"
-              className="h-8 w-full pl-5 pr-2 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-[11px] outline-none focus:bg-white font-mono font-black"
+              disabled={!item.item_name || item.item_name === 'CUSTOM'}
+              className={`h-8 w-full pl-5 pr-2 rounded-lg border text-center text-[11px] outline-none font-mono font-black transition-all ${(!item.item_name || item.item_name === 'CUSTOM') ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 border-zinc-200 focus:bg-white focus:ring-2 focus:ring-brand-primary/20'}`}
               value={item.rate ?? 0}
               onChange={(e) => onUpdate({ rate: parseFloat(e.target.value) || 0 })}
             />

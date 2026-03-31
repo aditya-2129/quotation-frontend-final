@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { assetService } from '@/services/assets';
 
 const ScopeAndIdentity = ({ 
@@ -19,6 +19,15 @@ const ScopeAndIdentity = ({
   panelIndex = 1
 }) => {
   const [isUploadingImg, setIsUploadingImg] = useState(false);
+  const [userSearch, setUserSearch] = useState(formData.quoting_engineer || "");
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  // Sync search input with form data (critical for edit mode)
+  useEffect(() => {
+    if (formData.quoting_engineer && userSearch !== formData.quoting_engineer) {
+      setUserSearch(formData.quoting_engineer);
+    }
+  }, [formData.quoting_engineer]);
 
   return (
      <section className={`bg-white rounded-xl border transition-all duration-300 ${activePhase === 'scope' ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200' : 'border-zinc-200'}`}>
@@ -234,20 +243,119 @@ const ScopeAndIdentity = ({
              </div>
 
              {/* Row 3: Admin & Logistics */}
-             <div>
+             <div className="relative z-40">
                 <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Project Incharge
+                   <span className="text-red-500 font-black">*</span>
+                </label>
+                <div className="relative group">
+                   <input 
+                      type="text"
+                      required
+                      placeholder="Search or Type Incharge..."
+                      className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
+                      value={userSearch || ""}
+                      onFocus={() => setIsUserDropdownOpen(true)}
+                      onChange={(e) => {
+                         const val = e.target.value;
+                         setUserSearch(val);
+                         setFormData(prev => ({ ...prev, quoting_engineer: val }));
+                         setIsUserDropdownOpen(true);
+                      }}
+                   />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                       {userSearch && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                               setUserSearch("");
+                               setFormData(prev => ({ ...prev, quoting_engineer: "" }));
+                               setIsUserDropdownOpen(false);
+                            }}
+                            className="text-zinc-300 hover:text-zinc-500 transition-colors"
+                          >
+                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                       )}
+                       <div className="text-zinc-400 group-focus-within:text-brand-primary transition-colors pointer-events-none">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                       </div>
+                    </div>
+                    {isUserDropdownOpen && (
+                       <>
+                          <div className="fixed inset-0 z-[60]" onClick={() => setIsUserDropdownOpen(false)} />
+                          <div className="absolute left-0 right-0 top-full mt-1.5 z-[70] bg-white border border-zinc-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/5">
+                             <div className="sticky top-0 bg-zinc-50 p-2 px-3 border-b border-zinc-100 text-[9px] font-black text-zinc-400 uppercase tracking-[0.15em] flex justify-between items-center z-10">
+                                <span>Authorized Personnel</span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-brand-primary animae-pulse" />
+                             </div>
+                             <div className="divide-y divide-zinc-50">
+                                {(() => {
+                                   const s = (userSearch || "").toLowerCase();
+                                   const filtered = (libraries.users || []).filter(u => 
+                                      (u.name || "").toLowerCase().includes(s) || 
+                                      (u.role || "").toLowerCase().includes(s)
+                                   );
+
+                                   if (filtered.length === 0) {
+                                      return (
+                                         <div className="p-4 text-center bg-zinc-50/20 text-[10px] font-bold text-zinc-400 uppercase tracking-widest italic">
+                                            No users found
+                                         </div>
+                                      );
+                                   }
+
+                                   return filtered.map(u => (
+                                      <button 
+                                        key={u.$id}
+                                        type="button"
+                                        onClick={() => {
+                                           setFormData(prev => ({ 
+                                              ...prev, 
+                                              quoting_engineer: u.name,
+                                              quoting_engineer_details: {
+                                                 name: u.name,
+                                                 email: u.email,
+                                                 mobile: u.mobile
+                                              }
+                                           }));
+                                           setUserSearch(u.name);
+                                           setIsUserDropdownOpen(false);
+                                        }}
+                                        className="w-full text-left px-4 py-3 hover:bg-zinc-50 transition-all group/user relative overflow-hidden"
+                                      >
+                                         <div className="flex items-center gap-3 relative z-10">
+                                            <span className="h-7 w-7 rounded-lg bg-zinc-100 flex items-center justify-center text-[10px] text-zinc-500 font-black group-hover/user:bg-brand-primary group-hover/user:text-zinc-950 transition-colors shadow-sm">{u.name.charAt(0)}</span>
+                                            <div className="flex flex-col">
+                                               <span className="text-[12.5px] font-bold text-zinc-900 group-hover/user:text-black transition-colors">{u.name}</span>
+                                               <span className="text-[9px] font-medium text-zinc-400 uppercase tracking-tighter">{u.role}</span>
+                                            </div>
+                                         </div>
+                                      </button>
+                                   ));
+                                })()}
+                             </div>
+                          </div>
+                       </>
+                    )}
+                </div>
+             </div>
+
+             <div>
+                <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
+                   Project Name
                    <span className="text-red-500 font-black">*</span>
                 </label>
                 <input 
                    type="text"
                    required
                    className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm"
-                   placeholder="HOD / Lead Name"
-                   value={formData.quoting_engineer || ""}
-                   onChange={(e) => setFormData({...formData, quoting_engineer: e.target.value})}
+                   placeholder="e.g. Main Conveyor Assembly"
+                   value={formData.project_name || ""}
+                   onChange={(e) => setFormData({...formData, project_name: e.target.value})}
                 />
              </div>
+
              <div>
                 <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1">
                    Quantity to Make (Total)
@@ -267,15 +375,20 @@ const ScopeAndIdentity = ({
                    Type of Project
                    <span className="text-red-500 font-black">*</span>
                 </label>
-                <select 
-                  className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm appearance-none cursor-pointer"
-                  value={formData.production_mode || "Batch"}
-                  onChange={(e) => setFormData({...formData, production_mode: e.target.value})}
-                >
-                   <option value="Prototype">Prototype</option>
-                   <option value="Batch">Batch / Lot</option>
-                   <option value="Production">Mass Production</option>
-                </select>
+                <div className="relative">
+                   <select 
+                     className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black text-[12.5px] shadow-sm appearance-none cursor-pointer"
+                     value={formData.production_mode || "Batch"}
+                     onChange={(e) => setFormData({...formData, production_mode: e.target.value})}
+                   >
+                      <option value="Prototype">Prototype</option>
+                      <option value="Batch">Batch / Lot</option>
+                      <option value="Production">Mass Production</option>
+                   </select>
+                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                   </div>
+                </div>
              </div>
 
              {/* Row 4: Project Snapshot / Model Image */}

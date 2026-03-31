@@ -1,9 +1,12 @@
 import React from 'react';
 import { assetService } from '@/services/assets';
 
+const INTEGER_UNITS = ['per_hole', 'per_rim', 'per_tap', 'pcs'];
+
 const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove, item }) => {
   const rate = process.rate || process.hourly_rate || 0;
   const unit = process.unit || 'hr';
+  const isIntegerUnit = INTEGER_UNITS.includes(unit);
   
   let batchValue = 0;
   if (unit === 'hr') {
@@ -25,9 +28,23 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
             className="h-8 flex-1 px-4 rounded-lg bg-zinc-50 border border-zinc-200 text-xs font-black outline-none focus:bg-white focus:ring-1 focus:ring-brand-primary transition-all"
             value={process.process_name || ""}
             onChange={(e) => {
-              const ref = libraries.labor.find(l => l.process_name === e.target.value);
+              const val = e.target.value;
+              if (!val) {
+                // Reset all numerical data if process is deselected
+                onUpdate({ 
+                  process_name: "", 
+                  rate: 0,
+                  unit: 'hr',
+                  cycle_time: 0,
+                  setup_time: 0,
+                  dim1: 0,
+                  dim2: 0
+                });
+                return;
+              }
+              const ref = libraries.labor.find(l => l.process_name === val);
               onUpdate({ 
-                process_name: e.target.value, 
+                process_name: val, 
                 rate: ref?.rate || ref?.hourly_rate || 0,
                 unit: ref?.unit || 'hr'
               });
@@ -38,7 +55,8 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
           </select>
           {(isWireCut || isGrinding) && (
             <button 
-              title="Sync dimensions from Raw Material"
+              title={!process.process_name ? "Select machine first" : "Sync dimensions from Raw Material"}
+              disabled={!process.process_name}
               onClick={() => {
                 const shape = item?.shape;
                 const d = item?.dimensions || {};
@@ -70,7 +88,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
                   cycle_time: area 
                 });
               }}
-              className="h-8 w-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-colors"
+              className={`h-8 w-8 flex items-center justify-center rounded-lg border transition-colors ${!process.process_name ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'}`}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             </button>
@@ -83,12 +101,14 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
             <div className="relative group/dim1">
               <input 
                 type="number" 
-                step="0.01"
+                step="1"
+                min="0"
+                disabled={!process.process_name}
                 placeholder={isWireCut ? "P" : (item?.shape === 'round' ? "D" : "L")}
-                className="h-8 w-20 px-3 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-[11px] outline-none focus:bg-white font-mono font-black placeholder:text-zinc-300"
+                className={`h-8 w-20 px-3 rounded-lg border text-center text-[11px] outline-none font-mono font-black placeholder:text-zinc-300 transition-all ${!process.process_name ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 border-zinc-200 focus:bg-white focus:ring-1 focus:ring-brand-primary'}`}
                 value={process.dim1 ?? ""}
                 onChange={(e) => {
-                  const d1 = parseFloat(e.target.value) || 0;
+                  const d1 = Math.max(0, Math.round(parseFloat(e.target.value) || 0));
                   const d2 = parseFloat(process.dim2) || 0;
                   const area = isWireCut ? (d1 * d2) / 100 : (item?.shape === 'round' ? (Math.PI * d1 * d2) / 100 : (d1 * d2) / 100);
                   onUpdate({ dim1: d1, cycle_time: area });
@@ -102,12 +122,14 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
             <div className="relative group/dim2">
               <input 
                 type="number" 
-                step="0.01"
+                step="1"
+                min="0"
+                disabled={!process.process_name}
                 placeholder={isWireCut ? "H" : (item?.shape === 'round' ? "L" : "W")}
-                className="h-8 w-20 px-3 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-[11px] outline-none focus:bg-white font-mono font-black placeholder:text-zinc-300"
+                className={`h-8 w-20 px-3 rounded-lg border text-center text-[11px] outline-none font-mono font-black placeholder:text-zinc-300 transition-all ${!process.process_name ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 border-zinc-200 focus:bg-white focus:ring-1 focus:ring-brand-primary'}`}
                 value={process.dim2 ?? ""}
                 onChange={(e) => {
-                  const d2 = parseFloat(e.target.value) || 0;
+                  const d2 = Math.max(0, Math.round(parseFloat(e.target.value) || 0));
                   const d1 = parseFloat(process.dim1) || 0;
                   const area = isWireCut ? (d1 * d2) / 100 : (item?.shape === 'round' ? (Math.PI * d1 * d2) / 100 : (d1 * d2) / 100);
                   onUpdate({ dim2: d2, cycle_time: area });
@@ -122,10 +144,15 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
           <div className="relative group/input">
             <input 
               type="number" 
-              step="0.01"
-              className="h-8 w-24 px-3 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-xs outline-none focus:bg-white font-mono font-black"
+              step="1"
+              min="0"
+              disabled={!process.process_name}
+              className={`h-8 w-24 px-3 rounded-lg border text-center text-xs outline-none font-mono font-black transition-all ${!process.process_name ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 border-zinc-200 focus:bg-white focus:ring-1 focus:ring-brand-primary'}`}
               value={process.cycle_time ?? 0}
-              onChange={(e) => onUpdate({ cycle_time: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value) || 0;
+                onUpdate({ cycle_time: Math.max(0, Math.round(val)) });
+              }}
             />
             <span className="absolute -bottom-4 left-0 right-0 text-[7px] text-zinc-400 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap">
               {unit === 'hr' ? 'MINS/PART' : unit.toUpperCase()}
@@ -138,10 +165,12 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
           <div className="relative group/setup">
             <input 
               type="number" 
-              step="0.01"
-              className="h-8 w-22 px-3 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-xs outline-none focus:bg-white font-mono font-black"
+              step="1"
+              min="0"
+              disabled={!process.process_name}
+              className={`h-8 w-22 px-3 rounded-lg border text-center text-xs outline-none font-mono font-black transition-all ${!process.process_name ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 border-zinc-200 focus:bg-white focus:ring-1 focus:ring-brand-primary'}`}
               value={process.setup_time ?? 0}
-              onChange={(e) => onUpdate({ setup_time: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => onUpdate({ setup_time: Math.max(0, Math.round(parseFloat(e.target.value) || 0)) })}
             />
             <span className="absolute -bottom-4 left-0 right-0 text-[7px] text-zinc-400 font-bold uppercase tracking-tighter">SETUP MINS</span>
           </div>
@@ -154,10 +183,12 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-bold">₹</span>
           <input 
             type="number" 
-            step="0.01"
-            className="h-8 w-26 pl-5 pr-2 rounded-lg bg-zinc-50 border border-zinc-200 text-center text-xs outline-none focus:bg-white font-mono font-black"
+            step="1"
+            min="0"
+            disabled={!process.process_name}
+            className={`h-8 w-26 pl-5 pr-2 rounded-lg border text-center text-xs outline-none font-mono font-black transition-all ${!process.process_name ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed' : 'bg-zinc-50 border-zinc-200 focus:bg-white focus:ring-1 focus:ring-brand-primary'}`}
             value={rate}
-            onChange={(e) => onUpdate({ rate: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => onUpdate({ rate: Math.max(0, Math.round(parseFloat(e.target.value) || 0)) })}
           />
           <span className="absolute -bottom-4 right-0 text-[7px] text-zinc-400 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap">
             RATE / {unit.toUpperCase()}
@@ -335,14 +366,24 @@ const MachiningLogic = ({
              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded border italic animate-in slide-in-from-right-2 duration-300 ${
                formData.items.every(item => 
                  (item.processes || []).length > 0 && 
-                 item.processes.every(p => p.process_name && p.process_name.trim() !== '')
+                 item.processes.every(p => 
+                    p.process_name && 
+                    p.process_name.trim() !== '' && 
+                    (parseFloat(p.cycle_time) > 0) &&
+                    (parseFloat(p.rate || p.hourly_rate) > 0)
+                 )
                )
                  ? 'text-emerald-600 bg-emerald-50 border-emerald-100'
                  : 'text-brand-primary bg-brand-primary/10 border-brand-primary/10'
              }`}>
                 {formData.items.every(item => 
                    (item.processes || []).length > 0 && 
-                   item.processes.every(p => p.process_name && p.process_name.trim() !== '')
+                   item.processes.every(p => 
+                      p.process_name && 
+                      p.process_name.trim() !== '' && 
+                      (parseFloat(p.cycle_time) > 0) &&
+                      (parseFloat(p.rate || p.hourly_rate) > 0)
+                   )
                 )
                   ? 'MACHINING CONFIG COMPLETE'
                   : 'MACHINING STEPS PENDING'}

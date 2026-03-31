@@ -7,6 +7,7 @@ import { quotationService } from '@/services/quotations';
 import { customerService } from '@/services/customers';
 import { materialService } from '@/services/materials';
 import { laborRateService, bopRateService } from '@/services/rates';
+import { userService } from '@/services/users';
 import { useRouter } from 'next/navigation';
 import CustomerModal from '@/components/modals/CustomerModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
@@ -18,6 +19,9 @@ import MachiningLogic from '@/components/quotations/MachiningLogic';
 import BroughtOutParts from '@/components/quotations/BroughtOutParts';
 import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
 import ValuationLedger from '@/components/quotations/ValuationLedger';
+import SuccessModal from '@/components/modals/SuccessModal';
+import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
+import { assetService } from '@/services/assets';
 
 export default function NewQuotationPage() {
   const router = useRouter();
@@ -28,6 +32,9 @@ export default function NewQuotationPage() {
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
   const [isDraftConfirmOpen, setIsDraftConfirmOpen] = useState(false);
   const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [lastQuotationRef, setLastQuotationRef] = useState('');
+  const [savedQuotationData, setSavedQuotationData] = useState(null);
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
@@ -35,6 +42,7 @@ export default function NewQuotationPage() {
     quotation_no: '', 
     supplier_name: '', 
     customer: null, // Project-wide customer
+    project_name: '',
     contact_person: '',
     contact_phone: '',
     contact_email: '',
@@ -72,7 +80,8 @@ export default function NewQuotationPage() {
     customers: [],
     materials: [],
     labor: [],
-    bop: []
+    bop: [],
+    users: []
   });
 
   const [activePhase, setActivePhase] = useState('scope'); // scope, material, machining
@@ -147,17 +156,19 @@ export default function NewQuotationPage() {
     const fetchMasterData = async () => {
       try {
         setIsLoading(true);
-        const [c, m, l, b] = await Promise.all([
+        const [c, m, l, b, u] = await Promise.all([
           customerService.listCustomers(100),
           materialService.listMaterials(100),
           laborRateService.listRates(100),
-          bopRateService.listRates(100)
+          bopRateService.listRates(100),
+          userService.listUsers(100)
         ]);
         setLibraries({
           customers: c.documents,
           materials: m.documents,
           labor: l.documents,
-          bop: b.documents
+          bop: b.documents,
+          users: u.documents
         });
       } catch (err) {
         console.error("Master data fetch failed:", err);
@@ -270,6 +281,7 @@ export default function NewQuotationPage() {
       // Validation Logic
       const missingFields = [];
       if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
+     if (!formData.project_name) missingFields.push("Project Name");
      if (!formData.contact_person) missingFields.push("Contact Person Name");
      if (!formData.contact_phone) missingFields.push("Contact Number");
      if (!formData.contact_email) missingFields.push("Contact Email");
@@ -293,8 +305,13 @@ export default function NewQuotationPage() {
             // Raw Material Validation
             if (!item.material) {
                missingFields.push(`${pName}: Material Selection`);
-            } else if (!item.material.base_rate || item.material.base_rate <= 0) {
-               missingFields.push(`${pName}: Material Base Rate`);
+            } else {
+               if (!item.material.base_rate || item.material.base_rate <= 0) {
+                  missingFields.push(`${pName}: Material Base Rate`);
+               }
+               if (!item.material_weight || item.material_weight <= 0) {
+                  missingFields.push(`${pName}: Raw Material Weight Calculation (check dimensions)`);
+               }
             }
 
             if (!item.shape) {
@@ -317,9 +334,11 @@ export default function NewQuotationPage() {
             // Machining Validation
             if (item.processes && item.processes.length > 0) {
                item.processes.forEach((proc, pIdx) => {
-                  if (!proc.process_name) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Type`);
-                  const rate = proc.rate; // Use the new 'rate' field
-                  if (!rate || rate <= 0) missingFields.push(`${pName}: Machining Operation ${pIdx + 1} Machine Rate`);
+                  const pLabel = proc.process_name || `Operation ${pIdx + 1}`;
+                  if (!proc.process_name) missingFields.push(`${pName}: ${pLabel} Type`);
+                  if (!proc.cycle_time || proc.cycle_time <= 0) missingFields.push(`${pName}: ${pLabel} Cycle Time / Qty`);
+                  const rate = proc.rate;
+                  if (!rate || rate <= 0) missingFields.push(`${pName}: ${pLabel} Machine Rate`);
                });
             }
 
@@ -353,7 +372,7 @@ export default function NewQuotationPage() {
       try {
          // Destructure only valid schema fields from formData
          const { 
-            quotation_no, supplier_name, contact_person, contact_phone, 
+            quotation_no, supplier_name, project_name, contact_person, contact_phone, 
             contact_email, quoting_engineer, revision_no, inquiry_date, 
             delivery_date, status, markup, packaging_cost, 
             transportation_cost, design_cost, assembly_cost,
@@ -363,6 +382,7 @@ export default function NewQuotationPage() {
          const payload = {
             quotation_no,
             supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Unknown',
+            project_name: toTitleCase(project_name),
             contact_person: toTitleCase(contact_person),
             contact_phone,
             contact_email: (contact_email || "").toLowerCase().trim(),
@@ -386,20 +406,51 @@ export default function NewQuotationPage() {
                design_files: (i.design_files || []).filter(f => f.$id), // Persist only uploaded assets
                part_image: i.part_image?.$id ? i.part_image : null
             }))),
-            detailed_breakdown: JSON.stringify(totals),
+            detailed_breakdown: JSON.stringify({ 
+               ...totals, 
+               quoting_engineer_details: formData.quoting_engineer_details 
+            }),
             total_amount: totals.finalTotal,
             subtotal: totals.subtotal,
             customer_id: formData.customer?.$id || ''
          };
 
-         await quotationService.createQuotation(payload);
+
+         const response = await quotationService.createQuotation(payload);
          localStorage.removeItem('draft_formData');
-         router.push('/quotations');
+         
+         // Set data for success modal and PDF download
+         setLastQuotationRef(payload.quotation_no);
+         setSavedQuotationData(response);
+         setIsSuccessOpen(true);
       } catch (e) {
          console.error("Save Error:", e);
          setErrorDetails({ open: true, message: e.message || "Unknown persistence error" });
       } finally {
          setIsSaveConfirmOpen(false);
+      }
+   };
+
+   const handleDownloadPDFResult = async () => {
+      if (!savedQuotationData) return;
+      
+      try {
+         let projectImageUrl = null;
+         if (savedQuotationData.project_image) {
+            try {
+               const parsedImage = JSON.parse(savedQuotationData.project_image);
+               if (parsedImage.$id) {
+                  projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
+               }
+            } catch (e) {
+               console.warn("Failed to parse project image for PDF");
+            }
+         }
+         
+         await generateQuotationPDF(savedQuotationData, projectImageUrl);
+      } catch (err) {
+         console.error("PDF download failed:", err);
+         setErrorDetails({ open: true, message: "Export encountered an error. Please try again from the registry." });
       }
    };
 
@@ -415,7 +466,7 @@ export default function NewQuotationPage() {
    const commitDraft = async () => {
       try {
          const { 
-            quotation_no, supplier_name, contact_person, contact_phone, 
+            quotation_no, supplier_name, project_name, contact_person, contact_phone, 
             contact_email, quoting_engineer, revision_no, inquiry_date, 
             delivery_date, markup, packaging_cost, 
             transportation_cost, design_cost, assembly_cost,
@@ -425,6 +476,7 @@ export default function NewQuotationPage() {
          const payload = {
             quotation_no,
             supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Anonymous Draft',
+            project_name: toTitleCase(project_name),
             contact_person: toTitleCase(contact_person),
             contact_phone,
             contact_email: (contact_email || "").toLowerCase().trim(),
@@ -498,7 +550,7 @@ export default function NewQuotationPage() {
               onClick={handleSave}
               className="px-8 h-10 flex items-center justify-center rounded-xl bg-brand-primary text-zinc-950 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-brand-primary/25 hover:scale-[1.02] transition-all active:scale-95 border border-brand-primary/20 cursor-pointer pointer-events-auto"
             >
-              Save & Finish
+              Save & Submit
             </button>
         </div>
       }
@@ -650,6 +702,16 @@ export default function NewQuotationPage() {
         confirmText="CLOSE"
         type="danger"
      />
+
+      <SuccessModal 
+        isOpen={isSuccessOpen}
+        onClose={() => router.push('/quotations')}
+        onDownload={handleDownloadPDFResult}
+        onViewList={() => router.push('/quotations')}
+        quotationNo={lastQuotationRef}
+        title="Sent for Review"
+        message="Your quotation has been successfully submitted and is now awaiting administrative approval. You can now download the PDF document."
+      />
     </DashboardLayout>
   );
 }

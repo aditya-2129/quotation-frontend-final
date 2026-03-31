@@ -164,6 +164,12 @@ export async function generateQuotationPDF(quote, projectImageUrl = null) {
       cY += 4.5;
       doc.text(`Phone: ${quote.contact_phone || '-'}`, margin + 10, cY);
       cY += 4.5;
+      if (quote.project_name) {
+         doc.setFont('helvetica', 'bold');
+         doc.text(`Project: ${quote.project_name}`, margin + 10, cY);
+         doc.setFont('helvetica', 'normal');
+         cY += 4.5;
+      }
       doc.text(`GSTIN/UIN : ___________`, margin + 10, cY);
       
       // Right: Quote Info
@@ -367,12 +373,19 @@ export async function generateQuotationPDF(quote, projectImageUrl = null) {
   
   // Final Footer Contact Row
   y += 12;
+  
+  // Use dynamically selected Project Incharge details if available, else fallback to company defaults
+  const incharge = breakdown.quoting_engineer_details || {};
+  const inchargeName = incharge.name || quote.quoting_engineer || 'ESTIMATING ENGR';
+  const inchargePhone = incharge.mobile || COMPANY.PHONE;
+  const inchargeEmail = incharge.email || COMPANY.EMAIL;
+
   autoTable(doc, {
       startY: y,
       margin: { left: margin, right: margin },
       head: [['CONTACT PERSON NAME', 'CALL', 'EMAIL', 'DELIVERY']],
       body: [
-          [quote.quoting_engineer || 'ESTIMATING ENGR', COMPANY.PHONE, COMPANY.EMAIL, 'AS PER PO']
+          [inchargeName, inchargePhone, inchargeEmail, 'AS PER PO']
       ],
       theme: 'grid',
       styles: { fontSize: 8, textColor: [0,0,0], cellPadding: 2, halign: 'center', lineColor: [0,0,0], lineWidth: 0.4 },
@@ -385,7 +398,8 @@ export async function generateQuotationPDF(quote, projectImageUrl = null) {
   
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text("QUOTATION – MATERIAL AND PROCESS DETAILS", pageWidth / 2, y, { align: 'center' });
+  const title = `QUOTATION – MATERIAL AND PROCESS DETAILS${quote.project_name ? ` (${quote.project_name})` : ''}`;
+  doc.text(title, pageWidth / 2, y, { align: 'center' });
   y += 3;
   
   doc.setLineWidth(0.4);

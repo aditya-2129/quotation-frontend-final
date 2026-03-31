@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attempts, setAttempts] = useState(0);
 
   // If already logged in, redirect
   useEffect(() => {
@@ -36,9 +37,19 @@ export default function LoginPage() {
       const isAdminUser = profile?.role === 'admin';
       router.replace(isAdminUser ? '/' : '/quotations');
     } catch (err) {
-      console.error("Login failed:", err);
+      // Keep logs clean for common password typos
+      if (err?.code !== 401 && err?.type !== 'user_invalid_credentials') {
+        console.error("Login failed:", err);
+      }
+
       if (err?.code === 401 || err?.type === 'user_invalid_credentials') {
-        setError('Invalid email or password. Please try again.');
+        setAttempts(prev => prev + 1);
+        
+        if (attempts >= 2) {
+          setError('Incorrect details. Use "Forgot Password?" below if you cannot remember it.');
+        } else {
+          setError('Invalid email or password. Please try again.');
+        }
       } else if (err?.code === 429) {
         setError('Too many attempts. Please wait a moment and try again.');
       } else {
@@ -160,6 +171,14 @@ export default function LoginPage() {
                     </svg>
                   )}
                 </button>
+              </div>
+              <div className="mt-2 flex justify-end">
+                <a 
+                  href="/forgot-password" 
+                  className="text-[11px] font-bold uppercase tracking-widest text-brand-primary hover:text-brand-primary/80 transition-colors"
+                >
+                  Forgot Password?
+                </a>
               </div>
             </div>
 

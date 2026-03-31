@@ -12,7 +12,8 @@ export const dashboardService = {
             const [
                 allQuotations,
                 draftQuotations,
-                pendingQuotations,
+                approvedQuotations,
+                rejectedQuotations,
                 completedQuotations,
                 customersCount,
                 materialsCount,
@@ -28,9 +29,14 @@ export const dashboardService = {
                     Query.equal("status", "Draft"),
                     Query.limit(1),
                 ]),
-                // Pending count
+                // Approved count
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
-                    Query.equal("status", "Pending"),
+                    Query.equal("status", "Approved"),
+                    Query.limit(1),
+                ]),
+                // Rejected count
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
+                    Query.equal("status", "Rejected"),
                     Query.limit(1),
                 ]),
                 // Completed count
@@ -83,7 +89,8 @@ export const dashboardService = {
                 totalRevenue,
                 totalQuotations: allQuotations.total,
                 draftCount: draftQuotations.total,
-                pendingCount: pendingQuotations.total,
+                approvedCount: approvedQuotations.total,
+                rejectedCount: rejectedQuotations.total,
                 completedCount: completedQuotations.total,
                 totalCustomers: customersCount.total,
                 totalMaterials: materialsCount.total,

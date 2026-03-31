@@ -25,8 +25,9 @@ function formatCurrency(num) {
 }
 
 const statusColor = (s) => {
-  if (s === "Completed") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (s === "Pending") return "bg-amber-50 text-amber-700 border-amber-200";
+  if (s === "Approved") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (s === "Completed") return "bg-amber-50 text-amber-700 border-amber-200";
+  if (s === "Rejected") return "bg-red-50 text-red-700 border-red-200";
   return "bg-zinc-100 text-zinc-600 border-zinc-200";
 };
 
@@ -74,44 +75,22 @@ function KPICard({ label, value, trend, trendLabel, icon, loading, accent }) {
   );
 }
 
-// ── Quick Action Card ────────────────────────────────────
-function QuickActionCard({ label, description, icon, href, color }) {
-  const router = useRouter();
-  return (
-    <button
-      onClick={() => href.startsWith("/quotations/new") ? (window.location.href = href) : router.push(href)}
-      className={`group flex items-center gap-4 rounded-2xl border border-zinc-200/80 bg-white p-5 text-left transition-all duration-300 hover:border-brand-primary/40 hover:shadow-[0_8px_30px_rgba(94,192,194,0.10)] active:scale-[0.98]`}
-    >
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color} transition-transform duration-300 group-hover:scale-110`}>
-        <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-        </svg>
-      </div>
-      <div className="min-w-0">
-        <p className="text-sm font-bold text-zinc-900 group-hover:text-brand-primary transition-colors">{label}</p>
-        <p className="mt-0.5 text-xs text-zinc-400 truncate">{description}</p>
-      </div>
-      <svg className="ml-auto h-4 w-4 shrink-0 text-zinc-300 transition-all duration-300 group-hover:text-brand-primary group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
-  );
-}
-
 // ── Status Bar ───────────────────────────────────────────
-function StatusDistributionBar({ draft, pending, completed, total, loading }) {
+function StatusDistributionBar({ draft, completed, approved, rejected, total, loading }) {
   if (loading) return <Pulse className="h-4 w-full rounded-full" />;
   if (total === 0) return <div className="h-4 w-full rounded-full bg-zinc-100" />;
 
   const draftPct = (draft / total) * 100;
-  const pendingPct = (pending / total) * 100;
   const completedPct = (completed / total) * 100;
+  const approvedPct = (approved / total) * 100;
+  const rejectedPct = (rejected / total) * 100;
 
   return (
     <div className="flex h-3 w-full overflow-hidden rounded-full bg-zinc-100">
       <div className="bg-zinc-400 transition-all duration-700 ease-out" style={{ width: `${draftPct}%` }} title={`Draft: ${draft}`} />
-      <div className="bg-amber-400 transition-all duration-700 ease-out" style={{ width: `${pendingPct}%` }} title={`Pending: ${pending}`} />
-      <div className="bg-brand-primary transition-all duration-700 ease-out" style={{ width: `${completedPct}%` }} title={`Completed: ${completed}`} />
+      <div className="bg-amber-400 transition-all duration-700 ease-out" style={{ width: `${completedPct}%` }} title={`Review: ${completed}`} />
+      <div className="bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${approvedPct}%` }} title={`Approved: ${approved}`} />
+      <div className="bg-red-500 transition-all duration-700 ease-out" style={{ width: `${rejectedPct}%` }} title={`Rejected: ${rejected}`} />
     </div>
   );
 }
@@ -175,7 +154,7 @@ export default function Home() {
         </button>
       }
     >
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col h-[calc(100vh-128px)] gap-6 overflow-hidden">
         {/* ── Error Banner ──────────────────────────────── */}
         {error && (
           <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600">
@@ -187,7 +166,7 @@ export default function Home() {
         )}
 
         {/* ── Page Header ──────────────────────────────── */}
-        <div>
+        <div className="shrink-0">
           <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
             Industrial Precision <span className="text-brand-primary">Dashboard</span>
           </h1>
@@ -197,7 +176,7 @@ export default function Home() {
         </div>
 
         {/* ── KPI Cards ────────────────────────────────── */}
-        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4 shrink-0">
           <KPICard
             label="Total Revenue"
             value={stats ? formatCurrency(stats.totalRevenue) : "—"}
@@ -232,10 +211,10 @@ export default function Home() {
         </section>
 
         {/* ── Main Content Grid ────────────────────────── */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 flex-1 min-h-0">
           {/* ── Recent Quotations Table (spans 2 cols) ── */}
-          <section className="xl:col-span-2 rounded-2xl border border-zinc-200/80 bg-white shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
+          <section className="xl:col-span-2 rounded-2xl border border-zinc-200/80 bg-white shadow-sm flex flex-col min-h-0 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 shrink-0">
               <div>
                 <h2 className="text-[15px] font-bold text-zinc-900">Recent Quotations</h2>
                 <p className="mt-0.5 text-[11px] text-zinc-400">Latest project valuations from the registry</p>
@@ -247,7 +226,7 @@ export default function Home() {
                 View All →
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-y-auto flex-1">
               <table className="w-full text-left text-sm">
                 <thead className="bg-zinc-50/80">
                   <tr>
@@ -299,7 +278,7 @@ export default function Home() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${statusColor(row.status)}`}>
-                            {row.status || "Draft"}
+                            {row.status === "Completed" ? "Review" : (row.status || "Draft")}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right font-mono font-bold text-zinc-900">
@@ -314,35 +293,41 @@ export default function Home() {
           </section>
 
           {/* ── Right Sidebar Column ─────────────────── */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 overflow-y-auto pr-2 pb-2">
             {/* Status Distribution */}
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+            <div className="shrink-0 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
               <h3 className="text-[13px] font-bold text-zinc-900">Status Distribution</h3>
               <p className="mt-0.5 text-[11px] text-zinc-400 mb-5">Breakdown across all quotations</p>
 
               <StatusDistributionBar
                 draft={stats?.draftCount || 0}
-                pending={stats?.pendingCount || 0}
                 completed={stats?.completedCount || 0}
+                approved={stats?.approvedCount || 0}
+                rejected={stats?.rejectedCount || 0}
                 total={stats?.totalQuotations || 0}
                 loading={loading}
               />
 
-              <div className="mt-4 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-zinc-400" />
-                  <span className="text-zinc-500 font-medium">Draft</span>
-                  <span className="font-bold text-zinc-900">{loading ? "—" : stats?.draftCount}</span>
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[11px]">
+                <div className="flex items-center gap-1.5 min-w-[60px]">
+                  <span className="h-2 w-2 rounded-full bg-zinc-400" />
+                  <span className="text-zinc-500 font-medium tracking-wide">Draft</span>
+                  <span className="font-bold text-zinc-900 ml-auto">{loading ? "—" : stats?.draftCount}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  <span className="text-zinc-500 font-medium">Pending</span>
-                  <span className="font-bold text-zinc-900">{loading ? "—" : stats?.pendingCount}</span>
+                <div className="flex items-center gap-1.5 min-w-[70px]">
+                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                  <span className="text-zinc-500 font-medium tracking-wide">Review</span>
+                  <span className="font-bold text-zinc-900 ml-auto">{loading ? "—" : stats?.completedCount}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-brand-primary" />
-                  <span className="text-zinc-500 font-medium">Completed</span>
-                  <span className="font-bold text-zinc-900">{loading ? "—" : stats?.completedCount}</span>
+                <div className="flex items-center gap-1.5 min-w-[70px]">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-zinc-500 font-medium tracking-wide">Approved</span>
+                  <span className="font-bold text-zinc-900 ml-auto">{loading ? "—" : stats?.approvedCount}</span>
+                </div>
+                <div className="flex items-center gap-1.5 min-w-[70px]">
+                  <span className="h-2 w-2 rounded-full bg-red-500" />
+                  <span className="text-zinc-500 font-medium tracking-wide">Rejected</span>
+                  <span className="font-bold text-zinc-900 ml-auto">{loading ? "—" : stats?.rejectedCount}</span>
                 </div>
               </div>
 
@@ -353,98 +338,16 @@ export default function Home() {
                   <p className="mt-1 text-xl font-extrabold text-zinc-900">{loading ? "—" : stats?.totalCustomers}</p>
                 </div>
                 <div className="rounded-xl bg-zinc-50 p-3 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Completed</p>
-                  <p className="mt-1 text-xl font-extrabold text-brand-primary">{loading ? "—" : stats?.completedCount}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Approved</p>
+                  <p className="mt-1 text-xl font-extrabold text-emerald-600">{loading ? "—" : stats?.approvedCount}</p>
                 </div>
               </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
-              <h3 className="text-[13px] font-bold text-zinc-900">Recent Activity</h3>
-              <p className="mt-0.5 text-[11px] text-zinc-400 mb-5">Latest actions across the workspace</p>
 
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-start gap-3 animate-pulse">
-                      <Pulse className="h-8 w-8 shrink-0 rounded-full" />
-                      <div className="flex-1 space-y-1.5">
-                        <Pulse className="h-3 w-3/4" />
-                        <Pulse className="h-3 w-1/2" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : recent.length === 0 ? (
-                <p className="text-xs text-zinc-400 italic">No recent activity</p>
-              ) : (
-                <div className="space-y-0">
-                  {recent.slice(0, 5).map((q, i) => (
-                    <div key={q.$id} className={`flex items-start gap-3 py-3 ${i < recent.slice(0, 5).length - 1 ? "border-b border-zinc-100" : ""}`}>
-                      <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                        q.status === "Completed" ? "bg-emerald-50 text-emerald-600" :
-                        q.status === "Pending" ? "bg-amber-50 text-amber-600" :
-                        "bg-zinc-100 text-zinc-500"
-                      }`}>
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                            d={q.status === "Completed" ? "M5 13l4 4L19 7" : q.status === "Pending" ? "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" : "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"}
-                          />
-                        </svg>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-zinc-800 truncate">
-                          {q.quotation_no || q.$id.substring(0, 8)}
-                          <span className="font-normal text-zinc-400"> · {q.supplier_name || "No customer"}</span>
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-zinc-400">{timeAgo(q.$createdAt)}</p>
-                      </div>
-                      <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${statusColor(q.status)}`}>
-                        {q.status || "Draft"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
-        {/* ── Quick Actions Grid ──────────────────────── */}
-        <section>
-          <h2 className="text-[13px] font-bold text-zinc-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <QuickActionCard
-              label="New Quotation"
-              description="Start a new project valuation"
-              icon="M12 4v16m8-8H4"
-              href="/quotations/new"
-              color="bg-brand-primary"
-            />
-            <QuickActionCard
-              label="All Quotations"
-              description="View the full project registry"
-              icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              href="/quotations"
-              color="bg-zinc-800"
-            />
-            <QuickActionCard
-              label="Manage Customers"
-              description="Update client directory"
-              icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-              href="/customers"
-              color="bg-indigo-500"
-            />
-            <QuickActionCard
-              label="Materials Library"
-              description="Browse indexed raw materials"
-              icon="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-              href="/materials"
-              color="bg-emerald-600"
-            />
-          </div>
-        </section>
       </div>
     </DashboardLayout>
   );
