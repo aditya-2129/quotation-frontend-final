@@ -96,6 +96,15 @@
                     "max": 1000000000
                 },
                 {
+                    "key": "unit_price",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": 0,
+                    "min": 0,
+                    "max": 1000000000
+                },
+                {
                     "key": "items",
                     "type": "string",
                     "required": false,

@@ -214,62 +214,63 @@ export default function NewQuotationPage() {
   }
 
   const calculateTotals = () => {
-    let materialTotal = 0;
-    let laborTotal = 0;
-    let bopTotal = 0;
-    let treatmentTotal = 0;
+    let materialUnit = 0;
+    let laborUnit = 0;
+    let bopUnit = 0;
+    let treatmentUnit = 0;
 
-    let projectEngineeringTotal = parseFloat(formData.design_cost || 0) + parseFloat(formData.assembly_cost || 0); 
+    const projectQty = Number(formData.quantity || 1);
+    
+    // Project-wide extras (Consultation, Logistics, One-time fees) - Added ONCE at the end
+    const totalEngineeringProject = Number(formData.design_cost || 0) + Number(formData.assembly_cost || 0); 
+    const totalLogisticsProject = Number(formData.packaging_cost || 0) + Number(formData.transportation_cost || 0);
 
     formData.items.forEach(item => {
-      const quantity = parseFloat(item.qty || 1);
+      const partQtyPerModel = parseFloat(item.qty || 1);
       
-      // Material Component (per unit * quantity)
+      // 1. Material Unit Cost (Weight * Rate * Qty in Model)
       if (item.material && item.material_weight > 0) {
-          materialTotal += (item.material_weight * item.material.base_rate) * quantity;
+          materialUnit += (item.material_weight * item.material.base_rate) * partQtyPerModel;
       }
 
-      // Labor Component (Total Batch Cost = (Setup Time + (Cycle Time * Quantity)) * Rate / 60)
-      laborTotal += item.processes.reduce((acc, p) => {
+      // 2. Labor Unit Cost (For 1 Complete Model)
+      laborUnit += item.processes.reduce((acc, p) => {
           const rate = parseFloat(p.rate || p.hourly_rate || 0);
           const unit = p.unit || 'hr';
           if (unit === 'hr') {
-            const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * quantity);
-            return acc + (rate * (totalMinutes / 60));
+            // Labor Unit = (Setup/ProjectQty + CycleTime * partQtyPerModel) * rate / 60
+            const totalMinutesForUnit = (parseFloat(p.setup_time || 0) / projectQty) + (parseFloat(p.cycle_time || 0) * partQtyPerModel);
+            return acc + (rate * (totalMinutesForUnit / 60));
           }
-          // Non-hourly: qty * val_per_part * rate
-          return acc + (quantity * parseFloat(p.cycle_time || 0) * rate);
+          // Non-hourly: partQtyPerModel * val_per_part * rate
+          return acc + (partQtyPerModel * parseFloat(p.cycle_time || 0) * rate);
       }, 0);
 
+      // 3. Treatments Unit Cost
+      treatmentUnit += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? partQtyPerModel : (1/projectQty))), 0);
 
-
-      // External Treatments (Batch-level costs)
-      treatmentTotal += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? quantity : 1)), 0);
-
-
-
-      // Design and Assembly are now handled project-wide outside the items loop
-
-      // 3. Brought Out Parts (BOP)
-      bopTotal += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * quantity), 0);
+      // 4. BOP Unit Cost
+      bopUnit += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * partQtyPerModel), 0);
     });
     
-    // 3. Project Level Adjustments
-    const commercialTotal = parseFloat(formData.packaging_cost || 0) + parseFloat(formData.transportation_cost || 0);
-
-    const subtotal = materialTotal + laborTotal + bopTotal + treatmentTotal + projectEngineeringTotal + commercialTotal;
-    const finalTotal = subtotal * (1 + (formData.markup / 100));
+    const unitSubtotal = Number(materialUnit) + Number(laborUnit) + Number(bopUnit) + Number(treatmentUnit);
+    const unitFinal = Math.round((unitSubtotal * (1 + (Number(formData.markup || 0) / 100))) * 100) / 100;
+    
+    // Grand Total logic: (Unit Price * Qty) + Project Extras (Flat/Once)
+    const totalExtras = Number(totalEngineeringProject) + Number(totalLogisticsProject);
+    const grandTotal = Number((unitFinal * projectQty) + totalExtras);
     
     return { 
-      subtotal, 
-      finalTotal, 
-      materialCost: materialTotal, 
-      laborCost: laborTotal, 
-      bopCost: bopTotal, 
-      treatmentCost: treatmentTotal, 
-
-      engineeringCost: projectEngineeringTotal,
-      commercialCost: commercialTotal
+      unitSubtotal,
+      unitFinal,
+      grandTotal,
+      materialCost: materialUnit, 
+      laborCost: laborUnit, 
+      bopCost: bopUnit, 
+      treatmentCost: treatmentUnit, 
+      engineeringCost: totalEngineeringProject, 
+      commercialCost: totalLogisticsProject,
+      totalExtras
     };
   };
 
@@ -410,8 +411,9 @@ export default function NewQuotationPage() {
                ...totals, 
                quoting_engineer_details: formData.quoting_engineer_details 
             }),
-            total_amount: totals.finalTotal,
-            subtotal: totals.subtotal,
+            total_amount: totals.grandTotal,
+            unit_price: totals.unitFinal,
+            subtotal: totals.unitSubtotal,
             customer_id: formData.customer?.$id || ''
          };
 
@@ -423,10 +425,16 @@ export default function NewQuotationPage() {
          setLastQuotationRef(payload.quotation_no);
          setSavedQuotationData(response);
          setIsSuccessOpen(true);
-      } catch (e) {
-         console.error("Save Error:", e);
-         setErrorDetails({ open: true, message: e.message || "Unknown persistence error" });
-      } finally {
+       } catch (e) {
+          console.error("Save Error:", e);
+          const isConflict = e.code === 409 || (e.message && e.message.includes("already exists"));
+          setErrorDetails({ 
+             open: true, 
+             message: isConflict 
+                ? `Quotation ID "${payload.quotation_no}" already exists in the central registry. Please refresh the page or manually increment the ID.` 
+                : (e.message || "Unknown persistence error") 
+          });
+       } finally {
          setIsSaveConfirmOpen(false);
       }
    };
@@ -499,18 +507,25 @@ export default function NewQuotationPage() {
                part_image: i.part_image?.$id ? i.part_image : null
             }))),
             detailed_breakdown: JSON.stringify(totals),
-            total_amount: totals.finalTotal,
-            subtotal: totals.subtotal,
+            total_amount: totals.grandTotal,
+            unit_price: totals.unitFinal,
+            subtotal: totals.unitSubtotal,
             customer_id: formData.customer?.$id || ''
          };
 
          await quotationService.createQuotation(payload);
          localStorage.removeItem('draft_formData');
          router.push('/quotations');
-      } catch (e) {
-         console.error("Draft Save Error:", e);
-         setErrorDetails({ open: true, message: e.message || "Failed to commit draft to registry." });
-      } finally {
+       } catch (e) {
+          console.error("Draft Error:", e);
+          const isConflict = e.code === 409 || (e.message && e.message.includes("already exists"));
+          setErrorDetails({ 
+             open: true, 
+             message: isConflict 
+                ? `Quotation ID "${payload.quotation_no}" already exists. This usually happens if a draft was already saved with this ID. Try editing the existing record instead.` 
+                : (e.message || "Failed to sync local draft with repository.") 
+          });
+       } finally {
          setIsDraftConfirmOpen(false);
       }
    };
@@ -644,6 +659,7 @@ export default function NewQuotationPage() {
               setFormData(prev => ({ 
                  ...prev, 
                  supplier_name: newCustomer.name,
+                 customer: newCustomer,
                  contact_person: newCustomer.contact_person || prev.contact_person,
                  contact_phone: newCustomer.phone || prev.contact_phone,
                  contact_email: newCustomer.email || prev.contact_email

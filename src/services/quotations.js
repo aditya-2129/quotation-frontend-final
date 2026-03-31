@@ -12,7 +12,7 @@ export const quotationService = {
                 COLLECTIONS.QUOTATIONS,
                 [
                     Query.notEqual('status', 'Cancelled'),
-                    Query.orderDesc("$createdAt"),
+                    Query.orderDesc("quotation_no"),
                     Query.limit(limit),
                     Query.offset(offset)
                 ]
@@ -30,7 +30,7 @@ export const quotationService = {
                 DATABASE_ID,
                 COLLECTIONS.QUOTATIONS,
                 [
-                    Query.orderDesc("$createdAt"),
+                    Query.orderDesc("quotation_no"),
                     Query.limit(1)
                 ]
             );
@@ -54,7 +54,7 @@ export const quotationService = {
             const response = await databases.createDocument(
                 DATABASE_ID,
                 COLLECTIONS.QUOTATIONS,
-                ID.unique(),
+                data.quotation_no || ID.unique(),
                 data
             );
             return response;

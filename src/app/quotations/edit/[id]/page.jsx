@@ -175,6 +175,7 @@ export default function EditQuotationPage() {
           assembly_cost: quote.assembly_cost || 0,
           production_mode: quote.production_mode || 'Batch',
           quantity: quote.quantity || 1,
+          project_name: quote.project_name || '',
           project_image: quote.project_image ? (() => {
              try {
                 const parsed = JSON.parse(quote.project_image);
@@ -249,54 +250,61 @@ export default function EditQuotationPage() {
   };
 
   const calculateTotals = () => {
-    let materialTotal = 0;
-    let laborTotal = 0;
-    let bopTotal = 0;
-    let treatmentTotal = 0;
+    let materialUnit = 0;
+    let laborUnit = 0;
+    let bopUnit = 0;
+    let treatmentUnit = 0;
 
-    let projectEngineeringTotal = parseFloat(formData.design_cost || 0) + parseFloat(formData.assembly_cost || 0); 
+    const projectQty = Number(formData.quantity || 1);
+    
+    // Project-wide extras (Consultation, Logistics, One-time fees) - Added ONCE at the end
+    const totalEngineeringProject = Number(formData.design_cost || 0) + Number(formData.assembly_cost || 0); 
+    const totalLogisticsProject = Number(formData.packaging_cost || 0) + Number(formData.transportation_cost || 0);
 
     formData.items.forEach(item => {
-      const quantity = parseFloat(item.qty || 1);
+      const partQtyPerModel = parseFloat(item.qty || 1);
       
+      // 1. Material Unit Cost
       if (item.material && item.material_weight > 0) {
-          materialTotal += (item.material_weight * (item.material.base_rate || 0)) * quantity;
+          materialUnit += (item.material_weight * (item.material.base_rate || 0)) * partQtyPerModel;
       }
 
-      laborTotal += (item.processes || []).reduce((acc, p) => {
+      // 2. Labor Unit Cost
+      laborUnit += (item.processes || []).reduce((acc, p) => {
           const rate = parseFloat(p.rate || p.hourly_rate || 0);
           const unit = p.unit || 'hr';
           if (unit === 'hr') {
-            const totalMinutes = parseFloat(p.setup_time || 0) + (parseFloat(p.cycle_time || 0) * quantity);
-            return acc + (rate * (totalMinutes / 60));
+            const totalMinutesForUnit = (parseFloat(p.setup_time || 0) / projectQty) + (parseFloat(p.cycle_time || 0) * partQtyPerModel);
+            return acc + (rate * (totalMinutesForUnit / 60));
           }
-          // Non-hourly: qty * val_per_part * rate
-          return acc + (quantity * parseFloat(p.cycle_time || 0) * rate);
+          return acc + (partQtyPerModel * parseFloat(p.cycle_time || 0) * rate);
       }, 0);
 
+      // 3. Treatments Unit Cost
+      treatmentUnit += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? partQtyPerModel : (1/projectQty))), 0);
 
-
-      treatmentTotal += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? quantity : 1)), 0);
-
-
-
-      bopTotal += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * quantity), 0);
+      // 4. BOP Unit Cost
+      bopUnit += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * partQtyPerModel), 0);
     });
     
-    const commercialTotal = parseFloat(formData.packaging_cost || 0) + parseFloat(formData.transportation_cost || 0);
-    const subtotal = materialTotal + laborTotal + bopTotal + treatmentTotal + projectEngineeringTotal + commercialTotal;
-    const finalTotal = subtotal * (1 + (formData.markup / 100));
+    const unitSubtotal = Number(materialUnit) + Number(laborUnit) + Number(bopUnit) + Number(treatmentUnit);
+    const unitFinal = Math.round((unitSubtotal * (1 + (Number(formData.markup || 0) / 100))) * 100) / 100;
+    
+    // Grand Total logic: (Unit Price * Qty) + Project Extras (Flat/Once)
+    const totalExtras = Number(totalEngineeringProject) + Number(totalLogisticsProject);
+    const grandTotal = Number((unitFinal * projectQty) + totalExtras);
     
     return { 
-      subtotal, 
-      finalTotal, 
-      materialCost: materialTotal, 
-      laborCost: laborTotal, 
-      bopCost: bopTotal, 
-      treatmentCost: treatmentTotal, 
-
-      engineeringCost: projectEngineeringTotal,
-      commercialCost: commercialTotal
+      unitSubtotal,
+      unitFinal,
+      grandTotal, 
+      materialCost: materialUnit, 
+      laborCost: laborUnit, 
+      bopCost: bopUnit, 
+      treatmentCost: treatmentUnit, 
+      engineeringCost: totalEngineeringProject, 
+      commercialCost: totalLogisticsProject,
+      totalExtras
     };
   };
 
@@ -434,8 +442,9 @@ export default function EditQuotationPage() {
              ...totals, 
              quoting_engineer_details: formData.quoting_engineer_details 
           }),
-          total_amount: totals.finalTotal,
-          subtotal: totals.subtotal,
+          total_amount: totals.grandTotal,
+          unit_price: totals.unitFinal,
+          subtotal: totals.unitSubtotal,
           customer_id: formData.customer?.$id || ''
        };
 
@@ -519,8 +528,9 @@ export default function EditQuotationPage() {
               part_image: i.part_image?.$id ? i.part_image : null
            }))),
            detailed_breakdown: JSON.stringify(totals),
-           total_amount: totals.finalTotal,
-           subtotal: totals.subtotal,
+           total_amount: totals.grandTotal,
+           unit_price: totals.unitFinal,
+           subtotal: totals.unitSubtotal,
            customer_id: formData.customer?.$id || ''
         };
 

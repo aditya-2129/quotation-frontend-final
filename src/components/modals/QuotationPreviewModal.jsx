@@ -69,9 +69,9 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
   );
 
   const LedgerRow = ({ label, value, isBold = false }) => (
-    <div className={`flex justify-between items-center py-1.5 ${isBold ? 'border-t border-zinc-700 pt-3 mt-2' : ''}`}>
-      <span className={`text-[11px] ${isBold ? 'font-black text-zinc-300 uppercase tracking-wider' : 'font-bold text-zinc-500'}`}>{label}</span>
-      <span className={`font-mono ${isBold ? 'text-lg font-black text-white' : 'text-[13px] font-bold text-zinc-400'}`}>
+    <div className={`flex justify-between items-center py-1 ${isBold ? 'border-t border-zinc-800 pt-2 mt-1.5' : ''}`}>
+      <span className={`text-[10.5px] ${isBold ? 'font-black text-zinc-300 uppercase tracking-wider' : 'font-bold text-zinc-500'}`}>{label}</span>
+      <span className={`font-mono ${isBold ? 'text-base font-black text-white' : 'text-[12px] font-bold text-zinc-400'}`}>
         ₹{parseFloat(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
       </span>
     </div>
@@ -144,7 +144,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
           ) : (
             <>
               {/* Main Content Area */}
-              <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-zinc-50/50">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 space-y-6 bg-zinc-50/50">
                 
                 {/* Section 1: Project Information */}
                 <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
@@ -337,77 +337,126 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
               </div>
 
               {/* Right Sidebar: Pricing Breakdown */}
-              <div className="w-[340px] shrink-0 bg-zinc-950 border-l border-zinc-800 p-5 flex flex-col">
+              <div className="w-[310px] shrink-0 bg-zinc-950 border-l border-zinc-800 p-5 flex flex-col overflow-hidden">
                 <div className="relative">
-                  <div className="absolute -top-2 -right-2 opacity-5 grayscale brightness-150 pointer-events-none rotate-12">
-                    <img src="/KE_Logo.png" alt="" className="h-32 w-32 object-contain" />
+                  <div className="absolute -top-10 -right-10 opacity-[0.02] grayscale brightness-200 pointer-events-none rotate-12">
+                    <img src="/KE_Logo.png" alt="" className="h-48 w-48 object-contain" />
                   </div>
                   
-                  <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 relative z-10">
+                  <h3 className="relative z-10 text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-brand-primary shadow-[0_0_8px_rgba(94,192,194,0.8)]" />
-                    Price Breakdown
+                    Valuation Ledger
                   </h3>
 
                   <div className="space-y-2 relative z-10">
                     <LedgerRow label="Material" value={breakdown.materialCost} />
                     <LedgerRow label="Manufacturing" value={(parseFloat(breakdown.laborCost || 0)) + (parseFloat(breakdown.treatmentCost || 0))} />
                     <LedgerRow label="Purchased Items" value={breakdown.bopCost} />
-                    <LedgerRow label="Design & Assembly" value={breakdown.engineeringCost} />
-                    <LedgerRow label="Packing & Shipping" value={breakdown.commercialCost} />
                     
-                    <div className="h-px bg-zinc-800 my-3" />
+                    <div className="h-px bg-zinc-800/40 my-3" />
                     
-                    <LedgerRow label="Manufacturing Cost" value={breakdown.subtotal || quote.subtotal} isBold />
+                    <div className="flex justify-between items-center group/subtotal">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-0.5">Unit Manufacturing</span>
+                        <span className="text-[8px] text-zinc-600 font-bold uppercase italic tracking-wider">Direct Factory Cost</span>
+                      </div>
+                      <span className="text-lg font-mono font-black tracking-tighter italic text-white">₹{parseFloat(breakdown.subtotal || quote.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-zinc-800 relative z-10">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Profit Margin</span>
-                      <span className="text-white font-mono font-black text-[15px]">{quote.markup || 0}%</span>
+                  <div className="mt-6 pt-5 border-t border-zinc-900 relative z-10">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Profit Margin</span>
+                        <span className="text-[8px] text-zinc-700 font-bold uppercase mt-1 italic tracking-tighter">Industrial Markup</span>
+                      </div>
+                      <span className="text-white font-mono font-black text-base bg-zinc-900 px-2.5 py-0.5 rounded-lg border border-zinc-800">{quote.markup || 0}%</span>
                     </div>
 
-                    <div className="flex flex-col">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-[11px] font-black text-brand-primary uppercase tracking-[0.2em]">Final Total</span>
-                        <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">After Markup</span>
+                    {/* Unit Final Price */}
+                    <div className="flex flex-col p-3 bg-zinc-900/30 rounded-xl border border-zinc-900 shadow-inner group/unit">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-none">Net Unit Rate</span>
+                        <div className="h-1 w-1 rounded-full bg-brand-primary/40 group-hover/unit:bg-brand-primary transition-colors" />
                       </div>
-                      <span className="text-3xl font-mono font-black tracking-tighter text-white leading-none">
-                        ₹{parseFloat(quote.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </span>
-                      <div className="h-1 w-full bg-brand-primary/10 rounded-full mt-3 overflow-hidden border border-zinc-900/50">
-                        <div className="h-full bg-brand-primary shadow-[0_0_10px_rgba(94,192,194,0.5)] transition-all duration-500 ease-out" style={{ width: `${Math.min(quote.markup || 0, 100)}%` }} />
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-mono font-black tracking-tighter text-brand-primary leading-none">
+                          ₹{parseFloat(quote.unit_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-[8px] font-bold text-zinc-600 uppercase ml-1">/ unit</span>
+                      </div>
+                    </div>
+
+                    {/* Multiplier / Volume Bridge */}
+                    <div className="flex items-center justify-center my-3 relative">
+                      <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t border-zinc-900 border-dashed" />
+                      </div>
+                      <div className="relative flex items-center gap-1.5 px-3 bg-zinc-950">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-full shadow-2xl ring-1 ring-zinc-800/50">
+                          <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mr-1">Quantity</span>
+                          <div className="h-3 w-3 rounded-md bg-zinc-950 flex items-center justify-center">
+                            <svg className="h-2 w-2 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </div>
+                          <span className="text-[12px] font-mono font-black text-white leading-none px-0.5">{quote.quantity || 1}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Project Extras (Post-Multiplication) */}
+                    {(parseFloat(breakdown.engineeringCost || 0) > 0 || parseFloat(breakdown.commercialCost || 0) > 0) && (
+                      <div className="p-2.5 bg-zinc-900/30 rounded-xl border border-zinc-900/50 mb-3 space-y-1.5">
+                        <div className="text-[7.5px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                          <span className="h-1 w-1 bg-zinc-700 rounded-full" />
+                          Project Add-ons
+                        </div>
+                        {parseFloat(breakdown.engineeringCost || 0) > 0 && (
+                          <div className="flex justify-between items-center text-[10.5px]">
+                            <span className="font-bold text-zinc-500">Design & Engineering</span>
+                            <span className="font-mono text-zinc-400">₹{parseFloat(breakdown.engineeringCost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                        {parseFloat(breakdown.commercialCost || 0) > 0 && (
+                          <div className="flex justify-between items-center text-[10.5px]">
+                            <span className="font-bold text-zinc-500">Logistics & Service</span>
+                            <span className="font-mono text-zinc-400">₹{parseFloat(breakdown.commercialCost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Grand Total */}
+                    <div className="flex flex-col relative group/total pt-0">
+                      <div className="absolute -inset-4 bg-brand-primary/5 blur-3xl rounded-full opacity-40 pointer-events-none" />
+                      
+                      <div className="flex items-center justify-between mb-1.5 relative z-10">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] leading-none">Grand Total</span>
+                          <span className="text-[7.5px] font-bold text-zinc-700 uppercase tracking-widest mt-1 italic">Final Order Sum</span>
+                        </div>
+                      </div>
+                      <div className="relative z-10 flex flex-col">
+                        <span className="text-3xl font-mono font-black tracking-tighter text-white leading-none drop-shadow-2xl">
+                          ₹{parseFloat(quote.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </span>
+                        <div className="h-1 w-full bg-zinc-900 rounded-full mt-3 overflow-hidden border border-zinc-800 p-0.5 shadow-inner">
+                          <div className="h-full bg-brand-primary shadow-[0_0_10px_rgba(94,192,194,0.6)] transition-all duration-700 ease-out rounded-full" style={{ width: `${Math.min((quote.markup || 0) * 3, 100)}%` }} />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Per Unit Pricing */}
-                {quote.quantity > 1 && (
-                  <div className="mt-5 pt-4 border-t border-zinc-800">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Per Unit Analysis</span>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[11px] font-bold text-zinc-400">Unit Price</span>
-                      <span className="text-xl font-mono font-black text-brand-primary">
-                        ₹{(parseFloat(quote.total_amount || 0) / (quote.quantity || 1)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-baseline mt-2">
-                      <span className="text-[11px] font-bold text-zinc-500">Quantity</span>
-                      <span className="text-[13px] font-mono font-bold text-zinc-400">{quote.quantity} units</span>
-                    </div>
-                  </div>
-                )}
-
                 {/* Metadata Footer */}
-                <div className="mt-auto pt-4 border-t border-zinc-800">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">Created</span>
-                      <span className="text-[10px] font-mono text-zinc-500">{quote.$createdAt ? new Date(quote.$createdAt).toLocaleDateString('en-GB') : '—'}</span>
+                <div className="mt-auto pt-4 border-t border-zinc-900/50">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[7px] font-black text-zinc-700 uppercase tracking-widest">Entry</span>
+                      <span className="text-[9px] font-mono font-bold text-zinc-600">{quote.$createdAt ? new Date(quote.$createdAt).toLocaleDateString('en-GB') : '—'}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">Last Modified</span>
-                      <span className="text-[10px] font-mono text-zinc-500">{quote.$updatedAt ? new Date(quote.$updatedAt).toLocaleDateString('en-GB') : '—'}</span>
+                    <div className="flex flex-col gap-0.5 text-right">
+                      <span className="text-[7px] font-black text-zinc-700 uppercase tracking-widest">Audit</span>
+                      <span className="text-[9px] font-mono font-bold text-zinc-600">{quote.$updatedAt ? new Date(quote.$updatedAt).toLocaleDateString('en-GB') : '—'}</span>
                     </div>
                   </div>
                 </div>

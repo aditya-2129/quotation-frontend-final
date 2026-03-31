@@ -11,7 +11,7 @@ const ValuationLedger = ({ totals, activeQuote, setActiveQuote, formData, setFor
        'material': 'Material',
        'machining': 'Manufacturing',
        'bop': 'Purchased Items',
-       'commercial': ['Design & Assembly', 'Packing & Shipping']
+       'commercial': ['Design & Engineering', 'Logistics & Service']
     };
     
     const target = PHASE_NAMES[activePhase];
@@ -48,14 +48,15 @@ const ValuationLedger = ({ totals, activeQuote, setActiveQuote, formData, setFor
              <LineItem label="Material" value={totals.materialCost} />
              <LineItem label="Manufacturing" value={totals.laborCost + (totals.treatmentCost || 0)} />
              <LineItem label="Purchased Items" value={totals.bopCost} />
-             <LineItem label="Design & Assembly" value={totals.engineeringCost} />
-             <LineItem label="Packing & Shipping" value={totals.commercialCost} />
              
              <div className="h-px bg-zinc-800 my-3" />
              
              <div className="flex justify-between items-center group/subtotal">
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover/subtotal:text-zinc-300 transition-colors block mb-0.5">Manufacturing Cost</span>
-                <span className="text-lg font-mono font-black tracking-tighter italic">₹{totals.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover/subtotal:text-zinc-300 transition-colors block mb-0.5">Unit Manufacturing Cost</span>
+                   <span className="text-[8px] text-zinc-600 font-bold uppercase italic">Direct Factory Cost / Unit</span>
+                </div>
+                <span className="text-lg font-mono font-black tracking-tighter italic">₹{(totals.unitSubtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
              </div>
           </div>
 
@@ -73,16 +74,62 @@ const ValuationLedger = ({ totals, activeQuote, setActiveQuote, formData, setFor
                   onChange={(e) => setFormData(prev => ({...prev, markup: parseFloat(e.target.value) || 0}))}
                 />
              </div>
-             <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                   <span className="text-[10.5px] font-black text-brand-primary uppercase tracking-[0.2em] leading-none">Final Total Price</span>
-                   <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">After Markup</span>
+
+             {/* Unit Final Price */}
+             <div className="flex flex-col mb-6 p-3 bg-zinc-900/50 rounded-xl border border-zinc-900 shadow-inner">
+                <div className="flex items-center justify-between mb-1.5">
+                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-none">Final Unit Rate</span>
+                   <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest italic">Per Item</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                   <span className="text-2xl font-mono font-black tracking-tighter text-white leading-none">₹{totals.finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                   <span className="text-xl font-mono font-black tracking-tighter text-brand-primary leading-none">₹{(totals.unitFinal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
-                <div className="h-1 w-full bg-brand-primary/10 rounded-full mt-4 overflow-hidden border border-zinc-900/50">
-                   <div className="h-full bg-brand-primary shadow-[0_0_10px_rgba(94,192,194,0.5)] transition-all duration-500 ease-out" style={{ width: `${Math.min(formData.markup, 100)}%` }} />
+             </div>
+
+               {/* Multiplier / Volume Bridge */}
+               <div className="flex items-center justify-center my-6 relative">
+                  <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                     <div className="w-full border-t border-zinc-900 border-dashed" />
+                  </div>
+                  <div className="relative flex items-center gap-2 px-4 bg-zinc-950">
+                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full shadow-2xl ring-1 ring-zinc-800/50 group/qty">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mr-1">Quantity</span>
+                        <div className="h-4 w-4 rounded-md bg-zinc-950 flex items-center justify-center">
+                           <svg className="h-2.5 w-2.5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </div>
+                        <span className="text-[13px] font-mono font-black text-white px-2 leading-none">{formData.quantity || 1}</span>
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Units</span>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Project Wide Extras */}
+               <div className="mb-6 space-y-2 p-3 bg-zinc-900/40 rounded-xl border border-zinc-900/50">
+                  <div className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2 italic">
+                     <span className="h-1 w-1 bg-zinc-600 rounded-full" />
+                     Project Add-ons (Consolidated)
+                  </div>
+                  <LineItem label="Design & Engineering" value={totals.engineeringCost} />
+                  <LineItem label="Logistics & Service" value={totals.commercialCost} />
+               </div>
+
+              {/* Grand Total */}
+              <div className="flex flex-col relative group/total pb-2">
+                 <div className="absolute -inset-4 bg-brand-primary/5 blur-3xl rounded-full opacity-0 group-hover/total:opacity-100 transition-opacity" />
+                 
+                 <div className="flex items-center justify-between mb-2 relative z-10">
+                    <div className="flex flex-col">
+                       <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] leading-none">Grand Total Price</span>
+                       <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mt-1.5 italic">Consolidated Order Value</span>
+                    </div>
+
+                 </div>
+                 <div className="flex items-baseline gap-2 relative z-10">
+                    <span className="text-4xl font-mono font-black tracking-tighter text-white leading-none drop-shadow-2xl">₹{(totals.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                 </div>
+                
+                <div className="h-1.5 w-full bg-zinc-900 rounded-full mt-5 overflow-hidden border border-zinc-800 p-0.5 shadow-inner">
+                   <div className="h-full bg-brand-primary shadow-[0_0_15px_rgba(94,192,194,0.6)] transition-all duration-700 ease-out rounded-full" style={{ width: `${Math.min((formData.markup / 30) * 100, 100)}%` }} />
                 </div>
              </div>
           </div>

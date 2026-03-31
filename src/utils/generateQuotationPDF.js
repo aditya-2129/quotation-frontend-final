@@ -209,41 +209,48 @@ export async function generateQuotationPDF(quote, projectImageUrl = null) {
   const mainTableData = items.map((item, idx) => {
       const partDesc = `${item.part_name}\n(Complete set as per model provided, Precision finished & work suitable)\nJob Material: ${item.material?.grade || 'As required'}`;
       
-      // Calculate a proportion of the total cost for this part to emulate the "Unit Price" x Qty layout
-      let partCost = 0;
       const q = parseFloat(item.qty || 1);
       
-      if (item.material && item.material_weight) partCost += (item.material_weight * (item.material.base_rate || 0));
+      let pCost = 0;
+      if (item.material && item.material_weight) pCost += (item.material_weight * (item.material.base_rate || 0));
       
       const labor = (item.processes || []).reduce((acc, p) => {
           const rate = parseFloat(p.rate || p.hourly_rate || 0);
           const unit = p.unit || 'hr';
           if (unit === 'hr') {
-            const time = parseFloat(p.setup_time || 0)/q + parseFloat(p.cycle_time || 0);
+            const time = (parseFloat(p.setup_time || 0)/q) + parseFloat(p.cycle_time || 0);
             return acc + (rate * (time / 60));
           }
           return acc + (parseFloat(p.cycle_time || 0) * rate);
       }, 0);
-      partCost += labor;
+      pCost += labor;
 
       const treatments = (item.treatments || []).reduce((acc, t) => acc + parseFloat(t.cost || 0)/(t.per_unit !== false ? 1 : q), 0);
       const bops = (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (parseFloat(b.qty || 1))), 0);
-      partCost += (treatments + bops);
+      pCost += (treatments + bops);
       
-      const commPerPart = ((parseFloat(quote.design_cost || 0) + parseFloat(quote.assembly_cost || 0) + parseFloat(quote.packaging_cost || 0) + parseFloat(quote.transportation_cost || 0)) / items.length) / q;
-      partCost += commPerPart;
-      
-      const finalUnitPrice = partCost * (1 + (quote.markup || 15)/100);
-      const rowTotal = finalUnitPrice * q;
+      const unitPrice = pCost * (1 + (quote.markup || 15)/100);
+      const total = unitPrice * q;
       
       return [
           idx + 1 + ".",
           partDesc,
           `${q}\nSet`,
-          finalUnitPrice.toFixed(2),
-          rowTotal.toFixed(2)
+          unitPrice.toFixed(2),
+          total.toFixed(2)
       ];
   });
+
+  // Project Extras as separate rows
+  const engTotal = (parseFloat(quote.design_cost || 0) + parseFloat(quote.assembly_cost || 0));
+  const logTotal = (parseFloat(quote.packaging_cost || 0) + parseFloat(quote.transportation_cost || 0));
+
+  if (engTotal > 0) {
+      mainTableData.push(["", "Design, Engineering & Assembly Fees (One-time)", "1 Lot", engTotal.toFixed(2), engTotal.toFixed(2)]);
+  }
+  if (logTotal > 0) {
+      mainTableData.push(["", "Packing, Logistics & Shipping Costs (Consolidated)", "1 Lot", logTotal.toFixed(2), logTotal.toFixed(2)]);
+  }
   
   autoTable(doc, {
       startY: y,

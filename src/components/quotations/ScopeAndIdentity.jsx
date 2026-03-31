@@ -125,6 +125,7 @@ const ScopeAndIdentity = ({
                                           setFormData(prev => ({
                                              ...prev, 
                                              supplier_name: c.name,
+                                             customer: c,
                                              contact_person: c.contact_person || prev.contact_person,
                                              contact_phone: c.phone || prev.contact_phone,
                                              contact_email: c.email || prev.contact_email
