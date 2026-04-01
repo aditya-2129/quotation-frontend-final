@@ -149,7 +149,7 @@ export default function CustomersPage() {
                   </tr>
                 ) : (
                   customers.map((customer) => (
-                    <tr key={customer.$id} className="group hover:bg-zinc-50 transition-colors">
+                    <tr key={customer.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                            <div className="h-8 w-8 min-w-[32px] rounded-md bg-zinc-950 flex items-center justify-center text-white text-xs font-bold">

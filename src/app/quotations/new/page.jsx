@@ -58,6 +58,7 @@ export default function NewQuotationPage() {
     assembly_cost: 0,
     production_mode: 'Batch',
     quantity: 1,
+    bought_out_items: [],
     project_image: null,
     items: [
       {
@@ -65,7 +66,6 @@ export default function NewQuotationPage() {
         part_name: 'Part 01',
         qty: 1,
         processes: [],
-        bought_out_items: [],
         design_files: [],
         part_image: null,
         treatments: [],
@@ -118,7 +118,6 @@ export default function NewQuotationPage() {
     part_name: 'Part 01',
     qty: 1,
     processes: [],
-    bought_out_items: [],
     design_files: [],
     part_image: null,
     treatments: [],
@@ -248,10 +247,11 @@ export default function NewQuotationPage() {
 
       // 3. Treatments Unit Cost
       treatmentUnit += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? partQtyPerModel : (1/projectQty))), 0);
-
-      // 4. BOP Unit Cost
-      bopUnit += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * partQtyPerModel), 0);
     });
+
+    // 4. BOP Unit Cost (Consolidated for the whole unit)
+    bopUnit = (formData.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1)), 0);
+
     
     const unitSubtotal = Number(materialUnit) + Number(laborUnit) + Number(bopUnit) + Number(treatmentUnit);
     const unitFinal = Math.round((unitSubtotal * (1 + (Number(formData.markup || 0) / 100))) * 100) / 100;
@@ -282,16 +282,16 @@ export default function NewQuotationPage() {
       // Validation Logic
       const missingFields = [];
       if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
-     if (!formData.project_name) missingFields.push("Project Name");
-     if (!formData.contact_person) missingFields.push("Contact Person Name");
-     if (!formData.contact_phone) missingFields.push("Contact Number");
-     if (!formData.contact_email) missingFields.push("Contact Email");
-     if (!formData.quoting_engineer) missingFields.push("Project Incharge");
-     if (!formData.revision_no) missingFields.push("Quotation Version");
-     if (!formData.inquiry_date) missingFields.push("Date Received");
-     if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
-     if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
-     if (!formData.project_image) missingFields.push("Project Model / Snapshot Image");
+      if (!formData.project_name) missingFields.push("Project Name");
+      if (!formData.contact_person) missingFields.push("Contact Person Name");
+      if (!formData.contact_phone) missingFields.push("Contact Number");
+      if (!formData.contact_email) missingFields.push("Contact Email");
+      if (!formData.quoting_engineer) missingFields.push("Project Incharge");
+      if (!formData.revision_no) missingFields.push("Quotation Version");
+      if (!formData.inquiry_date) missingFields.push("Date Received");
+      if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
+      if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
+      if (!formData.project_image) missingFields.push("Project Model / Snapshot Image");
 
       if (formData.items.length === 0) {
          missingFields.push("At least one BOM item");
@@ -342,17 +342,17 @@ export default function NewQuotationPage() {
                   if (!rate || rate <= 0) missingFields.push(`${pName}: ${pLabel} Machine Rate`);
                });
             }
-
-            // BOP Validation
-            if (item.bought_out_items && item.bought_out_items.length > 0) {
-               item.bought_out_items.forEach((bop, bIdx) => {
-                  const bName = bop.item_name === 'CUSTOM' ? 'Custom Item' : (bop.item_name || `BOP ${bIdx + 1}`);
-                  if (!bop.item_name) missingFields.push(`${pName}: Bought Out Material Descriptor (BOP ${bIdx + 1})`);
-                  if (!bop.qty || bop.qty <= 0) missingFields.push(`${pName}: BOP "${bName}" Volume/Quantity`);
-                  if (!bop.rate || bop.rate <= 0) missingFields.push(`${pName}: BOP "${bName}" Procurement Rate`);
-               });
-            }
          });
+
+         // BOP Validation (Consolidated Version)
+         if (formData.bought_out_items && formData.bought_out_items.length > 0) {
+            formData.bought_out_items.forEach((bop, bIdx) => {
+               const bName = bop.item_name === 'CUSTOM' ? 'Custom Item' : (bop.item_name || `BOP ${bIdx + 1}`);
+               if (!bop.item_name) missingFields.push(`BOP ${bIdx + 1}: Material Descriptor`);
+               if (!bop.qty || bop.qty <= 0) missingFields.push(`BOP "${bName}": Project Volume/Quantity`);
+               if (!bop.rate || bop.rate <= 0) missingFields.push(`BOP "${bName}": Procurement Rate`);
+            });
+         }
       }
 
       if (missingFields.length > 0) {
@@ -409,7 +409,8 @@ export default function NewQuotationPage() {
             }))),
             detailed_breakdown: JSON.stringify({ 
                ...totals, 
-               quoting_engineer_details: formData.quoting_engineer_details 
+               quoting_engineer_details: formData.quoting_engineer_details,
+               bought_out_items: formData.bought_out_items
             }),
             total_amount: totals.grandTotal,
             unit_price: totals.unitFinal,
@@ -444,16 +445,17 @@ export default function NewQuotationPage() {
       
       try {
          let projectImageUrl = null;
-         if (savedQuotationData.project_image) {
-            try {
-               const parsedImage = JSON.parse(savedQuotationData.project_image);
-               if (parsedImage.$id) {
-                  projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
-               }
-            } catch (e) {
-               console.warn("Failed to parse project image for PDF");
-            }
-         }
+          if (savedQuotationData.project_image) {
+             try {
+                const rawImg = savedQuotationData.project_image;
+                const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
+                if (parsedImage && parsedImage.$id) {
+                   projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
+                }
+             } catch (e) {
+                console.warn("Failed to parse project image for PDF in NewPage:", e);
+             }
+          }
          
          await generateQuotationPDF(savedQuotationData, projectImageUrl);
       } catch (err) {
@@ -506,7 +508,10 @@ export default function NewQuotationPage() {
                design_files: (i.design_files || []).filter(f => f.$id),
                part_image: i.part_image?.$id ? i.part_image : null
             }))),
-            detailed_breakdown: JSON.stringify(totals),
+            detailed_breakdown: JSON.stringify({
+               ...totals,
+               bought_out_items: formData.bought_out_items
+            }),
             total_amount: totals.grandTotal,
             unit_price: totals.unitFinal,
             subtotal: totals.unitSubtotal,

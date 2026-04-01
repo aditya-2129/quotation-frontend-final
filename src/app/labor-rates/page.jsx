@@ -118,7 +118,7 @@ export default function LaborRatesPage() {
                     )) : filteredRates.length === 0 ? (
                        <tr><td colSpan="4" className="px-6 py-20 text-center text-zinc-400 italic font-medium uppercase tracking-widest text-[11px]">No processes found in this trajectory.</td></tr>
                     ) : filteredRates.map(rate => (
-                       <tr key={rate.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                       <tr key={rate.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                           <td className="px-6 py-5">
                              <div className="flex flex-col">
                                 <span className="text-zinc-950 font-bold">{rate.process_name}</span>

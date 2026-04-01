@@ -271,35 +271,6 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                                 </div>
                               </div>                            )}
 
-                            {/* Bought Out Parts */}
-                            {item.bought_out_items && item.bought_out_items.length > 0 && (
-                              <div>
-                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Purchased / Bought Out Parts</span>
-                                <div className="overflow-hidden rounded-lg border border-zinc-200">
-                                  <table className="w-full text-left text-[12px]">
-                                    <thead className="bg-zinc-100">
-                                      <tr>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Item</th>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-center">Qty</th>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-right">Rate</th>
-                                        <th className="px-4 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-right">Total</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-zinc-100">
-                                      {item.bought_out_items.map((b, bIdx) => (
-                                        <tr key={bIdx} className="bg-white">
-                                          <td className="px-4 py-2.5 font-semibold text-zinc-700">{b.item_name || '—'}</td>
-                                          <td className="px-4 py-2.5 text-center font-mono text-zinc-600">{b.qty || 0}</td>
-                                          <td className="px-4 py-2.5 text-right font-mono text-zinc-600">₹{parseFloat(b.rate || 0).toFixed(2)}</td>
-                                          <td className="px-4 py-2.5 text-right font-mono font-bold text-zinc-700">₹{(parseFloat(b.rate || 0) * (b.qty || 1)).toFixed(2)}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            )}
-
                             {/* Design Files */}
                             {item.design_files && item.design_files.length > 0 && (
                               <div>
@@ -317,6 +288,53 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Section 2.5: Consolidated Purchased Items (BOP) */}
+                {breakdown.bought_out_items && breakdown.bought_out_items.length > 0 && (
+                  <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+                    <SectionHeader 
+                      icon={<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>}
+                      title="Purchased Components (Project-Wide)"
+                      count={breakdown.bought_out_items.length}
+                    />
+                    <div className="overflow-hidden rounded-xl border border-zinc-100">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-zinc-50 text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100">
+                          <tr>
+                            <th className="px-6 py-3">Item Descriptor</th>
+                            <th className="px-6 py-3 text-center">Unit</th>
+                            <th className="px-6 py-3 text-center">Quantity</th>
+                            <th className="px-6 py-3 text-right">Unit Rate</th>
+                            <th className="px-6 py-3 text-right">Total (₹)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-50 bg-white">
+                          {breakdown.bought_out_items.map((b, bIdx) => (
+                            <tr key={bIdx} className="hover:bg-zinc-50/50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="font-bold text-zinc-800">{b.item_name || '—'}</div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className="text-[10px] font-black text-zinc-400 uppercase font-mono">{b.unit || 'pcs'}</span>
+                              </td>
+                              <td className="px-6 py-4 text-center font-mono font-bold text-zinc-600">{b.qty || 0}</td>
+                              <td className="px-6 py-4 text-right font-mono text-zinc-500">₹{parseFloat(b.rate || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td className="px-6 py-4 text-right font-mono font-black text-zinc-900">₹{(parseFloat(b.rate || 0) * (b.qty || 1)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-zinc-50/30">
+                          <tr>
+                            <td colSpan="4" className="px-6 py-4 text-right text-[10px] font-black text-zinc-400 uppercase tracking-widest">Consolidated BOP Subtotal</td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="text-base font-black text-brand-primary font-mono">₹{parseFloat(breakdown.bopCost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
                     </div>
                   </section>
                 )}

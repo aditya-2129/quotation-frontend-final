@@ -53,12 +53,13 @@ export default function QuotationsPage() {
       let projectImageUrl = null;
       if (fullQuote.project_image) {
         try {
-          const parsedImage = JSON.parse(fullQuote.project_image);
-          if (parsedImage.$id) {
+          const rawImg = fullQuote.project_image;
+          const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
+          if (parsedImage && parsedImage.$id) {
             projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
           }
         } catch (e) {
-          console.warn("Failed to parse project image for PDF");
+          console.warn("Failed to parse project image for PDF in Registry:", e);
         }
       }
 
@@ -145,7 +146,7 @@ export default function QuotationsPage() {
                   </tr>
                 ) : (
                   quotations.map((row) => (
-                    <tr key={row.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                    <tr key={row.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                       <td className="px-6 py-4">
                          <div className="flex flex-col">
                             <span className="text-brand-primary font-bold">{row.quotation_no || row.$id.substring(0,8)}</span>

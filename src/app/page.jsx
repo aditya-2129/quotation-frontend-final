@@ -265,7 +265,7 @@ export default function Home() {
                       <tr
                         key={row.$id}
                         onClick={() => router.push(`/quotations/edit/${row.$id}`)}
-                        className="group cursor-pointer transition-colors hover:bg-zinc-50/80"
+                        className="group cursor-pointer transition-all duration-200 hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC]"
                       >
                         <td className="px-6 py-4">
                           <span className="font-bold text-brand-primary">{row.quotation_no || row.$id.substring(0, 8)}</span>

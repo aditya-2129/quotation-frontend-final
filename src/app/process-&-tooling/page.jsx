@@ -109,7 +109,7 @@ export default function ToolingRatePage() {
                     {isLoading ? [1,2,3,4].map(i => <SkeletonRow key={i} />) : laborRates.length === 0 ? (
                       <tr><td colSpan="4" className="px-5 py-20 text-center text-zinc-400 italic">No processes defined.</td></tr>
                     ) : laborRates.map(rate => (
-                      <tr key={rate.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                      <tr key={rate.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                         <td className="px-5 py-3.5 font-bold text-zinc-900 leading-tight">{rate.process_name}</td>
                         <td className="px-5 py-3.5 text-right font-bold text-zinc-500 text-xs uppercase">{rate.unit || 'hr'}</td>
                         <td className="px-5 py-3.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap text-xs">
@@ -145,7 +145,7 @@ export default function ToolingRatePage() {
                     {isLoading ? [1,2,3,4].map(i => <SkeletonRow key={i} />) : bopRates.length === 0 ? (
                       <tr><td colSpan="3" className="px-5 py-20 text-center text-zinc-400 italic">No bought out parts defined.</td></tr>
                     ) : bopRates.map(rate => (
-                      <tr key={rate.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                      <tr key={rate.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                         <td className="px-5 py-3.5 font-bold text-zinc-900 leading-tight">
                            {rate.item_name}
                            {rate.supplier && <div className="text-[10px] text-zinc-400 font-normal">{rate.supplier}</div>}

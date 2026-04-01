@@ -153,7 +153,7 @@ export default function MaterialsPage() {
                   </tr>
                 ) : (
                   filteredMaterials.map((m) => (
-                    <tr key={m.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                    <tr key={m.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                       <td className="px-6 py-4 font-black text-zinc-950 uppercase tracking-tight">{m.grade || '—'}</td>
                       <td className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase italic tracking-widest">{m.name}</td>
                       <td className="px-6 py-4 text-center">

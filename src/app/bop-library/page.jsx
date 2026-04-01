@@ -120,7 +120,7 @@ export default function BOPLibraryPage() {
                     )) : filteredItems.length === 0 ? (
                        <tr><td colSpan="5" className="px-6 py-20 text-center text-zinc-400 italic font-medium uppercase tracking-widest text-[11px]">No catalog items registered in this procurement path.</td></tr>
                     ) : filteredItems.map(item => (
-                       <tr key={item.$id} className="group hover:bg-zinc-50/80 transition-colors">
+                       <tr key={item.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                           <td className="px-6 py-5">
                              <span className="text-zinc-950 font-bold italic">{item.item_name}</span>
                           </td>

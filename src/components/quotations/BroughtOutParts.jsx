@@ -160,131 +160,6 @@ const BOPItemRow = ({ item, quantity, libraries, onUpdate, onRemove }) => {
   );
 };
 
-const PartBOPBlock = ({ part, idx, libraries, onUpdate }) => {
-  const addBOP = () => {
-    const newBOP = [...(part.bought_out_items || []), { id: Date.now(), item_name: '', rate: 0, qty: 1, unit: 'pcs' }];
-    onUpdate({ bought_out_items: newBOP });
-  };
-
-  const removeBOP = (id) => {
-    const newBOP = part.bought_out_items.filter(i => i.id !== id);
-    onUpdate({ bought_out_items: newBOP });
-  };
-
-  const updateBOP = (id, updates) => {
-    const newBOP = part.bought_out_items.map(i => i.id === id ? { ...i, ...updates } : i);
-    onUpdate({ bought_out_items: newBOP });
-  };
-
-  const batchTotal = (part.bought_out_items || []).reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1) * (part.qty || 1)), 0);
-  const unitTotal = (part.bought_out_items || []).reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1)), 0);
-
-  return (
-    <div className="mb-3 last:mb-0 border border-zinc-200 rounded-xl bg-white shadow-sm overflow-visible animate-in fade-in duration-500">
-      <div className="px-4 py-2.5 bg-zinc-50/50 border-b border-zinc-100 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          {part.part_image ? (
-            <div className="h-9 w-9 rounded border border-zinc-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
-               <img 
-                  src={part.part_image.localPreview || (part.part_image.$id ? assetService.getFilePreview(part.part_image.$id)?.toString() : "")}
-                  onError={(e) => {
-                     if (e.target.src.includes('preview')) {
-                        e.target.src = part.part_image.localPreview || assetService.getFileView(part.part_image.$id)?.toString();
-                     }
-                  }} 
-                  alt="Part" 
-                  className="h-full w-full object-cover"
-               />
-            </div>
-          ) : (
-            <div className="h-9 w-9 rounded-lg bg-brand-primary text-zinc-950 flex items-center justify-center text-[10px] font-black shadow-lg shadow-brand-primary/20">
-               {String(idx + 1).padStart(2, '0')}
-            </div>
-          )}
-          <div>
-            <h4 className="text-[12px] font-black text-brand-primary uppercase tracking-tight">{part.part_name}</h4>
-            <div className="flex items-center gap-2 mt-0.5">
-               <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.1em] italic font-mono leading-none">Buying List for this Part</span>
-               <div className="h-1 w-1 rounded-full bg-zinc-200" />
-               <span className="text-[9px] text-zinc-300 font-bold uppercase font-mono italic">Ref: {part.id}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-6">
-           <div className="flex flex-col items-end">
-              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Production Batch</span>
-              <span className="text-[11px] font-black text-zinc-950 font-mono tracking-tighter">{part.qty || 1} Units</span>
-           </div>
-           <button 
-             onClick={addBOP}
-             className="h-8 px-4 rounded-lg bg-brand-primary text-zinc-950 text-[10px] font-black uppercase tracking-tight hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-brand-primary/25 border border-brand-primary/20"
-           >
-             ADD ITEM +
-           </button>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="p-0 overflow-visible">
-        <table className="w-full text-left text-sm border-collapse table-fixed">
-          <colgroup>
-            <col style={{width: '38%'}} />
-            <col style={{width: '13%'}} />
-            <col style={{width: '15%'}} />
-            <col style={{width: '22%'}} />
-            <col style={{width: '12%'}} />
-          </colgroup>
-          <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
-            <tr>
-               <th className="px-4 py-2.5 whitespace-nowrap">Item Description <span className="text-red-500 font-extrabold">*</span></th>
-               <th className="px-3 py-2.5 text-center whitespace-nowrap">Qty Needed <span className="text-red-500 font-extrabold">*</span></th>
-               <th className="px-3 py-2.5 text-center whitespace-nowrap">Buying Price <span className="text-red-500 font-extrabold">*</span></th>
-               <th className="px-4 py-2.5 text-right whitespace-nowrap">Total Cost (₹)</th>
-              <th className="px-2 py-2.5 text-center"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50">
-            {!part.bought_out_items || part.bought_out_items.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="px-6 py-10 text-center">
-                  <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em] italic">No purchased items added for this component</span>
-                </td>
-              </tr>
-            ) : part.bought_out_items.map(i => (
-              <BOPItemRow 
-                key={i.id} 
-                item={i} 
-                libraries={libraries}
-                quantity={parseFloat(part.qty || 1)}
-                onUpdate={(updates) => updateBOP(i.id, updates)}
-                onRemove={() => removeBOP(i.id)}
-              />
-            ))}
-          </tbody>
-          {part.bought_out_items?.length > 0 && (
-            <tfoot>
-              <tr className="bg-zinc-50/20 border-t border-zinc-100">
-                 <td colSpan="3" className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Purchased Cost</td>
-                <td className="px-4 py-3 text-right">
-                  <div className="font-black text-zinc-950 font-mono text-[13px] italic leading-tight">
-                    ₹{batchTotal.toFixed(2)}
-                  </div>
-                  {(part.qty || 1) > 1 && (
-                    <div className="text-[8px] font-bold text-zinc-400 font-mono italic tracking-tighter mt-0.5">
-                      ₹{unitTotal.toFixed(2)} / unit total
-                    </div>
-                  )}
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
-    </div>
-  );
-};
-
 const BroughtOutParts = ({
   activePhase,
   setActivePhase,
@@ -293,15 +168,30 @@ const BroughtOutParts = ({
   libraries,
   panelIndex = 5
 }) => {
-  const updateItem = (idx, updates) => {
-    setFormData(prev => {
-      const newItems = [...prev.items];
-      newItems[idx] = { ...newItems[idx], ...updates };
-      return { ...prev, items: newItems };
-    });
+  const isExpanded = activePhase === 'bop';
+
+  const addBOP = () => {
+    setFormData(prev => ({
+      ...prev,
+      bought_out_items: [...(prev.bought_out_items || []), { id: Date.now(), item_name: '', rate: 0, qty: 1, unit: 'pcs' }]
+    }));
   };
 
-  const isExpanded = activePhase === 'bop';
+  const removeBOP = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      bought_out_items: (prev.bought_out_items || []).filter(i => i.id !== id)
+    }));
+  };
+
+  const updateBOP = (id, updates) => {
+    setFormData(prev => ({
+      ...prev,
+      bought_out_items: (prev.bought_out_items || []).map(i => i.id === id ? { ...i, ...updates } : i)
+    }));
+  };
+
+  const totalCost = (formData.bought_out_items || []).reduce((acc, i) => acc + (parseFloat(i.rate || 0) * (i.qty || 1)), 0);
 
   return (
     <section className={`bg-white rounded-xl border transition-all duration-300 ${isExpanded ? 'border-zinc-300 shadow-xl ring-1 ring-zinc-200/50 overflow-visible' : 'border-zinc-200 shadow-sm overflow-hidden'}`}>
@@ -315,11 +205,11 @@ const BroughtOutParts = ({
           </div>
           <div className="flex items-center gap-4">
              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded border italic animate-in slide-in-from-right-2 duration-300 ${
-               formData.items.some(it => it.bought_out_items?.length > 0)
+               formData.bought_out_items?.length > 0
                  ? 'text-emerald-600 bg-emerald-50 border-emerald-100'
                  : 'text-brand-primary bg-brand-primary/10 border-brand-primary/10'
              }`}>
-                {formData.items.some(it => it.bought_out_items?.length > 0)
+                {formData.bought_out_items?.length > 0
                   ? 'ITEMS ALLOCATED'
                   : 'BOP PENDING'}
              </span>
@@ -328,15 +218,80 @@ const BroughtOutParts = ({
        </header>
        <div className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 overflow-hidden'}`}>
           <div className="p-2.5 bg-zinc-50/10">
-             {formData.items.map((part, idx) => (
-                <PartBOPBlock 
-                   key={part.id}
-                   part={part}
-                   idx={idx}
-                   libraries={libraries}
-                   onUpdate={(updates) => updateItem(idx, updates)}
-                />
-             ))}
+            <div className="border border-zinc-200 rounded-xl bg-white shadow-sm overflow-visible">
+              <div className="px-4 py-2.5 bg-zinc-50/50 border-b border-zinc-100 flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="h-9 w-9 rounded-lg bg-brand-primary text-zinc-950 flex items-center justify-center text-[10px] font-black shadow-lg shadow-brand-primary/20">
+                     ALL
+                  </div>
+                  <div>
+                    <h4 className="text-[12px] font-black text-brand-primary uppercase tracking-tight">Project-Wide Consumables</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                       <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.1em] italic font-mono leading-none">Purchased items for entire unit</span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={addBOP}
+                  className="h-8 px-4 rounded-lg bg-brand-primary text-zinc-950 text-[10px] font-black uppercase tracking-tight hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-brand-primary/25 border border-brand-primary/20"
+                >
+                  ADD ITEM +
+                </button>
+              </div>
+
+              {/* Table */}
+              <div className="p-0 overflow-visible">
+                <table className="w-full text-left text-sm border-collapse table-fixed">
+                  <colgroup>
+                    <col style={{width: '38%'}} />
+                    <col style={{width: '13%'}} />
+                    <col style={{width: '15%'}} />
+                    <col style={{width: '22%'}} />
+                    <col style={{width: '12%'}} />
+                  </colgroup>
+                  <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
+                    <tr>
+                       <th className="px-4 py-2.5 whitespace-nowrap">Item Description <span className="text-red-500 font-extrabold">*</span></th>
+                       <th className="px-3 py-2.5 text-center whitespace-nowrap">Qty Needed <span className="text-red-500 font-extrabold">*</span></th>
+                       <th className="px-3 py-2.5 text-center whitespace-nowrap">Buying Price <span className="text-red-500 font-extrabold">*</span></th>
+                       <th className="px-4 py-2.5 text-right whitespace-nowrap">Total Cost (₹)</th>
+                      <th className="px-2 py-2.5 text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-50">
+                    {!formData.bought_out_items || formData.bought_out_items.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-10 text-center">
+                          <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em] italic">No project-wide items added</span>
+                        </td>
+                      </tr>
+                    ) : formData.bought_out_items.map(i => (
+                      <BOPItemRow 
+                        key={i.id} 
+                        item={i} 
+                        libraries={libraries}
+                        quantity={1} // Whole unit context
+                        onUpdate={(updates) => updateBOP(i.id, updates)}
+                        onRemove={() => removeBOP(i.id)}
+                      />
+                    ))}
+                  </tbody>
+                  {formData.bought_out_items?.length > 0 && (
+                    <tfoot>
+                      <tr className="bg-zinc-50/20 border-t border-zinc-100">
+                         <td colSpan="3" className="px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Total Purchased Cost</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="font-black text-zinc-950 font-mono text-[13px] italic leading-tight">
+                            ₹{totalCost.toFixed(2)}
+                          </div>
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </div>
           </div>
        </div>
     </section>

@@ -76,6 +76,7 @@ export default function EditQuotationPage() {
     production_mode: 'Batch',
     quantity: 1,
     project_image: null,
+    bought_out_items: [],
     items: [] 
   });
 
@@ -123,13 +124,37 @@ export default function EditQuotationPage() {
            console.error("Failed to parse items:", e);
         }
 
+        // Migration logic for BOP (moving from per-item to consolidated)
+        let consolidatedBOP = [];
+        try {
+           const breakdown = JSON.parse(quote.detailed_breakdown || '{}');
+           if (breakdown.bought_out_items) {
+              consolidatedBOP = breakdown.bought_out_items;
+           } else {
+              // Legacy migration: Collect from all items
+              parsedItems.forEach(item => {
+                 if (item.bought_out_items && item.bought_out_items.length > 0) {
+                    item.bought_out_items.forEach(b => {
+                       consolidatedBOP.push({
+                          ...b,
+                          id: Date.now() + Math.random(),
+                          qty: b.qty * (item.qty || 1), // Convert to unit total for the whole model
+                          item_name: `${b.item_name} (migrated)`
+                       });
+                    });
+                 }
+              });
+           }
+        } catch (e) {
+           console.warn("BOP Migration failed:", e);
+        }
+
         const sanitizedItems = (parsedItems.length > 0 ? parsedItems : [{
            id: Date.now(),
            part_name: 'Part 01',
            qty: 1,
            processes: [],
            treatments: [],
-           bought_out_items: [],
            design_files: [],
            part_image: null,
            material: null,
@@ -142,7 +167,7 @@ export default function EditQuotationPage() {
              ...item,
              processes: item.processes || [],
              treatments: item.treatments || [],
-             bought_out_items: item.bought_out_items || [],
+             bought_out_items: [], // Clear per-item BOPs as we now use consolidated list
              design_files: item.design_files || [],
              inspection: item.inspection || { cmm: false, mtc: false, cmm_cost: 0, mtc_cost: 0 }
            };
@@ -168,7 +193,7 @@ export default function EditQuotationPage() {
           delivery_date: quote.delivery_date || '',
           status: quote.status || 'Draft',
           rejection_reason: quote.rejection_reason || '',
-          markup: quote.markup || 15,
+          markup: (quote.markup !== undefined && quote.markup !== null) ? quote.markup : 15,
           packaging_cost: quote.packaging_cost || 0,
           transportation_cost: quote.transportation_cost || 0,
           design_cost: quote.design_cost || 0,
@@ -185,6 +210,7 @@ export default function EditQuotationPage() {
                 return null;
              }
           })() : null,
+          bought_out_items: consolidatedBOP,
           items: sanitizedItems
         });
 
@@ -231,7 +257,6 @@ export default function EditQuotationPage() {
     part_name: 'Part 01',
     qty: 1,
     processes: [],
-    bought_out_items: [],
     design_files: [],
     part_image: null,
     treatments: [],
@@ -282,10 +307,10 @@ export default function EditQuotationPage() {
 
       // 3. Treatments Unit Cost
       treatmentUnit += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? partQtyPerModel : (1/projectQty))), 0);
-
-      // 4. BOP Unit Cost
-      bopUnit += (item.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1) * partQtyPerModel), 0);
     });
+
+    // 4. BOP Unit Cost (Consolidated for the whole unit)
+    bopUnit = (formData.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1)), 0);
     
     const unitSubtotal = Number(materialUnit) + Number(laborUnit) + Number(bopUnit) + Number(treatmentUnit);
     const unitFinal = Math.round((unitSubtotal * (1 + (Number(formData.markup || 0) / 100))) * 100) / 100;
@@ -310,9 +335,7 @@ export default function EditQuotationPage() {
 
   const totals = calculateTotals();
 
-  const handleUpdate = async (e) => {
-    if (e) e.preventDefault();
-    // Validation Logic
+  const validateForm = () => {
     const missingFields = [];
     if (!formData.customer && !formData.supplier_name) missingFields.push("Organization / Customer");
     if (!formData.project_name) missingFields.push("Project Name");
@@ -376,26 +399,47 @@ export default function EditQuotationPage() {
              });
           }
 
-          // BOP Validation
-          if (item.bought_out_items && item.bought_out_items.length > 0) {
-             item.bought_out_items.forEach((bop, bIdx) => {
-                const bName = bop.item_name === 'CUSTOM' ? 'Custom Item' : (bop.item_name || `BOP ${bIdx + 1}`);
-                if (!bop.item_name) missingFields.push(`${pName}: Bought Out Material Descriptor (BOP ${bIdx + 1})`);
-                if (!bop.qty || bop.qty <= 0) missingFields.push(`${pName}: BOP "${bName}" Volume/Quantity`);
-                if (!bop.rate || bop.rate <= 0) missingFields.push(`${pName}: BOP "${bName}" Procurement Rate`);
-             });
-          }
-       });
-    }
+        });
 
-    if (missingFields.length > 0) {
-       setMissingFields(missingFields);
+        // BOP Validation (Consolidated Version)
+        if (formData.bought_out_items && formData.bought_out_items.length > 0) {
+           formData.bought_out_items.forEach((bop, bIdx) => {
+              const bName = bop.item_name === 'CUSTOM' ? 'Custom Item' : (bop.item_name || `BOP ${bIdx + 1}`);
+              if (!bop.item_name) missingFields.push(`BOP ${bIdx + 1}: Material Descriptor`);
+              if (!bop.qty || bop.qty <= 0) missingFields.push(`BOP "${bName}": Project Volume/Quantity`);
+              if (!bop.rate || bop.rate <= 0) missingFields.push(`BOP "${bName}": Procurement Rate`);
+           });
+        }
+      }
+    return missingFields;
+  };
+
+  const handleUpdate = async (e) => {
+    if (e) e.preventDefault();
+    const missing = validateForm();
+
+    if (missing.length > 0) {
+       setMissingFields(missing);
        setIsValidationOpen(true);
        return;
     }
 
     setIsUpdateConfirmOpen(true);
   };
+
+  const handleApprove = async (e) => {
+    if (e) e.preventDefault();
+    const missing = validateForm();
+
+    if (missing.length > 0) {
+       setMissingFields(missing);
+       setIsValidationOpen(true);
+       return;
+    }
+
+    setIsApproveConfirmOpen(true);
+  };
+
 
   const toTitleCase = (str) => {
      if (!str) return '';
@@ -440,7 +484,8 @@ export default function EditQuotationPage() {
           }))),
           detailed_breakdown: JSON.stringify({ 
              ...totals, 
-             quoting_engineer_details: formData.quoting_engineer_details 
+             quoting_engineer_details: formData.quoting_engineer_details,
+             bought_out_items: formData.bought_out_items
           }),
           total_amount: totals.grandTotal,
           unit_price: totals.unitFinal,
@@ -471,16 +516,17 @@ export default function EditQuotationPage() {
      
      try {
         let projectImageUrl = null;
-        if (savedQuotationData.project_image) {
-           try {
-              const parsedImage = JSON.parse(savedQuotationData.project_image);
-              if (parsedImage.$id) {
-                 projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
-              }
-           } catch (e) {
-              console.warn("Failed to parse project image for PDF");
-           }
-        }
+         if (savedQuotationData.project_image) {
+            try {
+               const rawImg = savedQuotationData.project_image;
+               const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
+               if (parsedImage && parsedImage.$id) {
+                  projectImageUrl = assetService.getFilePreview(parsedImage.$id)?.toString();
+               }
+            } catch (e) {
+               console.warn("Failed to parse project image for PDF in EditPage:", e);
+            }
+         }
         
         await generateQuotationPDF(savedQuotationData, projectImageUrl);
      } catch (err) {
@@ -527,7 +573,10 @@ export default function EditQuotationPage() {
               design_files: (i.design_files || []).filter(f => f.$id),
               part_image: i.part_image?.$id ? i.part_image : null
            }))),
-           detailed_breakdown: JSON.stringify(totals),
+           detailed_breakdown: JSON.stringify({
+              ...totals,
+              bought_out_items: formData.bought_out_items
+           }),
            total_amount: totals.grandTotal,
            unit_price: totals.unitFinal,
            subtotal: totals.unitSubtotal,
@@ -555,8 +604,61 @@ export default function EditQuotationPage() {
 
   const commitApprove = async () => {
      try {
-        await quotationService.updateQuotation(id, { status: 'Approved' });
-        router.push('/quotations');
+        const { 
+           quotation_no, supplier_name, project_name, contact_person, contact_phone, 
+           contact_email, quoting_engineer, revision_no, inquiry_date, 
+           delivery_date, markup, packaging_cost, 
+           transportation_cost, design_cost, assembly_cost,
+           production_mode, quantity, project_image 
+        } = formData;
+
+        const payload = {
+           quotation_no,
+           supplier_name: formData.customer?.name || toTitleCase(supplier_name) || 'Unknown',
+           project_name: toTitleCase(project_name),
+           contact_person: toTitleCase(contact_person),
+           contact_phone,
+           contact_email: (contact_email || "").toLowerCase().trim(),
+           quoting_engineer: toTitleCase(quoting_engineer),
+           revision_no,
+           inquiry_date,
+           delivery_date,
+           status: 'Approved',
+           markup,
+           packaging_cost,
+           transportation_cost,
+           design_cost,
+           assembly_cost,
+           production_mode,
+           project_image: project_image ? JSON.stringify(project_image) : '',
+           quantity: parseInt(quantity) || 1,
+           part_number: formData.items[0]?.part_name || 'MULTIPLE',
+           items: JSON.stringify(formData.items.map(i => ({ 
+              ...i, 
+              design_files: (i.design_files || []).filter(f => f.$id),
+              part_image: i.part_image?.$id ? i.part_image : null
+           }))),
+           detailed_breakdown: JSON.stringify({ 
+              ...totals, 
+              quoting_engineer_details: formData.quoting_engineer_details,
+              bought_out_items: formData.bought_out_items
+           }),
+           total_amount: totals.grandTotal,
+           unit_price: totals.unitFinal,
+           subtotal: totals.unitSubtotal,
+           customer_id: formData.customer?.$id || ''
+        };
+
+        const response = await quotationService.updateQuotation(id, payload);
+        
+        // Ensure historic rejection reason is cleared
+        if (formData.rejection_reason) {
+           await quotationService.updateQuotation(id, { rejection_reason: null });
+        }
+       
+       setLastQuotationRef(payload.quotation_no);
+       setSavedQuotationData(response);
+       setIsSuccessOpen(true);
      } catch (e) {
         setErrorDetails({ open: true, message: e.message || "Failed to finalize approval." });
      } finally {
@@ -613,7 +715,7 @@ export default function EditQuotationPage() {
                    </button>
                    <button 
                        type="button"
-                       onClick={() => setIsApproveConfirmOpen(true)}
+                       onClick={handleApprove}
                        className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-emerald-600 border border-emerald-200 hover:bg-emerald-50 rounded-xl transition-all cursor-pointer pointer-events-auto bg-white/50"
                      >
                        Approve
@@ -842,8 +944,10 @@ export default function EditQuotationPage() {
          onDownload={handleDownloadPDFResult}
          onViewList={() => router.push('/quotations')}
          quotationNo={lastQuotationRef}
-         title="Sent for Review"
-         message="The quotation has been updated and re-submitted for administrative review. You can now download the updated PDF document."
+         title={savedQuotationData?.status === 'Approved' ? "Quotation Approved" : "Sent for Review"}
+         message={savedQuotationData?.status === 'Approved' 
+           ? "The quotation has been formally approved and locked. You can now download the finalized PDF document."
+           : "The quotation has been updated and re-submitted for administrative review. You can now download the updated PDF document."}
       />
     </DashboardLayout>
   );
