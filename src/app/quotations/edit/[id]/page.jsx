@@ -22,7 +22,12 @@ import SuccessModal from '@/components/modals/SuccessModal';
 import RejectionModal from '@/components/modals/RejectionModal';
 import { useAuth } from '@/context/AuthContext';
 import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
+import { generateMaterialListPDF } from '@/utils/generateMaterialListPDF';
+import { generateSinglePagePDF } from '@/utils/generateSinglePagePDF';
+import { generateProcessSheetPDF } from '@/utils/generateProcessSheetPDF';
+import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { assetService } from '@/services/assets';
+import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
 const nextRevision = (rev) => {
   const match = (rev || "").match(/Rev (\d+)/i);
   const num = match ? parseInt(match[1]) + 1 : 1;
@@ -47,6 +52,7 @@ export default function EditQuotationPage() {
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [lastQuotationRef, setLastQuotationRef] = useState('');
   const [savedQuotationData, setSavedQuotationData] = useState(null);
+  const [downloadModal, setDownloadModal] = useState({ open: false, quotation: null });
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
@@ -511,28 +517,48 @@ export default function EditQuotationPage() {
      }
   };
 
-  const handleDownloadPDFResult = async () => {
-     if (!savedQuotationData) return;
-     
-     try {
-        let projectImageUrl = null;
-         if (savedQuotationData.project_image) {
-            try {
-               const rawImg = savedQuotationData.project_image;
-               const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
-               if (parsedImage && parsedImage.$id) {
-                  projectImageUrl = assetService.getFilePreview(parsedImage.$id)?.toString();
-               }
-            } catch (e) {
-               console.warn("Failed to parse project image for PDF in EditPage:", e);
-            }
-         }
-        
-        await generateQuotationPDF(savedQuotationData, projectImageUrl);
-     } catch (err) {
-        console.error("PDF download failed:", err);
-        setErrorDetails({ open: true, message: "Export encountered an error. Please try again from the registry." });
-     }
+  const handleDownloadPDFResult = () => {
+    if (!savedQuotationData) return;
+    setDownloadModal({ open: true, quotation: savedQuotationData });
+  };
+
+  const handleDownloadExecution = async (optionId) => {
+    const quotation = downloadModal.quotation;
+    if (!quotation) return;
+
+    try {
+      // For now, we still use the same PDF generator for all options,
+      // but we can pass the optionId to it if needed in the future.
+      let projectImageUrl = null;
+      if (quotation.project_image) {
+        try {
+          const rawImg = quotation.project_image;
+          const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
+          if (parsedImage && parsedImage.$id) {
+            projectImageUrl = assetService.getFilePreview(parsedImage.$id)?.toString();
+          }
+        } catch (e) {
+          console.warn("Failed to parse project image for PDF in EditPage:", e);
+        }
+      }
+
+      setDownloadModal({ open: false, quotation: null });
+      console.log(`Downloading with option: ${optionId}`);
+      if (optionId === 'material') {
+        await generateMaterialListPDF(quotation);
+      } else if (optionId === 'single') {
+        await generateSinglePagePDF(quotation, projectImageUrl);
+      } else if (optionId === 'process') {
+        await generateProcessSheetPDF(quotation);
+      } else if (optionId === 'bop') {
+        await generateBOPListPDF(quotation);
+      } else {
+        await generateQuotationPDF(quotation, projectImageUrl);
+      }
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      setErrorDetails({ open: true, message: "Export encountered an error. Please try again from the registry." });
+    }
   };
 
   const handleUpdateDraft = () => {
@@ -948,6 +974,13 @@ export default function EditQuotationPage() {
          message={savedQuotationData?.status === 'Approved' 
            ? "The quotation has been formally approved and locked. You can now download the finalized PDF document."
            : "The quotation has been updated and re-submitted for administrative review. You can now download the updated PDF document."}
+      />
+
+      <DownloadOptionsModal 
+         isOpen={downloadModal.open}
+         onClose={() => setDownloadModal({ open: false, quotation: null })}
+         onDownload={handleDownloadExecution}
+         quotationNo={downloadModal.quotation?.quotation_no}
       />
     </DashboardLayout>
   );

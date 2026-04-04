@@ -21,7 +21,12 @@ import CommercialAdjustments from '@/components/quotations/CommercialAdjustments
 import ValuationLedger from '@/components/quotations/ValuationLedger';
 import SuccessModal from '@/components/modals/SuccessModal';
 import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
+import { generateMaterialListPDF } from '@/utils/generateMaterialListPDF';
+import { generateSinglePagePDF } from '@/utils/generateSinglePagePDF';
+import { generateProcessSheetPDF } from '@/utils/generateProcessSheetPDF';
+import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { assetService } from '@/services/assets';
+import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
 
 export default function NewQuotationPage() {
   const router = useRouter();
@@ -35,6 +40,7 @@ export default function NewQuotationPage() {
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [lastQuotationRef, setLastQuotationRef] = useState('');
   const [savedQuotationData, setSavedQuotationData] = useState(null);
+  const [downloadModal, setDownloadModal] = useState({ open: false, quotation: null });
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
@@ -440,24 +446,42 @@ export default function NewQuotationPage() {
       }
    };
 
-   const handleDownloadPDFResult = async () => {
+   const handleDownloadPDFResult = () => {
       if (!savedQuotationData) return;
-      
+      setDownloadModal({ open: true, quotation: savedQuotationData });
+   };
+
+   const handleDownloadExecution = async (optionId) => {
+      const quotation = downloadModal.quotation;
+      if (!quotation) return;
+
       try {
          let projectImageUrl = null;
-          if (savedQuotationData.project_image) {
-             try {
-                const rawImg = savedQuotationData.project_image;
-                const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
-                if (parsedImage && parsedImage.$id) {
-                   projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
-                }
-             } catch (e) {
-                console.warn("Failed to parse project image for PDF in NewPage:", e);
-             }
-          }
+         if (quotation.project_image) {
+            try {
+               const rawImg = quotation.project_image;
+               const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
+               if (parsedImage && parsedImage.$id) {
+                  projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
+               }
+            } catch (e) {
+               console.warn("Failed to parse project image for PDF in NewPage:", e);
+            }
+         }
          
-         await generateQuotationPDF(savedQuotationData, projectImageUrl);
+         setDownloadModal({ open: false, quotation: null });
+         console.log(`Downloading with option: ${optionId}`);
+         if (optionId === 'material') {
+            await generateMaterialListPDF(quotation);
+         } else if (optionId === 'single') {
+            await generateSinglePagePDF(quotation, projectImageUrl);
+         } else if (optionId === 'process') {
+            await generateProcessSheetPDF(quotation);
+         } else if (optionId === 'bop') {
+            await generateBOPListPDF(quotation);
+         } else {
+            await generateQuotationPDF(quotation, projectImageUrl);
+         }
       } catch (err) {
          console.error("PDF download failed:", err);
          setErrorDetails({ open: true, message: "Export encountered an error. Please try again from the registry." });
@@ -732,6 +756,13 @@ export default function NewQuotationPage() {
         quotationNo={lastQuotationRef}
         title="Sent for Review"
         message="Your quotation has been successfully submitted and is now awaiting administrative approval. You can now download the PDF document."
+      />
+
+      <DownloadOptionsModal 
+        isOpen={downloadModal.open}
+        onClose={() => setDownloadModal({ open: false, quotation: null })}
+        onDownload={handleDownloadExecution}
+        quotationNo={downloadModal.quotation?.quotation_no}
       />
     </DashboardLayout>
   );

@@ -8,7 +8,12 @@ import { useRouter } from 'next/navigation';
 import ActionButtons from '@/components/shared/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import QuotationPreviewModal from '@/components/modals/QuotationPreviewModal';
+import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
 import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
+import { generateMaterialListPDF } from '@/utils/generateMaterialListPDF';
+import { generateSinglePagePDF } from '@/utils/generateSinglePagePDF';
+import { generateProcessSheetPDF } from '@/utils/generateProcessSheetPDF';
+import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { useAuth } from '@/context/AuthContext';
 
 export default function QuotationsPage() {
@@ -21,6 +26,7 @@ export default function QuotationsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [previewId, setPreviewId] = useState(null);
+  const [downloadModal, setDownloadModal] = useState({ open: false, quotation: null });
   const router = useRouter();
   const limit = 25;
 
@@ -46,9 +52,18 @@ export default function QuotationsPage() {
      setDeleteConfirm({ open: true, row: quote });
   };
 
-  const handleDownload = async (quotationId) => {
+  const handleDownloadTrigger = (quotation) => {
+    setDownloadModal({ open: true, quotation });
+  };
+
+  const handleDownloadExecution = async (optionId) => {
+    const quotation = downloadModal.quotation;
+    if (!quotation) return;
+
     try {
-      const fullQuote = await quotationService.getQuotation(quotationId);
+      // For now, we still use the same PDF generator for all options,
+      // but we can pass the optionId to it if needed in the future.
+      const fullQuote = await quotationService.getQuotation(quotation.$id);
       
       let projectImageUrl = null;
       if (fullQuote.project_image) {
@@ -63,7 +78,22 @@ export default function QuotationsPage() {
         }
       }
 
-      await generateQuotationPDF(fullQuote, projectImageUrl);
+      // Close modal before starting generation
+      setDownloadModal({ open: false, quotation: null });
+
+      // Note: We could customize based on optionId here
+      console.log(`Downloading with option: ${optionId}`);
+      if (optionId === 'material') {
+        await generateMaterialListPDF(fullQuote);
+      } else if (optionId === 'single') {
+        await generateSinglePagePDF(fullQuote, projectImageUrl);
+      } else if (optionId === 'process') {
+        await generateProcessSheetPDF(fullQuote);
+      } else if (optionId === 'bop') {
+        await generateBOPListPDF(fullQuote);
+      } else {
+        await generateQuotationPDF(fullQuote, projectImageUrl);
+      }
     } catch (err) {
       console.error("PDF generation failed:", err);
       setErrorDetails({ open: true, message: "Failed to generate PDF. Please try again." });
@@ -179,7 +209,7 @@ export default function QuotationsPage() {
                        <td className="px-6 py-4 text-right">
                          <ActionButtons 
                             onPreview={() => setPreviewId(row.$id)}
-                            onDownload={() => handleDownload(row.$id)}
+                            onDownload={() => handleDownloadTrigger(row)}
                             downloadDisabled={!(row.status === 'Completed' || row.status === 'Approved')}
                             onEdit={() => router.push(`/quotations/edit/${row.$id}`)} 
                             editDisabled={row.status === 'Approved' && !isAdmin}
@@ -247,6 +277,13 @@ export default function QuotationsPage() {
         isOpen={!!previewId}
         onClose={() => setPreviewId(null)}
         quotationId={previewId}
+      />
+
+      <DownloadOptionsModal 
+        isOpen={downloadModal.open}
+        onClose={() => setDownloadModal({ open: false, quotation: null })}
+        onDownload={handleDownloadExecution}
+        quotationNo={downloadModal.quotation?.quotation_no}
       />
     </DashboardLayout>
   );
