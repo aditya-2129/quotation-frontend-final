@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Precision Quotations | Engineering Command Center",
   description: "Advanced industrial quotation management for precision engineering shops.",
+  icons: {
+    icon: "/KE_Logo_Minimised_Sidebar.png",
+  },
 };
 
 export default function RootLayout({ children }) {
