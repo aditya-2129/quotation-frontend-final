@@ -1,82 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { COMPANY, numberToWords, loadImage, safeParseItems, safeParseBreakdown } from '../constants/pdfConstants';
 
-// --- COMPANY CONFIGURATION ---
-const COMPANY = {
-  NAME: 'KAIVALYA ENGINEERING',
-  TAGLINE: 'Manufacturing & Supply of SPM, Precision Tools, Die & Components',
-  ADDRESS_L1: 'Gat No 103, Jyotiba Nagar',
-  ADDRESS_L2: 'Talawade, Pune - 411062',
-  PHONE: '+91 99224 42211',
-  EMAIL: 'sales@kaivalyaengineering.com',
-  GSTIN: '27AABCK1234D1Z5',
-  STATE: 'Maharashtra CODE:27'
-};
-
-/**
- * Converts a number into Indian Words format
- */
-function numberToWords(num) {
-    if (num === 0) return "Zero";
-    const a = ["", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ", "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ", "Nineteen "];
-    const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-
-    const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-    if (!n) return "";
-
-    let str = "";
-    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + " " + a[n[1][1]]) + "Crore " : "";
-    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + " " + a[n[2][1]]) + "Lakh " : "";
-    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + " " + a[n[3][1]]) + "Thousand " : "";
-    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + " " + a[n[4][1]]) + "Hundred " : "";
-    str += (n[5] != 0) ? ((str != "") ? "and " : "") + (a[Number(n[5])] || b[n[5][0]] + " " + a[n[5][1]]) : "";
-    
-    return str.trim() + " Only";
-}
-
-/**
- * Loads an image from a URL and returns a base64 data URL + dimensions.
- */
-async function loadImage(src) {
-  if (!src) throw new Error("No source");
-  
-  try {
-    let fetchUrl = src;
-    if (src.includes('appwrite') && src.includes('/files/')) {
-      const parts = src.split('/files/');
-      const fileId = parts[1]?.split('/')[0];
-      if (fileId) {
-        fetchUrl = `/api/storage/${fileId}`;
-      }
-    }
-
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blob = await response.blob();
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result;
-        const img = new Image();
-        img.onload = () => {
-          resolve({
-            dataUrl,
-            width: img.width,
-            height: img.height
-          });
-        };
-        img.onerror = () => reject(new Error("Image decode failed"));
-        img.src = dataUrl;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (err) {
-    console.error("loadImage failed:", src, err);
-    throw err;
-  }
-}
+const MARGIN = 10; // Single page uses compact margins
 
 export async function generateSinglePagePDF(quote, projectImageUrl = null) {
   if (!quote) return;
@@ -84,14 +10,11 @@ export async function generateSinglePagePDF(quote, projectImageUrl = null) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 10;
+  const margin = MARGIN;
   const contentWidth = pageWidth - margin * 2;
   
-  // Parse breakdown for contact person details
-  let breakdown = {};
-  try { breakdown = JSON.parse(quote.detailed_breakdown || '{}'); } catch (e) { breakdown = {}; }
-  let items = [];
-  try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
+  const breakdown = safeParseBreakdown(quote.detailed_breakdown);
+  const items = safeParseItems(quote.items);
 
   // 1. Header Box
   doc.setDrawColor(0);

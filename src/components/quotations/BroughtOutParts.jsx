@@ -243,11 +243,11 @@ const BroughtOutParts = ({
               <div className="p-0 overflow-visible">
                 <table className="w-full text-left text-sm border-collapse table-fixed">
                   <colgroup>
-                    <col style={{width: '38%'}} />
-                    <col style={{width: '13%'}} />
-                    <col style={{width: '15%'}} />
-                    <col style={{width: '22%'}} />
-                    <col style={{width: '12%'}} />
+                    <col className="w-[38%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[22%]" />
+                    <col className="w-[12%]" />
                   </colgroup>
                   <thead className="bg-zinc-50/30 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-100 italic">
                     <tr>

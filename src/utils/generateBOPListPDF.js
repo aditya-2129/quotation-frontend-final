@@ -1,21 +1,15 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
-const COMPANY = {
-  NAME: 'KAIVALYA ENGINEERING',
-  ADDRESS: 'Talawade, Pune - 411062'
-};
+import { COMPANY, PDF_DEFAULTS, safeParseBreakdown } from '../constants/pdfConstants';
 
 export async function generateBOPListPDF(quote) {
   if (!quote) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 15;
+  const margin = PDF_DEFAULTS.MARGIN;
   
-  // Parse Breakdown
-  let breakdown = {};
-  try { breakdown = JSON.parse(quote.detailed_breakdown || '{}'); } catch (e) { breakdown = {}; }
+  const breakdown = safeParseBreakdown(quote.detailed_breakdown);
   const bopItems = breakdown.bought_out_items || [];
   const projectQty = Number(quote.quantity ?? 1);
 

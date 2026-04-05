@@ -27,6 +27,7 @@ import { generateProcessSheetPDF } from '@/utils/generateProcessSheetPDF';
 import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { assetService } from '@/services/assets';
 import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
+import { toast } from 'react-hot-toast';
 
 export default function NewQuotationPage() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function NewQuotationPage() {
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
     quotation_no: '', 
     supplier_name: '', 
@@ -376,6 +378,7 @@ export default function NewQuotationPage() {
    };
 
    const commitSave = async () => {
+      setIsProcessing(true);
       try {
          // Destructure only valid schema fields from formData
          const { 
@@ -442,6 +445,7 @@ export default function NewQuotationPage() {
                 : (e.message || "Unknown persistence error") 
           });
        } finally {
+         setIsProcessing(false);
          setIsSaveConfirmOpen(false);
       }
    };
@@ -470,7 +474,6 @@ export default function NewQuotationPage() {
          }
          
          setDownloadModal({ open: false, quotation: null });
-         console.log(`Downloading with option: ${optionId}`);
          if (optionId === 'material') {
             await generateMaterialListPDF(quotation);
          } else if (optionId === 'single') {
@@ -483,8 +486,7 @@ export default function NewQuotationPage() {
             await generateQuotationPDF(quotation, projectImageUrl);
          }
       } catch (err) {
-         console.error("PDF download failed:", err);
-         setErrorDetails({ open: true, message: "Export encountered an error. Please try again from the registry." });
+         toast.error("Export encountered an error. Please try again.");
       }
    };
 
@@ -498,6 +500,7 @@ export default function NewQuotationPage() {
    };
 
    const commitDraft = async () => {
+      setIsProcessing(true);
       try {
          const { 
             quotation_no, supplier_name, project_name, contact_person, contact_phone, 
@@ -555,6 +558,7 @@ export default function NewQuotationPage() {
                 : (e.message || "Failed to sync local draft with repository.") 
           });
        } finally {
+         setIsProcessing(false);
          setIsDraftConfirmOpen(false);
       }
    };
@@ -708,6 +712,7 @@ export default function NewQuotationPage() {
         confirmText="ABANDON"
         cancelText="KEEP EDITING"
         type="danger"
+        isLoading={isProcessing}
      />
 
      <ConfirmationModal 
@@ -719,6 +724,7 @@ export default function NewQuotationPage() {
         confirmText="SAVE DRAFT"
         cancelText="KEEP EDITING"
         type="warning"
+        isLoading={isProcessing}
      />
 
      <ConfirmationModal 
@@ -730,6 +736,7 @@ export default function NewQuotationPage() {
         confirmText="FINISH & SAVE"
         cancelText="REVIEW DATA"
         type="brand"
+        isLoading={isProcessing}
      />
 
      <ValidationModal 

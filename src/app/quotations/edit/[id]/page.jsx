@@ -28,6 +28,8 @@ import { generateProcessSheetPDF } from '@/utils/generateProcessSheetPDF';
 import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { assetService } from '@/services/assets';
 import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
+import { toast } from 'react-hot-toast';
+
 const nextRevision = (rev) => {
   const match = (rev || "").match(/Rev (\d+)/i);
   const num = match ? parseInt(match[1]) + 1 : 1;
@@ -56,6 +58,7 @@ export default function EditQuotationPage() {
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
   const [missingFields, setMissingFields] = useState([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [activePhase, setActivePhase] = useState('scope');
   const [customerSearch, setCustomerSearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -453,6 +456,7 @@ export default function EditQuotationPage() {
   };
 
   const commitUpdate = async () => {
+    setIsProcessing(true);
     try {
        const { 
           quotation_no, supplier_name, project_name, contact_person, contact_phone, 
@@ -513,6 +517,7 @@ export default function EditQuotationPage() {
         console.error("Update Error:", e);
         setErrorDetails({ open: true, message: e.message || "Unknown persistence error" });
      } finally {
+        setIsProcessing(false);
         setIsUpdateConfirmOpen(false);
      }
   };
@@ -543,7 +548,6 @@ export default function EditQuotationPage() {
       }
 
       setDownloadModal({ open: false, quotation: null });
-      console.log(`Downloading with option: ${optionId}`);
       if (optionId === 'material') {
         await generateMaterialListPDF(quotation);
       } else if (optionId === 'single') {
@@ -556,8 +560,7 @@ export default function EditQuotationPage() {
         await generateQuotationPDF(quotation, projectImageUrl);
       }
     } catch (err) {
-      console.error("PDF download failed:", err);
-      setErrorDetails({ open: true, message: "Export encountered an error. Please try again from the registry." });
+      toast.error("Export encountered an error. Please try again.");
     }
   };
 
@@ -566,6 +569,7 @@ export default function EditQuotationPage() {
   };
 
   const commitDraftUpdate = async () => {
+     setIsProcessing(true);
      try {
         const {            quotation_no, supplier_name, project_name, contact_person, contact_phone, 
             contact_email, quoting_engineer, revision_no, inquiry_date, 
@@ -615,6 +619,7 @@ export default function EditQuotationPage() {
         console.error("Draft Update Error:", e);
         setErrorDetails({ open: true, message: e.message || "Failed to update draft in registry." });
      } finally {
+        setIsProcessing(false);
         setIsDraftConfirmOpen(false);
      }
   };
@@ -629,6 +634,7 @@ export default function EditQuotationPage() {
   };
 
   const commitApprove = async () => {
+     setIsProcessing(true);
      try {
         const { 
            quotation_no, supplier_name, project_name, contact_person, contact_phone, 
@@ -688,17 +694,20 @@ export default function EditQuotationPage() {
      } catch (e) {
         setErrorDetails({ open: true, message: e.message || "Failed to finalize approval." });
      } finally {
+        setIsProcessing(false);
         setIsApproveConfirmOpen(false);
      }
   };
 
   const confirmReject = async (reason) => {
+     setIsProcessing(true);
      try {
         await quotationService.updateQuotation(id, { status: 'Rejected', rejection_reason: reason });
         router.push('/quotations');
      } catch (e) {
         setErrorDetails({ open: true, message: e.message || "Failed to reject quotation." });
      } finally {
+        setIsProcessing(false);
         setIsRejectionModalOpen(false);
      }
   };
@@ -906,6 +915,7 @@ export default function EditQuotationPage() {
         confirmText="DISCARD"
         cancelText="CONTINUE EDITING"
         type="warning"
+        isLoading={isProcessing}
      />
 
      <ConfirmationModal 
@@ -917,6 +927,7 @@ export default function EditQuotationPage() {
         confirmText="UPDATE DRAFT"
         cancelText="KEEP EDITING"
         type="brand"
+        isLoading={isProcessing}
      />
 
      <ConfirmationModal 
@@ -928,6 +939,7 @@ export default function EditQuotationPage() {
         confirmText="APPROVE QUOTATION"
         cancelText="WAIT"
         type="brand"
+        isLoading={isProcessing}
      />
 
      <RejectionModal 
@@ -935,6 +947,7 @@ export default function EditQuotationPage() {
         onClose={() => setIsRejectionModalOpen(false)}
         onConfirm={confirmReject}
         quotationNo={formData.quotation_no}
+        isLoading={isProcessing}
      />
 
      <ConfirmationModal 
@@ -946,6 +959,7 @@ export default function EditQuotationPage() {
         confirmText="FINISH & UPDATE"
         cancelText="REVIEW EDITS"
         type="brand"
+        isLoading={isProcessing}
      />
 
      <ValidationModal 

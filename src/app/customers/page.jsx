@@ -6,6 +6,7 @@ import { customerService } from '@/services/customers';
 import ActionButtons from '@/components/shared/ActionButtons';
 import CustomerModal from '@/components/modals/CustomerModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import Pagination from '@/components/shared/Pagination';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -180,31 +181,7 @@ export default function CustomersPage() {
             </table>
           </div>
 
-          {/* Pagination Footer */}
-          <div className="px-6 py-4 border-t border-zinc-200 bg-zinc-50/50 flex items-center justify-between">
-             <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest leading-none">
-                Showing {Math.min(total, (page - 1) * limit + 1)} - {Math.min(total, page * limit)} of {total}
-             </div>
-             <div className="flex items-center gap-2">
-                <button 
-                  disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
-                  className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-1 px-2 text-[11px] font-bold text-zinc-900 mono">
-                   {page} <span className="text-zinc-300 font-normal">/</span> {Math.ceil(total / limit) || 1}
-                </div>
-                <button 
-                  disabled={page >= Math.ceil(total / limit)}
-                  onClick={() => setPage(p => p + 1)}
-                  className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-                >
-                  Next
-                </button>
-             </div>
-          </div>
+          <Pagination total={total} page={page} limit={limit} onPageChange={setPage} label="Showing" />
         </section>
       </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { toast } from 'react-hot-toast';
 import { quotationService } from '@/services/quotations';
 import { assetService } from '@/services/assets';
 import { useRouter } from 'next/navigation';
@@ -9,6 +10,7 @@ import ActionButtons from '@/components/shared/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import QuotationPreviewModal from '@/components/modals/QuotationPreviewModal';
 import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
+import Pagination from '@/components/shared/Pagination';
 import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
 import { generateMaterialListPDF } from '@/utils/generateMaterialListPDF';
 import { generateSinglePagePDF } from '@/utils/generateSinglePagePDF';
@@ -37,8 +39,7 @@ export default function QuotationsPage() {
       setQuotations(response.documents);
       setTotal(response.total);
     } catch (err) {
-      console.error("Failed to fetch quotations:", err);
-      setError("Unable to sync with central repository. Verify connection.");
+      toast.error("Unable to sync with central repository.");
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +83,6 @@ export default function QuotationsPage() {
       setDownloadModal({ open: false, quotation: null });
 
       // Note: We could customize based on optionId here
-      console.log(`Downloading with option: ${optionId}`);
       if (optionId === 'material') {
         await generateMaterialListPDF(fullQuote);
       } else if (optionId === 'single') {
@@ -95,8 +95,7 @@ export default function QuotationsPage() {
         await generateQuotationPDF(fullQuote, projectImageUrl);
       }
     } catch (err) {
-      console.error("PDF generation failed:", err);
-      setErrorDetails({ open: true, message: "Failed to generate PDF. Please try again." });
+      toast.error("Failed to generate PDF. Please try again.");
     }
   };
 
@@ -109,10 +108,10 @@ export default function QuotationsPage() {
        // Only the database status is changed so it doesn't appear in lists.
        await quotationService.deleteQuotation(quote.$id); 
        fetchQuotations(); 
+       toast.success("Valuation Cancelled successfully.");
     }
     catch (e) { 
-       console.error("Cancel cycle failed:", e);
-       setErrorDetails({ open: true, message: e.message || "Failed to update record status." });
+       toast.error(e.message || "Failed to update record status.");
     } finally {
        setDeleteConfirm({ open: false, row: null });
     }
@@ -224,31 +223,7 @@ export default function QuotationsPage() {
             </table>
           </div>
 
-          {/* Pagination Footer */}
-          <div className="px-6 py-4 border-t border-zinc-200 bg-zinc-50/50 flex items-center justify-between">
-             <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-                Showing {Math.min(total, (page - 1) * limit + 1)} - {Math.min(total, page * limit)} of {total}
-             </div>
-             <div className="flex items-center gap-2">
-                <button 
-                   disabled={page === 1}
-                   onClick={() => setPage(p => p - 1)}
-                   className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-                >
-                   Previous
-                </button>
-                <div className="flex items-center gap-1 px-2 text-[11px] font-bold text-zinc-900 mono">
-                   {page} <span className="text-zinc-300 font-normal">/</span> {Math.ceil(total / limit) || 1}
-                </div>
-                <button 
-                   disabled={page >= Math.ceil(total / limit)}
-                   onClick={() => setPage(p => p + 1)}
-                   className="h-8 px-3 rounded-md border border-zinc-200 bg-white text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-                >
-                   Next
-                </button>
-             </div>
-          </div>
+          <Pagination total={total} page={page} limit={limit} onPageChange={setPage} label="Showing" />
         </section>
       </div>
 

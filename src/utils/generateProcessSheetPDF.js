@@ -1,21 +1,17 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { COMPANY, safeParseItems } from '../constants/pdfConstants';
 
-const COMPANY = {
-  NAME: 'KAIVALYA ENGINEERING',
-  ADDRESS: 'Talawade, Pune - 411062'
-};
+const MARGIN = 10; // Process sheet uses tighter margins
 
 export async function generateProcessSheetPDF(quote) {
   if (!quote) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 10;
+  const margin = MARGIN;
   
-  // Parse Items
-  let items = [];
-  try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
+  const items = safeParseItems(quote.items);
   const projectQty = Number(quote.quantity ?? 1);
 
   // Header for the entire document

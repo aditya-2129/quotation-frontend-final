@@ -1,21 +1,13 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
-const COMPANY = {
-  NAME: 'KAIVALYA ENGINEERING',
-  TAGLINE: 'Manufacturing & Supply of SPM, Precision Tools, Die & Components',
-  ADDRESS: 'Gat No 103, Jyotiba Nagar, Talawade, Pune - 411062',
-  PHONE: '+91 99224 42211',
-  EMAIL: 'sales@kaivalyaengineering.com',
-  GSTIN: '27AABCK1234D1Z5'
-};
+import { COMPANY, PDF_DEFAULTS, safeParseItems, safeParseBreakdown } from '../constants/pdfConstants';
 
 export async function generateMaterialListPDF(quote) {
   if (!quote) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 15;
+  const margin = PDF_DEFAULTS.MARGIN;
   const contentWidth = pageWidth - margin * 2;
 
   // Header Details
@@ -61,9 +53,7 @@ export async function generateMaterialListPDF(quote) {
 
   let y = 75;
 
-  // Parse Breakdown
-  let breakdown = {};
-  try { breakdown = JSON.parse(quote.detailed_breakdown || '{}'); } catch (e) { breakdown = {}; }
+  const breakdown = safeParseBreakdown(quote.detailed_breakdown);
   const bopItems = breakdown.bought_out_items || [];
 
   // 1. PROJECT-WIDE PURCHASED COMPONENTS (BOP)
@@ -110,8 +100,7 @@ export async function generateMaterialListPDF(quote) {
   }
 
   // 2. RAW MATERIAL REQUIREMENTS
-  let items = [];
-  try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
+  const items = safeParseItems(quote.items);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
