@@ -4,7 +4,7 @@ import { COMPANY, COLORS, numberToWords, loadImage, safeParseItems, safeParseBre
 
 const MARGIN = 20; // Full quotation uses wider margins for breathable cover
 
-export async function generateQuotationPDF(quote, projectImageUrl = null) {
+export async function generateQuotationPDF(quote, projectImageUrl = null, { save = true } = {}) {
   if (!quote) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -259,5 +259,6 @@ export async function generateQuotationPDF(quote, projectImageUrl = null) {
   }
 
   const filename = `Full_Quotation_${quote.quotation_no}.pdf`;
-  doc.save(filename);
+  if (save) doc.save(filename);
+  return doc;
 }

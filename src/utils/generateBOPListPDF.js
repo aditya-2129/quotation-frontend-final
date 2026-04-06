@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { COMPANY, PDF_DEFAULTS, safeParseBreakdown } from '../constants/pdfConstants';
 
-export async function generateBOPListPDF(quote) {
+export async function generateBOPListPDF(quote, { save = true } = {}) {
   if (!quote) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -94,5 +94,6 @@ export async function generateBOPListPDF(quote) {
   doc.text(`Generated on ${new Date().toLocaleString()}`, pageWidth - margin - 50, doc.internal.pageSize.getHeight() - 15);
 
   const filename = `BOP_List_${quote.quotation_no || 'QTN'}.pdf`;
-  doc.save(filename);
+  if (save) doc.save(filename);
+  return doc;
 }

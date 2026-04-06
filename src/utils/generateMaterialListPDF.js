@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { COMPANY, PDF_DEFAULTS, safeParseItems, safeParseBreakdown } from '../constants/pdfConstants';
 
-export async function generateMaterialListPDF(quote) {
+export async function generateMaterialListPDF(quote, { save = true } = {}) {
   if (!quote) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -160,5 +160,6 @@ export async function generateMaterialListPDF(quote) {
   }
 
   const filename = `MaterialList_${quote.quotation_no || 'QTN'}.pdf`;
-  doc.save(filename);
+  if (save) doc.save(filename);
+  return doc;
 }

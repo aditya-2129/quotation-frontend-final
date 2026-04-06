@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { THEME } from '@/constants/ui';
 import { toast } from 'react-hot-toast';
 import { quotationService } from '@/services/quotations';
 import { assetService } from '@/services/assets';
 import { useRouter } from 'next/navigation';
+import { Plus, FileText, Database, ShieldAlert, Download } from 'lucide-react';
 import ActionButtons from '@/components/shared/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import QuotationPreviewModal from '@/components/modals/QuotationPreviewModal';
 import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
+import PdfPreviewModal from '@/components/modals/PdfPreviewModal';
 import Pagination from '@/components/shared/Pagination';
 import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
 import { generateMaterialListPDF } from '@/utils/generateMaterialListPDF';
@@ -17,55 +20,31 @@ import { generateSinglePagePDF } from '@/utils/generateSinglePagePDF';
 import { generateProcessSheetPDF } from '@/utils/generateProcessSheetPDF';
 import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { useAuth } from '@/context/AuthContext';
+import { useQuotations, useDeleteQuotation } from '@/features/quotations/api/useQuotations';
 
 export default function QuotationsPage() {
   const { isAdmin } = useAuth();
-  const [quotations, setQuotations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
-  const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
-  const [previewId, setPreviewId] = useState(null);
-  const [downloadModal, setDownloadModal] = useState({ open: false, quotation: null });
-  const router = useRouter();
   const limit = 25;
 
-  const fetchQuotations = async () => {
-    try {
-      setIsLoading(true);
-      const response = await quotationService.listQuotations(limit, (page - 1) * limit);
-      setQuotations(response.documents);
-      setTotal(response.total);
-    } catch (err) {
-      toast.error("Unable to sync with central repository.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data, isLoading } = useQuotations(limit, (page - 1) * limit);
+  const deleteQuotation = useDeleteQuotation();
 
-  useEffect(() => {
-    fetchQuotations();
-  }, [page]);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
+  const [previewId, setPreviewId] = useState(null);
+  const [downloadModal, setDownloadModal] = useState({ open: false, quotation: null });
+  const [pdfPreview, setPdfPreview] = useState({ open: false, doc: null, title: '', filename: '' });
+  const router = useRouter();
 
-  const handleDelete = (quote) => {
-     setDeleteConfirm({ open: true, row: quote });
-  };
-
-  const handleDownloadTrigger = (quotation) => {
-    setDownloadModal({ open: true, quotation });
-  };
+  const quotations = data?.documents || [];
+  const total = data?.total || 0;
 
   const handleDownloadExecution = async (optionId) => {
     const quotation = downloadModal.quotation;
     if (!quotation) return;
 
     try {
-      // For now, we still use the same PDF generator for all options,
-      // but we can pass the optionId to it if needed in the future.
       const fullQuote = await quotationService.getQuotation(quotation.$id);
-      
       let projectImageUrl = null;
       if (fullQuote.project_image) {
         try {
@@ -75,45 +54,52 @@ export default function QuotationsPage() {
             projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
           }
         } catch (e) {
-          console.warn("Failed to parse project image for PDF in Registry:", e);
+          console.warn("Failed to parse project image:", e);
         }
       }
 
-      // Close modal before starting generation
       setDownloadModal({ open: false, quotation: null });
 
-      // Note: We could customize based on optionId here
+      let doc;
+      let title = "PDF Preview";
+      let filename = "document.pdf";
+
       if (optionId === 'material') {
-        await generateMaterialListPDF(fullQuote);
+        doc = await generateMaterialListPDF(fullQuote, { save: false });
+        title = "Material List";
+        filename = `MaterialList_${fullQuote.quotation_no}.pdf`;
       } else if (optionId === 'single') {
-        await generateSinglePagePDF(fullQuote, projectImageUrl);
+        doc = await generateSinglePagePDF(fullQuote, projectImageUrl, { save: false });
+        title = "Single Page Quotation";
+        filename = `SinglePage_${fullQuote.quotation_no}.pdf`;
       } else if (optionId === 'process') {
-        await generateProcessSheetPDF(fullQuote);
+        doc = await generateProcessSheetPDF(fullQuote, { save: false });
+        title = "Manufacturing Process Sheet";
+        filename = `ProcessSheet_${fullQuote.quotation_no}.pdf`;
       } else if (optionId === 'bop') {
-        await generateBOPListPDF(fullQuote);
+        doc = await generateBOPListPDF(fullQuote, { save: false });
+        title = "BOP Procurement List";
+        filename = `BOP_List_${fullQuote.quotation_no}.pdf`;
       } else {
-        await generateQuotationPDF(fullQuote, projectImageUrl);
+        doc = await generateQuotationPDF(fullQuote, projectImageUrl, { save: false });
+        title = "Full Technical Quotation";
+        filename = `Full_Quotation_${fullQuote.quotation_no}.pdf`;
       }
+
+      setPdfPreview({ open: true, doc, title, filename });
     } catch (err) {
-      toast.error("Failed to generate PDF. Please try again.");
+      toast.error("Export failed.");
     }
   };
 
   const commitDelete = async () => {
-    const quote = deleteConfirm.row;
-    if (!quote) return;
-
+    if (!deleteConfirm.row) return;
     try { 
-       // For soft delete, we keep the assets for the audit trail.
-       // Only the database status is changed so it doesn't appear in lists.
-       await quotationService.deleteQuotation(quote.$id); 
-       fetchQuotations(); 
-       toast.success("Valuation Cancelled successfully.");
-    }
-    catch (e) { 
-       toast.error(e.message || "Failed to update record status.");
-    } finally {
+       await deleteQuotation.mutateAsync(deleteConfirm.row.$id); 
+       toast.success("Valuation Cancelled.");
        setDeleteConfirm({ open: false, row: null });
+    } catch (e) { 
+       toast.error("Operation failed.");
     }
   };
 
@@ -122,54 +108,40 @@ export default function QuotationsPage() {
       title="Project Quotations"
       primaryAction={
         <button 
-          onClick={() => window.location.href = '/quotations/new'}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-[13px] font-bold text-white shadow-lg shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-95 border border-brand-primary/20"
+          onClick={() => router.push('/quotations/new')}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 border border-brand-primary/20"
+          style={{ fontSize: THEME.FONT_SIZE.BASE, fontWeight: 'bold' }}
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus className="h-4 w-4" />
           Project New Valuation
         </button>
       }
     >
       <div className="flex flex-col gap-6">
-
-        {error && (
-           <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
-              {error}
-           </div>
-        )}
-
         <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-zinc-50 border-b border-zinc-200">
-                <tr>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest">Quote Vector / ID</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest">Client Name</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest">Project Incharge</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-center">Batch Date</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-center">Status</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-right">Valuation Total</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-zinc-950 uppercase tracking-widest text-right">Registry Ops</th>
+                <tr style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+                   <th className="px-6 py-4 font-bold text-zinc-950 uppercase tracking-widest">Quote Vector / ID</th>
+                   <th className="px-6 py-4 font-bold text-zinc-950 uppercase tracking-widest">Client Name</th>
+                   <th className="px-6 py-4 font-bold text-zinc-950 uppercase tracking-widest">Project Incharge</th>
+                   <th className="px-6 py-4 font-bold text-zinc-950 uppercase tracking-widest text-center">Batch Date</th>
+                   <th className="px-6 py-4 font-bold text-zinc-950 uppercase tracking-widest text-center">Status</th>
+                   <th className="px-6 py-4 font-bold text-zinc-950 uppercase tracking-widest text-right">Valuation Total</th>
+                   <th className="px-6 py-4 font-bold text-zinc-950 uppercase tracking-widest text-right">Registry Ops</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
                 {isLoading ? (
                   [1,2,3,4,5].map(i => (
                     <tr key={i} className="animate-pulse">
-                       <td className="px-6 py-4"><div className="h-4 w-28 bg-zinc-100 rounded" /></td>
-                       <td className="px-6 py-4"><div className="h-4 w-32 bg-zinc-100 rounded" /></td>
-                       <td className="px-6 py-4"><div className="h-4 w-24 bg-zinc-100 rounded" /></td>
-                       <td className="px-6 py-4 text-center"><div className="h-4 w-16 bg-zinc-100 rounded mx-auto" /></td>
-                       <td className="px-6 py-4 text-center"><div className="h-6 w-16 bg-zinc-100 rounded-full mx-auto" /></td>
-                       <td className="px-6 py-4 text-right"><div className="h-4 w-20 bg-zinc-100 rounded ml-auto" /></td>
-                       <td className="px-6 py-4 text-right"><div className="h-8 w-16 bg-zinc-100 rounded ml-auto" /></td>
+                       <td colSpan="7" className="h-16 px-6 bg-zinc-50/10" />
                     </tr>
                   ))
                 ) : quotations.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-20 text-center text-zinc-400 italic">
+                    <td colSpan="7" className="px-6 py-20 text-center text-zinc-400 italic" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>
                        No valuations found in central repository.
                     </td>
                   </tr>
@@ -178,41 +150,40 @@ export default function QuotationsPage() {
                     <tr key={row.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                       <td className="px-6 py-4">
                          <div className="flex flex-col">
-                            <span className="text-brand-primary font-bold">{row.quotation_no || row.$id.substring(0,8)}</span>
-                            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-tighter">{row.part_number || 'No Part Ref'}</span>
+                            <span className="text-brand-primary font-bold" style={{ fontSize: THEME.FONT_SIZE.BASE }}>{row.quotation_no || row.$id.substring(0,8)}</span>
+                            <span className="font-mono text-zinc-400 uppercase tracking-tighter" style={{ fontSize: '10px' }}>{row.part_number || 'No Part Ref'}</span>
                          </div>
                       </td>
                       <td className="px-6 py-4 text-zinc-600 font-medium">
-                         <span className="truncate max-w-[150px] inline-block">{row.supplier_name || 'N/A'}</span>
+                         <span className="truncate max-w-[150px] inline-block" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>{row.supplier_name || 'N/A'}</span>
                       </td>
                       <td className="px-6 py-4 text-zinc-600 font-medium">
-                         <span className="truncate max-w-[120px] inline-block text-[13px]">{row.quoting_engineer || 'Unassigned'}</span>
+                         <span className="truncate max-w-[120px] inline-block" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>{row.quoting_engineer || 'Unassigned'}</span>
                       </td>
-                      <td className="px-6 py-4 text-center text-[10px] font-bold font-mono text-zinc-500">
+                      <td className="px-6 py-4 text-center font-bold font-mono text-zinc-500" style={{ fontSize: '10px' }}>
                          {new Date(row.$createdAt).toLocaleDateString('en-GB')}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest leading-none ${
-                          row.status === 'Completed' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 
-                          row.status === 'Pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                          row.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
-                          row.status === 'Rejected' ? 'bg-red-50 text-red-600 border border-red-200' :
-                          'bg-zinc-50 text-zinc-500 border border-zinc-200'
-                        }`}>
+                        <span className={`inline-flex rounded-full px-2.5 py-1 font-bold uppercase tracking-widest leading-none border ${
+                          row.status === 'Completed' ? 'bg-amber-50 text-amber-600 border-amber-200' : 
+                          row.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          row.status === 'Rejected' ? 'bg-red-50 text-red-600 border-red-200' :
+                          'bg-zinc-50 text-zinc-500 border-zinc-200'
+                        }`} style={{ fontSize: '9px' }}>
                           {row.status === 'Completed' ? 'Review' : (row.status || 'Draft')}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-mono font-bold text-brand-primary">
+                      <td className="px-6 py-4 text-right font-mono font-bold text-brand-primary" style={{ fontSize: THEME.FONT_SIZE.BASE }}>
                         ₹{parseFloat(row.total_amount || 0).toLocaleString()}
                       </td>
                        <td className="px-6 py-4 text-right">
                          <ActionButtons 
                             onPreview={() => setPreviewId(row.$id)}
-                            onDownload={() => handleDownloadTrigger(row)}
+                            onDownload={() => setDownloadModal({ open: true, quotation: row })}
                             downloadDisabled={!(row.status === 'Completed' || row.status === 'Approved')}
                             onEdit={() => router.push(`/quotations/edit/${row.$id}`)} 
                             editDisabled={row.status === 'Approved' && !isAdmin}
-                            onDelete={() => handleDelete(row)} 
+                            onDelete={() => setDeleteConfirm({ open: true, row: row })} 
                             deleteDisabled={row.status === 'Approved' && !isAdmin}
                           />
                        </td>
@@ -232,21 +203,12 @@ export default function QuotationsPage() {
         onClose={() => setDeleteConfirm({ open: false, row: null })}
         onConfirm={commitDelete}
         title="Cancel Valuation?"
-        message={`This will mark ${deleteConfirm.row?.quotation_no || 'this record'} as 'Cancelled'. It will be removed from your active list but will remain in the database for audit history.`}
+        message={`This will mark ${deleteConfirm.row?.quotation_no || 'this record'} as 'Cancelled'.`}
         confirmText="CANCEL VALUATION"
         cancelText="KEEP ACTIVE"
         type="danger"
+        isLoading={deleteQuotation.isPending}
       />
-
-      <ConfirmationModal 
-        isOpen={errorDetails.open}
-        onClose={() => setErrorDetails({ open: false, message: '' })}
-        onConfirm={() => setErrorDetails({ open: false, message: '' })}
-        title="REGISTRY ERROR"
-        message={errorDetails.message}
-        confirmText="CLOSE"
-         type="danger"
-       />
 
       <QuotationPreviewModal 
         isOpen={!!previewId}
@@ -259,6 +221,14 @@ export default function QuotationsPage() {
         onClose={() => setDownloadModal({ open: false, quotation: null })}
         onDownload={handleDownloadExecution}
         quotationNo={downloadModal.quotation?.quotation_no}
+      />
+
+      <PdfPreviewModal 
+        isOpen={pdfPreview.open}
+        onClose={() => setPdfPreview({ ...pdfPreview, open: false })}
+        pdfDoc={pdfPreview.doc}
+        title={pdfPreview.title}
+        filename={pdfPreview.filename}
       />
     </DashboardLayout>
   );

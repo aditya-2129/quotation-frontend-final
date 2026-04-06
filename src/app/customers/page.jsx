@@ -1,76 +1,43 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { customerService } from '@/services/customers';
+import { THEME } from '@/constants/ui';
+import { Search, Plus, User, MapPin, Mail, Phone, Users, Database } from 'lucide-react';
 import ActionButtons from '@/components/shared/ActionButtons';
-import CustomerModal from '@/components/modals/CustomerModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import Pagination from '@/components/shared/Pagination';
+import { useCustomers, useDeleteCustomer } from '@/features/customers/api/useCustomers';
+import { CustomerModal } from '@/features/customers/components/CustomerModal';
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 25;
+
+  const { data, isLoading, isError } = useCustomers(limit, (page - 1) * limit, searchQuery);
+  const deleteCustomer = useDeleteCustomer();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
   const [errorDetails, setErrorDetails] = useState({ open: false, message: '' });
-  const [error, setError] = useState(null);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const limit = 25;
 
-  const fetchCustomers = async () => {
-    try {
-      setIsLoading(true);
-      const response = await customerService.listCustomers(limit, (page - 1) * limit, searchQuery);
-      setCustomers(response.documents);
-      setTotal(response.total);
-    } catch (err) {
-      console.error("Failed to fetch customers:", err);
-      setError("Unable to load customers. Please check your Appwrite collection permissions and IDs.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCustomers();
-  }, [page]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-       if (page !== 1) setPage(1);
-       else fetchCustomers();
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
+  const customers = data?.documents || [];
+  const total = data?.total || 0;
 
   const openEditModal = (customer) => {
      setSelectedCustomer(customer);
      setIsModalOpen(true);
   };
 
-  const closeAndResetModal = () => {
-     setIsModalOpen(false);
-     setSelectedCustomer(null);
-  };
-
-  const handleDelete = (customer) => {
-     setDeleteConfirm({ open: true, row: customer });
-  };
-
   const commitDelete = async () => {
-     const customer = deleteConfirm.row;
-     if (!customer) return;
+     if (!deleteConfirm.row) return;
      try {
-        await customerService.deleteCustomer(customer.$id);
-        fetchCustomers();
+        await deleteCustomer.mutateAsync(deleteConfirm.row.$id);
+        setDeleteConfirm({ open: false, row: null });
      } catch (e) {
         setErrorDetails({ open: true, message: e.message || "Failed to remove customer record." });
-     } finally {
-        setDeleteConfirm({ open: false, row: null });
      }
   };
 
@@ -79,12 +46,11 @@ export default function CustomersPage() {
       title="Customer Base" 
       primaryAction={
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-95"
+          onClick={() => { setSelectedCustomer(null); setIsModalOpen(true); }}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-white shadow-lg transition-all hover:bg-zinc-800 active:scale-95"
+          style={{ fontSize: THEME.FONT_SIZE.BASE, fontWeight: 'bold' }}
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus className="h-4 w-4" />
           Add Customer
         </button>
       }
@@ -96,38 +62,32 @@ export default function CustomersPage() {
                 type="text" 
                 placeholder="Search by name, location or email..." 
                 className="w-full h-10 pl-10 pr-4 rounded-lg border border-zinc-200 bg-zinc-50 transition-all focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
+                style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setPage(1); // Reset to page 1 on new search
+                  setPage(1);
                 }}
               />
-              <svg className="h-4 w-4 absolute left-3 top-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="h-4 w-4 absolute left-3 top-3 text-zinc-400" />
            </div>
-           <div className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
+           <div className="font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+              <Database className="h-4 w-4 text-zinc-400" />
               Total Records: {total}
            </div>
         </div>
 
-        {error && (
-           <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
-              {error}
-           </div>
-        )}
-
         <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-zinc-50 text-xs font-semibold text-zinc-400 uppercase tracking-widest border-b border-zinc-200">
-                <tr>
-                  <th className="px-6 py-4 font-bold">Organization</th>
-                  <th className="px-6 py-4 font-bold">Contact Person</th>
-                  <th className="px-6 py-4 font-bold">Location</th>
-                  <th className="px-6 py-4 font-bold">Email</th>
-                  <th className="px-6 py-4 font-bold">Phone</th>
-                  <th className="px-6 py-4 font-bold text-right">Actions</th>
+              <thead className="bg-zinc-50 border-b border-zinc-200">
+                <tr style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+                  <th className="px-6 py-4 font-bold text-zinc-400 uppercase tracking-widest">Organization</th>
+                  <th className="px-6 py-4 font-bold text-zinc-400 uppercase tracking-widest">Contact Person</th>
+                  <th className="px-6 py-4 font-bold text-zinc-400 uppercase tracking-widest">Location</th>
+                  <th className="px-6 py-4 font-bold text-zinc-400 uppercase tracking-widest">Email</th>
+                  <th className="px-6 py-4 font-bold text-zinc-400 uppercase tracking-widest">Phone</th>
+                  <th className="px-6 py-4 font-bold text-zinc-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
@@ -144,7 +104,7 @@ export default function CustomersPage() {
                   ))
                 ) : customers.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-20 text-center text-zinc-400 italic font-medium">
+                    <td colSpan="6" className="px-6 py-20 text-center text-zinc-400 italic font-medium" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>
                        No customer records found matching the current search query.
                     </td>
                   </tr>
@@ -153,25 +113,25 @@ export default function CustomersPage() {
                     <tr key={customer.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                           <div className="h-8 w-8 min-w-[32px] rounded-md bg-zinc-950 flex items-center justify-center text-white text-xs font-bold">
+                           <div className="h-8 w-8 min-w-[32px] rounded-md bg-zinc-950 flex items-center justify-center text-white font-bold" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                               {customer.name?.substring(0, 1) || 'C'}
                            </div>
-                           <span className="font-bold text-zinc-900 tracking-tight">{customer.name}</span>
+                           <span className="font-bold text-zinc-900 tracking-tight" style={{ fontSize: THEME.FONT_SIZE.BASE }}>{customer.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-zinc-600 font-medium">{customer.contact_person || "—"}</td>
+                      <td className="px-6 py-4 text-zinc-600 font-medium" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>{customer.contact_person || "—"}</td>
                       <td className="px-6 py-4">
-                         <div className="flex items-center gap-1.5 text-zinc-500 text-xs">
-                            <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                         <div className="flex items-center gap-1.5 text-zinc-500" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>
+                            <MapPin className="h-3 w-3 shrink-0" />
                             <span className="truncate max-w-[120px]">{customer.location || "N/A"}</span>
                          </div>
                       </td>
-                      <td className="px-6 py-4 text-zinc-600 font-mono text-[11px]">{customer.email || "—"}</td>
-                      <td className="px-6 py-4 text-zinc-600 font-mono text-[11px]">{customer.phone || "—"}</td>
+                      <td className="px-6 py-4 text-zinc-600 font-mono" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>{customer.email || "—"}</td>
+                      <td className="px-6 py-4 text-zinc-600 font-mono" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>{customer.phone || "—"}</td>
                       <td className="px-6 py-4 text-right">
                          <ActionButtons 
                            onEdit={() => openEditModal(customer)} 
-                           onDelete={() => handleDelete(customer)} 
+                           onDelete={() => setDeleteConfirm({ open: true, row: customer })} 
                          />
                       </td>
                     </tr>
@@ -188,11 +148,7 @@ export default function CustomersPage() {
       {isModalOpen && (
          <CustomerModal 
             customer={selectedCustomer} 
-            onClose={closeAndResetModal} 
-            onSuccess={() => {
-              closeAndResetModal();
-              fetchCustomers();
-            }} 
+            onClose={() => setIsModalOpen(false)} 
             onError={(msg) => setErrorDetails({ open: true, message: msg })}
          />
       )}
@@ -206,6 +162,7 @@ export default function CustomersPage() {
          confirmText="DELETE RECORD"
          cancelText="CANCEL"
          type="danger"
+         isLoading={deleteCustomer.isPending}
       />
 
       <ConfirmationModal 

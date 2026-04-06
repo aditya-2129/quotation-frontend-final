@@ -4,7 +4,7 @@ import { COMPANY, safeParseItems } from '../constants/pdfConstants';
 
 const MARGIN = 10; // Process sheet uses tighter margins
 
-export async function generateProcessSheetPDF(quote) {
+export async function generateProcessSheetPDF(quote, { save = true } = {}) {
   if (!quote) return;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -123,5 +123,6 @@ export async function generateProcessSheetPDF(quote) {
   }
 
   const filename = `ProcessSheet_${quote.quotation_no || 'QTN'}.pdf`;
-  doc.save(filename);
+  if (save) doc.save(filename);
+  return doc;
 }
