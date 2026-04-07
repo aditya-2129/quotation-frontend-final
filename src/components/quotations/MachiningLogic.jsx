@@ -353,7 +353,7 @@ const MachiningLogic = ({
   const isExpanded = activePhase === 'machining';
 
   return (
-    <section className={`bg-white rounded-xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200' : 'border-zinc-200 shadow-sm'}`}>
+    <section className={`bg-white rounded-xl border transition-all duration-300 ${isExpanded ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200 overflow-visible' : 'border-zinc-200 shadow-sm overflow-hidden'}`}>
        <header 
          onClick={() => setActivePhase(isExpanded ? '' : 'machining')}
          className={`h-[52px] px-5 border-b cursor-pointer flex justify-between items-center group transition-colors ${isExpanded ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}

@@ -127,7 +127,9 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
   );
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl overflow-visible mb-2.5 transition-all hover:border-zinc-300">
+    <div 
+      className={`bg-white border border-zinc-200 rounded-xl overflow-visible mb-2.5 transition-all hover:border-zinc-300 relative ${isOpen ? 'z-[50]' : 'z-0'}`}
+    >
       <div className="flex items-stretch min-h-[50px]">
         {/* Step Indicator Sidebar */}
         <div className="w-12 bg-zinc-50 border-r border-zinc-100 flex flex-col items-center justify-center gap-1 py-2">

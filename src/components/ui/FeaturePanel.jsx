@@ -19,8 +19,8 @@ export const FeaturePanel = ({
 }) => {
   return (
     <section
-      className={`bg-white rounded-xl border transition-all duration-300 overflow-hidden shadow-sm ${
-        isExpanded ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200' : 'border-zinc-200'
+      className={`bg-white rounded-xl border transition-all duration-300 shadow-sm ${
+        isExpanded ? 'border-zinc-300 shadow-md ring-1 ring-zinc-200 overflow-visible' : 'border-zinc-200 overflow-hidden'
       } ${className}`}
     >
       <header

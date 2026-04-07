@@ -48,7 +48,7 @@ const ScopeAndIdentity = ({
        <div className="p-3 grid grid-cols-4 gap-x-4 gap-y-2.5 items-start">
           {/* Row 1: Personnel & Reach */}
           <div className="relative z-50">
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Organization / Customer
              </label>
               <div className="relative group">
@@ -159,7 +159,7 @@ const ScopeAndIdentity = ({
              </div>
           </div>
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Contact Person Name
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -174,7 +174,7 @@ const ScopeAndIdentity = ({
              />
           </div>
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Contact Number
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -190,7 +190,7 @@ const ScopeAndIdentity = ({
              />
           </div>
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Contact Email
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -207,13 +207,13 @@ const ScopeAndIdentity = ({
 
           {/* Row 2: Reference & Timeline */}
           <div>
-             <label className="block font-bold text-zinc-500 uppercase tracking-[0.12em] leading-none mb-1.5" style={{ fontSize: THEME.FONT_SIZE.TINY }}>Quotation ID</label>
+             <label className="block font-bold text-zinc-500 uppercase tracking-[0.12em] mb-1.5" style={{ fontSize: THEME.FONT_SIZE.TINY }}>Quotation ID</label>
              <div className="h-8.5 flex items-center px-4 bg-zinc-100/30 rounded-lg text-amber-700 font-mono font-semibold border border-amber-200/50 shadow-sm-inset transition-all tracking-tight" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>
                 {formData.quotation_no || 'GENERATING...'}
              </div>
           </div>
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Quotation Version
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -222,7 +222,7 @@ const ScopeAndIdentity = ({
              </div>
           </div>
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Date Received
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -236,7 +236,7 @@ const ScopeAndIdentity = ({
              />
           </div>
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Expected Delivery Date
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -252,7 +252,7 @@ const ScopeAndIdentity = ({
 
           {/* Row 3: Admin & Logistics */}
           <div className="relative z-40">
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Project Incharge
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -352,7 +352,7 @@ const ScopeAndIdentity = ({
           </div>
 
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Project Name
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -368,7 +368,7 @@ const ScopeAndIdentity = ({
           </div>
 
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Quantity to Make (Total)
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -383,7 +383,7 @@ const ScopeAndIdentity = ({
              />
           </div>
           <div>
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] mb-1.5 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                 Type of Project
                 <span className="text-red-500 font-black">*</span>
              </label>
@@ -409,8 +409,7 @@ const ScopeAndIdentity = ({
               {/* Project Snapshot (image) */}
               <div className="col-span-12 lg:col-span-4">
                  <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-3 flex items-center gap-1">
-                    PROJECT MODEL / SNAPSHOT 
-                    <span className="text-red-500 font-black">*</span>
+                    PROJECT MODEL / SNAPSHOT
                  </label>
                  
                  <div className="flex items-start gap-4">
@@ -480,13 +479,13 @@ const ScopeAndIdentity = ({
                     
                     <div className="flex-1 min-w-0 py-0.5">
                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className={`h-2 w-2 rounded-full ${formData.project_image ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-red-500 shadow-lg shadow-red-500/30'}`} />
-                          <span className={`text-[9px] font-black uppercase tracking-widest ${formData.project_image ? 'text-emerald-600' : 'text-red-600'}`}>
-                             {formData.project_image ? 'Registered' : 'Required'}
+                          <div className={`h-2 w-2 rounded-full ${formData.project_image ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-zinc-300 shadow-sm'}`} />
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${formData.project_image ? 'text-emerald-600' : 'text-zinc-400'}`}>
+                             {formData.project_image ? 'Registered' : 'Optional'}
                           </span>
                        </div>
                        <p className="text-[10px] font-semibold text-zinc-400 italic leading-snug">
-                          Technical snapshot or 3D model image required.
+                          Technical snapshot or 3D model image (if available).
                        </p>
                     </div>
                  </div>

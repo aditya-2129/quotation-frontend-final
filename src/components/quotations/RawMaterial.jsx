@@ -123,7 +123,9 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
   };
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl overflow-visible mb-2.5 transition-all hover:border-zinc-300">
+    <div 
+      className={`bg-white border border-zinc-200 rounded-xl overflow-visible mb-2.5 transition-all hover:border-zinc-300 relative ${isOpen ? 'z-[50]' : 'z-0'}`}
+    >
       <div className="flex items-stretch min-h-[50px]">
         {/* Step Indicator Sidebar */}
         <div className="w-12 bg-zinc-50 border-r border-zinc-100 flex flex-col items-center justify-center gap-1 py-2">
@@ -448,7 +450,7 @@ const RawMaterial = ({
   };
 
   return (
-    <section className={`bg-white rounded-xl border transition-all duration-300 ${activePhase === 'material' ? 'border-zinc-300 shadow-xl ring-1 ring-zinc-200/50' : 'border-zinc-200 shadow-sm'}`}>
+    <section className={`bg-white rounded-xl border transition-all duration-300 ${activePhase === 'material' ? 'border-zinc-300 shadow-xl ring-1 ring-zinc-200/50 overflow-visible' : 'border-zinc-200 shadow-sm overflow-hidden'}`}>
        <header 
          onClick={() => setActivePhase(activePhase === 'material' ? '' : 'material')}
          className={`h-[52px] px-5 border-b cursor-pointer flex justify-between items-center group rounded-t-xl transition-colors ${activePhase === 'material' ? 'bg-zinc-50 border-zinc-200' : 'bg-white border-zinc-100'}`}
