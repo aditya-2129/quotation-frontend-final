@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AssetPreviewModal from '../modals/AssetPreviewModal';
 import { assetService } from '@/services/assets';
+import { Trash2, Plus } from 'lucide-react';
 
 const BOMRegistry = ({ 
   formData, 
@@ -118,7 +119,7 @@ const BOMRegistry = ({
                        </span>
                     </td>
                     <td className="px-3 py-2">
-                        <div className="flex justify-center">
+                        <div className="flex items-center gap-4">
                              <input 
                                type="file" 
                                id={`part-image-${item.id}`} 
@@ -145,51 +146,56 @@ const BOMRegistry = ({
                                }}
                              />
                              {item.part_image ? (
-                                <div className="relative group/img h-11 w-11 rounded-lg border border-zinc-200 bg-zinc-50 overflow-hidden shadow-sm-inset cursor-pointer" onClick={() => setPreviewFile(item.part_image)}>
-                                   <img 
-                                     src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")} 
-                                     alt="Part" 
-                                     className="h-full w-full object-cover transition-transform group-hover/img:scale-110" 
-                                     onError={(e) => {
-                                        if (e.target.src.includes('preview')) {
-                                           e.target.src = item.part_image.localPreview || assetService.getFileView(item.part_image.$id)?.toString();
-                                        }
-                                     }}
-                                   />
-                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                      <button 
-                                        onClick={async (e) => {
-                                           e.stopPropagation();
-                                           if (item.part_image.$id) {
-                                              try {
-                                                 await assetService.deleteFile(item.part_image.$id);
-                                              } catch (err) {
-                                                 console.error("Deletion failed:", err);
-                                              }
+                                <div className="relative group/img flex-shrink-0">
+                                   <div 
+                                     className="h-14 w-14 rounded-xl border-2 border-zinc-200 bg-zinc-50 overflow-hidden shadow-sm-inset cursor-pointer"
+                                     onClick={() => setPreviewFile(item.part_image)}
+                                   >
+                                      <img 
+                                        src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")} 
+                                        alt="Part" 
+                                        className="h-full w-full object-cover transition-transform group-hover/img:scale-110" 
+                                        onError={(e) => {
+                                           if (e.target.src.includes('preview')) {
+                                              e.target.src = item.part_image.localPreview || assetService.getFileView(item.part_image.$id)?.toString();
                                            }
-                                           const newItems = [...formData.items];
-                                           newItems[idx].part_image = null;
-                                           setFormData({...formData, items: newItems});
                                         }}
-                                        className="p-1 rounded bg-red-500 text-white shadow-lg"
-                                      >
-                                         <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                                      </button>
+                                      />
+                                      <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/img:opacity-100 transition-opacity" />
                                    </div>
+                                   
+                                   <button 
+                                     onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (item.part_image.$id) {
+                                           try {
+                                              await assetService.deleteFile(item.part_image.$id);
+                                           } catch (err) {
+                                              console.error("Deletion failed:", err);
+                                           }
+                                        }
+                                        const newItems = [...formData.items];
+                                        newItems[idx].part_image = null;
+                                        setFormData({...formData, items: newItems});
+                                     }}
+                                     className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 shadow-lg opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-all z-20 scale-75 group-hover/img:scale-100"
+                                   >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                   </button>
                                 </div>
                              ) : (
-                                <label htmlFor={`part-image-${item.id}`} className="relative h-11 w-11 rounded-lg border-2 border-dashed border-zinc-200 bg-zinc-50 flex flex-col items-center justify-center gap-0.5 text-zinc-300 hover:border-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer group/upload overflow-hidden">
+                                <label htmlFor={`part-image-${item.id}`} className="relative h-14 w-14 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center gap-0.5 text-zinc-300 hover:border-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer group/upload overflow-hidden flex-shrink-0">
                                    {isUploading && (
                                       <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center">
                                          <div className="h-3 w-3 border-[1.5px] border-brand-primary border-t-transparent rounded-full animate-spin" />
                                       </div>
                                    )}
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    <span className="text-[6px] font-black uppercase tracking-tighter">PHOTO</span>
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    <span className="text-[7px] font-black uppercase tracking-tighter opacity-0 group-hover/upload:opacity-100 transition-opacity">Snap</span>
                                 </label>
                              )}
                         </div>
-                     </td>
+                    </td>
                     <td className="px-3 py-2">
                        <div className="relative group/input max-w-sm">
                           <input 
@@ -227,30 +233,16 @@ const BOMRegistry = ({
                             id={`drawing-${item.id}`} 
                             className="hidden" 
                             multiple
-                            accept=".pdf"
+                            accept=".pdf,.stp,.step,.dwg,.dxf"
                             disabled={isUploading}
                             onChange={async (e) => {
                                const selectedFiles = Array.from(e.target.files);
                                if (selectedFiles.length === 0) return;
                                
-                               const pdfFiles = selectedFiles.filter(file => 
-                                  file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-                               );
-
-                               if (pdfFiles.length === 0) {
-                                  if (onError) onError("Only PDF files are allowed for blueprints.");
-                                  e.target.value = '';
-                                  return;
-                               }
-
-                               if (pdfFiles.length < selectedFiles.length && onError) {
-                                  onError("Some files were skipped. Only PDF files are allowed.");
-                               }
-                               
                                setIsUploading(true);
                                try {
                                   const uploadedFiles = await Promise.all(
-                                     pdfFiles.map(file => assetService.uploadFile(file))
+                                     selectedFiles.map(file => assetService.uploadFile(file))
                                   );
                                   const newItems = [...formData.items];
                                   newItems[idx].design_files = [...(newItems[idx].design_files || []), ...uploadedFiles];
@@ -260,41 +252,54 @@ const BOMRegistry = ({
                                   if (onError) onError("Failed to upload assets. Check connection or file registry status.");
                                } finally {
                                   setIsUploading(false);
+                                  if (e.target) e.target.value = '';
                                }
                             }}
                           />
                           {item.design_files?.length > 0 ? (
                              <div className="flex flex-col items-start gap-1.5 w-full">
                                 <div className="flex flex-wrap justify-start gap-1.5 max-w-[400px] animate-in fade-in slide-in-from-top-1 duration-300">
-                                   {item.design_files.map((file, fIdx) => (
-                                      <div 
-                                        key={fIdx} 
-                                        onClick={() => setPreviewFile(file)}
-                                        className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-950 hover:border-brand-primary transition-all shadow-sm group/file cursor-pointer active:scale-95"
-                                      >
-                                         <svg className="h-3 w-3 text-zinc-400 group-hover/file:text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                         <span className="text-[10px] font-bold uppercase tracking-tight truncate max-w-[120px]">{file.name}</span>
-                                         <button 
-                                           onClick={async (e) => {
-                                              e.stopPropagation();
-                                              const fileToRemove = item.design_files[fIdx];
-                                              if (fileToRemove.$id) {
-                                                 try {
-                                                    await assetService.deleteFile(fileToRemove.$id);
-                                                 } catch (err) {
-                                                    console.error("Deletion failed:", err);
-                                                 }
-                                              }
-                                              const newItems = [...formData.items];
-                                              newItems[idx].design_files = newItems[idx].design_files.filter((_, i) => i !== fIdx);
-                                              setFormData({...formData, items: newItems});
-                                           }}
-                                           className="text-zinc-300 hover:text-red-500 transition-colors ml-0.5"
-                                         >
-                                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                                         </button>
-                                      </div>
-                                   ))}
+                                   {item.design_files.map((file, fIdx) => {
+                                       const isCAD = file.name?.toLowerCase().endsWith('.stp') || file.name?.toLowerCase().endsWith('.step') || file.name?.toLowerCase().endsWith('.dwg') || file.name?.toLowerCase().endsWith('.dxf');
+                                       return (
+                                          <div 
+                                            key={fIdx} 
+                                            className="relative group/file"
+                                          >
+                                             <div 
+                                               onClick={() => setPreviewFile(file)}
+                                               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all shadow-sm cursor-pointer active:scale-95 ${isCAD ? 'bg-cyan-50/50 border-cyan-100 hover:border-cyan-400' : 'bg-red-50/50 border-red-100 hover:border-red-400'}`}
+                                             >
+                                                {isCAD ? (
+                                                   <svg className="h-3 w-3 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                                ) : (
+                                                   <svg className="h-3 w-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                                )}
+                                                <span className={`text-[10px] font-bold uppercase tracking-tight truncate max-w-[120px] ${isCAD ? 'text-cyan-900' : 'text-red-900'}`}>{file.name}</span>
+                                             </div>
+                                             
+                                             <button 
+                                               onClick={async (e) => {
+                                                  e.stopPropagation();
+                                                  const fileToRemove = item.design_files[fIdx];
+                                                  if (fileToRemove.$id) {
+                                                     try {
+                                                        await assetService.deleteFile(fileToRemove.$id);
+                                                     } catch (err) {
+                                                        console.error("Deletion failed:", err);
+                                                     }
+                                                  }
+                                                  const newItems = [...formData.items];
+                                                  newItems[idx].design_files = newItems[idx].design_files.filter((_, i) => i !== fIdx);
+                                                  setFormData({...formData, items: newItems});
+                                               }}
+                                               className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 shadow-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-10 scale-75 group-hover:scale-100"
+                                             >
+                                                <Trash2 className="h-2.5 w-2.5" />
+                                             </button>
+                                          </div>
+                                       );
+                                    })}
                                    {isUploading ? (
                                       <div className="h-7 px-3 flex items-center gap-2 rounded-lg bg-zinc-50 border border-zinc-100 text-[9px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">
                                          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>

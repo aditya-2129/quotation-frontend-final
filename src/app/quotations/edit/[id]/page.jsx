@@ -85,6 +85,7 @@ export default function EditQuotationPage() {
     production_mode: 'Batch',
     quantity: 1,
     project_image: null,
+    inquiry_files: [],
     bought_out_items: [],
     items: [] 
   });
@@ -139,6 +140,9 @@ export default function EditQuotationPage() {
            const breakdown = JSON.parse(quote.detailed_breakdown || '{}');
            if (breakdown.bought_out_items) {
               consolidatedBOP = breakdown.bought_out_items;
+           }
+           if (breakdown.inquiry_files) {
+              formData.inquiry_files = breakdown.inquiry_files;
            } else {
               // Legacy migration: Collect from all items
               parsedItems.forEach(item => {
@@ -220,6 +224,18 @@ export default function EditQuotationPage() {
              }
           })() : null,
           bought_out_items: consolidatedBOP,
+          inquiry_pdfs: (() => {
+             try {
+                const breakdown = JSON.parse(quote.detailed_breakdown || '{}');
+                return breakdown.inquiry_pdfs || breakdown.inquiry_files || [];
+             } catch (e) { return []; }
+          })(),
+          inquiry_cad_files: (() => {
+             try {
+                const breakdown = JSON.parse(quote.detailed_breakdown || '{}');
+                return breakdown.inquiry_cad_files || [];
+             } catch (e) { return []; }
+          })(),
           items: sanitizedItems
         });
 
@@ -495,7 +511,9 @@ export default function EditQuotationPage() {
           detailed_breakdown: JSON.stringify({ 
              ...totals, 
              quoting_engineer_details: formData.quoting_engineer_details,
-             bought_out_items: formData.bought_out_items
+             bought_out_items: formData.bought_out_items,
+             inquiry_pdfs: formData.inquiry_pdfs || [],
+             inquiry_cad_files: formData.inquiry_cad_files || []
           }),
           total_amount: totals.grandTotal,
           unit_price: totals.unitFinal,
@@ -605,7 +623,9 @@ export default function EditQuotationPage() {
            }))),
            detailed_breakdown: JSON.stringify({
               ...totals,
-              bought_out_items: formData.bought_out_items
+              bought_out_items: formData.bought_out_items,
+              inquiry_pdfs: formData.inquiry_pdfs || [],
+              inquiry_cad_files: formData.inquiry_cad_files || []
            }),
            total_amount: totals.grandTotal,
            unit_price: totals.unitFinal,
@@ -673,7 +693,9 @@ export default function EditQuotationPage() {
            detailed_breakdown: JSON.stringify({ 
               ...totals, 
               quoting_engineer_details: formData.quoting_engineer_details,
-              bought_out_items: formData.bought_out_items
+              bought_out_items: formData.bought_out_items,
+              inquiry_pdfs: formData.inquiry_pdfs || [],
+              inquiry_cad_files: formData.inquiry_cad_files || []
            }),
            total_amount: totals.grandTotal,
            unit_price: totals.unitFinal,

@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { THEME } from '@/constants/ui';
-import { Search, UserPlus, X, ChevronDown, Calendar, Hash, Layers, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, UserPlus, X, ChevronDown, Calendar, Hash, Layers, Image as ImageIcon, CheckCircle2, AlertCircle, FileText, FileUp, Trash2 } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
+import { assetService } from '@/services/assets';
 import { FeaturePanel } from '@/components/ui/FeaturePanel';
+import AssetPreviewModal from '@/components/modals/AssetPreviewModal';
 
 const ScopeAndIdentity = ({ 
   formData, 
@@ -21,9 +23,11 @@ const ScopeAndIdentity = ({
   setIsDropdownOpen,
   panelIndex = 1
 }) => {
-  const { isUploading, uploadFile, getPreviewUrl } = useAssets();
+  const { isUploading, uploadFile, uploadFiles, getPreviewUrl } = useAssets();
+  const [isUploadingImg, setIsUploadingImg] = useState(false);
   const [userSearch, setUserSearch] = useState(formData.quoting_engineer || "");
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
 
   // Sync search input with form data
   useEffect(() => {
@@ -400,80 +404,233 @@ const ScopeAndIdentity = ({
              </div>
           </div>
 
-          {/* Row 4: Project Snapshot / Model Image */}
-          <div className="col-span-4 mt-4 pt-4 border-t border-zinc-100">
-             <label className="block font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-3 flex items-center gap-1" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
-                PROJECT MODEL / SNAPSHOT 
-                <span className="text-red-500 font-black">*</span>
-                <span className="ml-2 font-medium text-zinc-400 normal-case italic" style={{ fontSize: THEME.FONT_SIZE.TINY }}>(Clear technical image or 3D snapshot required)</span>
-             </label>
-             
-             <div className="flex items-start gap-4">
-                <div className="relative group/upload h-28 w-44 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center transition-all hover:bg-white hover:border-brand-primary/50 overflow-hidden shadow-sm-inset text-center">
-                   {formData.project_image ? (
-                      <div className="absolute inset-0 group/img">
-                         <img 
-                           src={formData.project_image.localPreview || (formData.project_image.$id ? getPreviewUrl(formData.project_image.$id) : "")} 
-                           alt="Project Model" 
-                           className="h-full w-full object-cover transition-transform group-hover/img:scale-105"
-                         />
-                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <button 
-                              type="button"
-                              onClick={() => setFormData({...formData, project_image: null})}
-                              className="h-8 w-8 rounded-full bg-white text-red-500 flex items-center justify-center shadow-lg hover:scale-110 transition-all active:scale-95 z-20"
-                            >
-                               <Trash2 className="h-4.5 w-4.5" />
-                            </button>
-                         </div>
-                      </div>
-                   ) : (
-                      <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full p-2 relative">
-                         {isUploading && (
-                            <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center rounded-xl">
-                               <div className="h-6 w-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin mb-2" />
-                               <span className="font-bold text-zinc-600 uppercase tracking-widest" style={{ fontSize: THEME.FONT_SIZE.TINY }}>Uploading...</span>
-                            </div>
-                         )}
-                         <input 
-                           type="file" 
-                           className="hidden" 
-                           accept="image/*"
-                           onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              try {
-                                 const uploaded = await uploadFile(file);
-                                 setFormData({...formData, project_image: { ...uploaded, localPreview: URL.createObjectURL(file) }});
-                              } catch (err) {
-                                 alert("Image upload failed: " + err.message);
-                              } finally {
-                                 if (e.target) e.target.value = '';
-                              }
-                           }}
-                         />
-                         <div className="h-10 w-10 rounded-xl bg-white border border-zinc-100 flex items-center justify-center text-zinc-300 group-hover/upload:text-brand-primary group-hover/upload:border-brand-primary/20 transition-all shadow-sm mb-2">
-                            <ImageIcon className="h-5 w-5" />
-                         </div>
-                         <span className="font-black text-zinc-400 uppercase tracking-tighter group-hover/upload:text-brand-primary transition-colors" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>Select Model Image</span>
-                      </label>
-                   )}
-                </div>
-                
-                <div className="flex-1 space-y-3 py-2">
-                   <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${formData.project_image ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-red-500 shadow-lg shadow-red-500/30'}`} />
-                      <span className={`font-black uppercase tracking-widest ${formData.project_image ? 'text-emerald-600' : 'text-red-600'}`} style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>
-                         {formData.project_image ? 'Image Registered' : 'Image Missing (Required)'}
-                      </span>
-                   </div>
-                   <p className="max-w-[400px] font-semibold text-zinc-400 italic leading-snug" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>
-                      Please upload a clear high-resolution image of the 3D model or technical drawing. This image will appear in the final quotation document and serve as the project reference.
-                   </p>
-                </div>
-             </div>
-          </div>
-       </div>
+           {/* Combined Assets Row (Single Row for Snapshot, PDFs, and CAD) */}
+           <div className="col-span-4 mt-6 pt-6 border-t border-zinc-100 grid grid-cols-12 gap-8">
+              {/* Project Snapshot (image) */}
+              <div className="col-span-12 lg:col-span-4">
+                 <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-3 flex items-center gap-1">
+                    PROJECT MODEL / SNAPSHOT 
+                    <span className="text-red-500 font-black">*</span>
+                 </label>
+                 
+                 <div className="flex items-start gap-4">
+                    <div className="relative group/upload h-20 w-32 flex-shrink-0">
+                       {formData.project_image ? (
+                          <>
+                             <div className="absolute inset-0 rounded-xl border-2 border-zinc-200 bg-zinc-50 overflow-hidden shadow-sm-inset group/img">
+                                <img 
+                                   src={formData.project_image.localPreview || (formData.project_image.$id ? assetService.getFilePreview(formData.project_image.$id)?.toString() : "")} 
+                                   alt="Project Model" 
+                                   className="h-full w-full object-cover transition-transform group-hover/img:scale-110"
+                                   onError={(e) => {
+                                      if (e.target.src.includes('preview')) {
+                                         e.target.src = formData.project_image.localPreview || assetService.getFileView(formData.project_image.$id)?.toString();
+                                      }
+                                   }}
+                                />
+                                <div className="absolute inset-0 bg-zinc-950/20 opacity-0 group-hover/img:opacity-100 transition-opacity" />
+                                <button 
+                                   type="button"
+                                   onClick={() => setPreviewFile(formData.project_image)}
+                                   className="absolute inset-0 z-20"
+                                />
+                             </div>
+                             <button 
+                               type="button"
+                               onClick={() => setFormData({...formData, project_image: null})}
+                               className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 shadow-lg opacity-0 group-hover/upload:opacity-100 flex items-center justify-center transition-all z-30 scale-75 group-hover/upload:scale-100"
+                             >
+                                <Trash2 className="h-3.5 w-3.5" />
+                             </button>
+                          </>
+                       ) : (
+                          <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full p-2 relative rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 hover:bg-white hover:border-brand-primary/50 transition-all shadow-sm-inset">
+                             {isUploadingImg && (
+                                <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center rounded-xl">
+                                   <div className="h-4 w-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                                </div>
+                             )}
+                             <input 
+                               type="file" 
+                               className="hidden" 
+                               accept="image/*"
+                               onChange={async (e) => {
+                                  const file = e.target.files[0];
+                                  if (!file) return;
+                                  setIsUploadingImg(true);
+                                  try {
+                                     const uploaded = await assetService.uploadFile(file);
+                                     const localPreviewUrl = URL.createObjectURL(file);
+                                     setFormData({...formData, project_image: { ...uploaded, localPreview: localPreviewUrl }});
+                                  } catch (err) {
+                                     alert("Image upload failed: " + err.message);
+                                  } finally {
+                                     setIsUploadingImg(false);
+                                     if (e.target) e.target.value = null;
+                                  }
+                               }}
+                             />
+                             <div className="h-8 w-8 rounded-lg bg-white border border-zinc-100 flex items-center justify-center text-zinc-300 group-hover/upload:text-brand-primary group-hover/upload:border-brand-primary/20 transition-all shadow-sm mb-1.5">
+                                <ImageIcon className="h-4 w-4" />
+                             </div>
+                             <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter group-hover/upload:text-brand-primary transition-colors leading-none">Snapshot</span>
+                          </label>
+                       )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0 py-0.5">
+                       <div className="flex items-center gap-2 mb-1.5">
+                          <div className={`h-2 w-2 rounded-full ${formData.project_image ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-red-500 shadow-lg shadow-red-500/30'}`} />
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${formData.project_image ? 'text-emerald-600' : 'text-red-600'}`}>
+                             {formData.project_image ? 'Registered' : 'Required'}
+                          </span>
+                       </div>
+                       <p className="text-[10px] font-semibold text-zinc-400 italic leading-snug">
+                          Technical snapshot or 3D model image required.
+                       </p>
+                    </div>
+                 </div>
+              </div>
+
+              {/* PDF Inquiry Files */}
+              <div className="col-span-12 lg:col-span-4 lg:border-l lg:pl-6 border-zinc-100">
+                 <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-3">
+                    Inquiry PDFs
+                 </label>
+                 <div className="flex flex-wrap gap-2.5">
+                    <label className="relative group/file h-20 w-32 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center transition-all hover:bg-white hover:border-brand-primary/50 overflow-hidden shadow-sm-inset cursor-pointer px-4 text-center shrink-0">
+                       <input 
+                         type="file" 
+                         multiple
+                         className="hidden" 
+                         accept=".pdf"
+                         onChange={async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length === 0) return;
+                            try {
+                               const responses = await uploadFiles(files);
+                               setFormData(prev => ({
+                                  ...prev,
+                                  inquiry_pdfs: [...(prev.inquiry_pdfs || []), ...responses]
+                               }));
+                            } catch (err) {
+                               alert("PDF upload failed: " + err.message);
+                            } finally {
+                               if (e.target) e.target.value = null;
+                            }
+                         }}
+                       />
+                       <div className="h-6 w-6 rounded-lg bg-white border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover/file:text-brand-primary transition-all shadow-sm mb-1">
+                          <FileUp className="h-3.5 w-3.5" />
+                       </div>
+                       <span className="font-black text-zinc-400 uppercase tracking-tighter group-hover/file:text-brand-primary transition-colors leading-none text-[8px]">Add PDF</span>
+                    </label>
+
+                    {(formData.inquiry_pdfs || []).map((file, idx) => (
+                       <div key={file.$id || idx} className="h-20 w-32 rounded-xl bg-[#F8FAFC] border border-zinc-200/60 p-3 flex flex-col items-center justify-center group relative shadow-sm hover:shadow-md hover:border-brand-primary/30 transition-all shrink-0">
+                          <div className="h-9 w-9 rounded-xl bg-white border border-zinc-100 flex items-center justify-center text-red-500 shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                             <FileText className="h-5 w-5" />
+                          </div>
+                          <div className="w-full text-center px-1">
+                             <div className="text-[9px] font-black text-zinc-900 truncate leading-none mb-0.5" title={file.name}>{file.name}</div>
+                             <div className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter">{(file.sizeOriginal/ (1024 * 1024)).toFixed(2)} MB • PDF</div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                               setFormData(prev => ({
+                                  ...prev,
+                                  inquiry_pdfs: (prev.inquiry_pdfs || []).filter(f => f.$id !== file.$id)
+                               }));
+                            }}
+                            className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-600 hover:border-red-100 shadow-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-30 scale-75 group-hover:scale-100"
+                          >
+                             <Trash2 className="h-3 w-3" />
+                          </button>
+                          <a 
+                             href={assetService.getFileView(file.$id)} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="absolute inset-0 rounded-xl z-20"
+                          />
+                       </div>
+                    ))}
+                 </div>
+              </div>
+
+              {/* CAD / STP Files */}
+              <div className="col-span-12 lg:col-span-4 lg:border-l lg:pl-6 border-zinc-100">
+                 <label className="block text-[9px] font-bold text-zinc-950 uppercase tracking-[0.12em] leading-none mb-3">
+                    STP / CAD Models
+                 </label>
+                 <div className="flex flex-wrap gap-2.5">
+                    <label className="relative group/file h-20 w-32 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center transition-all hover:bg-white hover:border-brand-primary/50 overflow-hidden shadow-sm-inset cursor-pointer px-4 text-center shrink-0">
+                       <input 
+                         type="file" 
+                         multiple
+                         className="hidden" 
+                         accept=".stp,.step,.dwg,.dxf,.zip"
+                         onChange={async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length === 0) return;
+                            try {
+                               const responses = await uploadFiles(files);
+                               setFormData(prev => ({
+                                  ...prev,
+                                  inquiry_cad_files: [...(prev.inquiry_cad_files || []), ...responses]
+                               }));
+                            } catch (err) {
+                               alert("CAD upload failed: " + err.message);
+                            } finally {
+                               if (e.target) e.target.value = null;
+                            }
+                         }}
+                       />
+                       <div className="h-6 w-6 rounded-lg bg-white border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover/file:text-brand-primary transition-all shadow-sm mb-1">
+                          <FileUp className="h-3.5 w-3.5" />
+                       </div>
+                       <span className="font-black text-zinc-400 uppercase tracking-tighter group-hover/file:text-brand-primary transition-colors leading-none text-[8px]">Add CAD</span>
+                    </label>
+
+                    {(formData.inquiry_cad_files || []).map((file, idx) => (
+                       <div key={file.$id || idx} className="h-20 w-32 rounded-xl bg-[#F8FAFC] border border-zinc-200/60 p-3 flex flex-col items-center justify-center group relative shadow-sm hover:shadow-md hover:border-brand-primary/30 transition-all shrink-0">
+                          <div className="h-9 w-9 rounded-xl bg-white border border-zinc-100 flex items-center justify-center text-brand-primary shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                             <Layers className="h-5 w-5" />
+                          </div>
+                          <div className="w-full text-center px-1">
+                             <div className="text-[9px] font-black text-zinc-900 truncate leading-none mb-0.5" title={file.name}>{file.name}</div>
+                             <div className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter">{(file.sizeOriginal/ (1024 * 1024)).toFixed(2)} MB • CAD</div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                               setFormData(prev => ({
+                                  ...prev,
+                                  inquiry_cad_files: (prev.inquiry_cad_files || []).filter(f => f.$id !== file.$id)
+                               }));
+                            }}
+                            className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-600 hover:border-red-100 shadow-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-30 scale-75 group-hover:scale-100"
+                          >
+                             <Trash2 className="h-3 w-3" />
+                          </button>
+                          <a 
+                             href={assetService.getFileView(file.$id)} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="absolute inset-0 rounded-xl z-20"
+                          />
+                       </div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        <AssetPreviewModal 
+           isOpen={!!previewFile} 
+           onClose={() => setPreviewFile(null)} 
+           file={previewFile}
+        />
      </FeaturePanel>
   );
 };

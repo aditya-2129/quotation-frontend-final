@@ -39,6 +39,16 @@ export const assetService = {
         }
     },
 
+    getFileDownload(fileId) {
+        try {
+            const result = storage.getFileDownload(BUCKETS.INQUIRY_FILES, fileId);
+            return result?.href || result?.toString() || `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${BUCKETS.INQUIRY_FILES}/files/${fileId}/download?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
+        } catch (error) {
+            console.error("Appwrite Service Error [getFileDownload]:", error);
+            return `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${BUCKETS.INQUIRY_FILES}/files/${fileId}/download?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
+        }
+    },
+
     async deleteFile(fileId) {
         try {
             await storage.deleteFile(BUCKETS.INQUIRY_FILES, fileId);

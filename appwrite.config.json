@@ -641,7 +641,7 @@
             "fileSecurity": false,
             "name": "Inquiry Files",
             "enabled": true,
-            "maximumFileSize": 30000000,
+            "maximumFileSize": 50000000,
             "allowedFileExtensions": [],
             "compression": "none",
             "encryption": true,

@@ -69,6 +69,8 @@ export default function NewQuotationPage() {
     quantity: 1,
     bought_out_items: [],
     project_image: null,
+    inquiry_pdfs: [],
+    inquiry_cad_files: [],
     items: [
       {
         id: Date.now(),
@@ -358,7 +360,9 @@ export default function NewQuotationPage() {
             detailed_breakdown: JSON.stringify({ 
                ...totals, 
                quoting_engineer_details: formData.quoting_engineer_details,
-               bought_out_items: formData.bought_out_items
+               bought_out_items: formData.bought_out_items,
+               inquiry_pdfs: formData.inquiry_pdfs || [],
+               inquiry_cad_files: formData.inquiry_cad_files || []
             }),
             total_amount: totals.grandTotal,
             unit_price: totals.unitFinal,
@@ -476,7 +480,8 @@ export default function NewQuotationPage() {
             }))),
             detailed_breakdown: JSON.stringify({
                ...totals,
-               bought_out_items: formData.bought_out_items
+               bought_out_items: formData.bought_out_items,
+               inquiry_files: formData.inquiry_files || []
             }),
             total_amount: totals.grandTotal,
             unit_price: totals.unitFinal,
