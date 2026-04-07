@@ -8,9 +8,10 @@ import { customerService } from '@/services/customers';
 import { materialService } from '@/services/materials';
 import { laborRateService, bopRateService } from '@/services/rates';
 import { userService } from '@/services/users';
-import CustomerModal from '@/components/modals/CustomerModal';
+import { CustomerModal } from '@/features/customers/components/CustomerModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import ValidationModal from '@/components/modals/ValidationModal';
+import { calculateQuotationTotals } from '@/features/quotations/utils/calculations';
 import ScopeAndIdentity from '@/features/quotations/components/ScopeAndIdentity';
 import BOMRegistry from '@/features/quotations/components/BOMRegistry';
 import RawMaterial from '@/features/quotations/components/RawMaterial';
@@ -299,66 +300,7 @@ export default function EditQuotationPage() {
      });
   };
 
-  const calculateTotals = () => {
-    let materialUnit = 0;
-    let laborUnit = 0;
-    let bopUnit = 0;
-    let treatmentUnit = 0;
-
-    const projectQty = Number(formData.quantity || 1);
-    
-    // Project-wide extras (Consultation, Logistics, One-time fees) - Added ONCE at the end
-    const totalEngineeringProject = Number(formData.design_cost || 0) + Number(formData.assembly_cost || 0); 
-    const totalLogisticsProject = Number(formData.packaging_cost || 0) + Number(formData.transportation_cost || 0);
-
-    formData.items.forEach(item => {
-      const partQtyPerModel = parseFloat(item.qty || 1);
-      
-      // 1. Material Unit Cost
-      if (item.material && item.material_weight > 0) {
-          materialUnit += (item.material_weight * (item.material.base_rate || 0)) * partQtyPerModel;
-      }
-
-      // 2. Labor Unit Cost
-      laborUnit += (item.processes || []).reduce((acc, p) => {
-          const rate = parseFloat(p.rate || p.hourly_rate || 0);
-          const unit = p.unit || 'hr';
-          if (unit === 'hr') {
-            const totalMinutesForUnit = (parseFloat(p.setup_time || 0) / projectQty) + (parseFloat(p.cycle_time || 0) * partQtyPerModel);
-            return acc + (rate * (totalMinutesForUnit / 60));
-          }
-          return acc + (partQtyPerModel * parseFloat(p.cycle_time || 0) * rate);
-      }, 0);
-
-      // 3. Treatments Unit Cost
-      treatmentUnit += (item.treatments || []).reduce((acc, t) => acc + (parseFloat(t.cost || 0) * (t.per_unit !== false ? partQtyPerModel : (1/projectQty))), 0);
-    });
-
-    // 4. BOP Unit Cost (Consolidated for the whole unit)
-    bopUnit = (formData.bought_out_items || []).reduce((acc, b) => acc + (parseFloat(b.rate || 0) * (b.qty || 1)), 0);
-    
-    const unitSubtotal = Number(materialUnit) + Number(laborUnit) + Number(bopUnit) + Number(treatmentUnit);
-    const unitFinal = Math.round((unitSubtotal * (1 + (Number(formData.markup || 0) / 100))) * 100) / 100;
-    
-    // Grand Total logic: (Unit Price * Qty) + Project Extras (Flat/Once)
-    const totalExtras = Number(totalEngineeringProject) + Number(totalLogisticsProject);
-    const grandTotal = Number((unitFinal * projectQty) + totalExtras);
-    
-    return { 
-      unitSubtotal,
-      unitFinal,
-      grandTotal, 
-      materialCost: materialUnit, 
-      laborCost: laborUnit, 
-      bopCost: bopUnit, 
-      treatmentCost: treatmentUnit, 
-      engineeringCost: totalEngineeringProject, 
-      commercialCost: totalLogisticsProject,
-      totalExtras
-    };
-  };
-
-  const totals = calculateTotals();
+  const totals = calculateQuotationTotals(formData);
 
   const validateForm = () => {
     const missingFields = [];
@@ -387,7 +329,8 @@ export default function EditQuotationPage() {
           if (!item.material) {
              missingFields.push(`${pName}: Material Selection`);
           } else {
-             if (!item.material.base_rate || item.material.base_rate <= 0) {
+             const isSpecialJob = item.jobType === 'rework' || item.jobType === 'labour';
+             if (!isSpecialJob && (!item.material.base_rate || item.material.base_rate <= 0)) {
                 missingFields.push(`${pName}: Material Base Rate`);
              }
              if (!item.material_weight || item.material_weight <= 0) {

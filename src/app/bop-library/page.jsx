@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { THEME } from '@/constants/ui';
 import { Search, Plus, Trash2, Edit3, Package, Database } from 'lucide-react';
-import ActionButtons from '@/components/shared/ActionButtons';
+import ActionButtons from '@/components/ui/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import { useBOPList, useDeleteBOP } from '@/features/inventory/api/useBOP';
 import { BOPModal } from '@/features/inventory/components/BOPModal';

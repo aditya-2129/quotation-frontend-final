@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { THEME } from '@/constants/ui';
 import { Search, Plus, User, MapPin, Mail, Phone, Users, Database } from 'lucide-react';
-import ActionButtons from '@/components/shared/ActionButtons';
+import ActionButtons from '@/components/ui/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
-import Pagination from '@/components/shared/Pagination';
+import Pagination from '@/components/ui/Pagination';
 import { useCustomers, useDeleteCustomer } from '@/features/customers/api/useCustomers';
 import { CustomerModal } from '@/features/customers/components/CustomerModal';
 

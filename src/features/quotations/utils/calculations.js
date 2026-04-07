@@ -25,7 +25,7 @@ export const calculateQuotationTotals = (formData) => {
     
     // 1. Material Unit Cost
     if (item.material && item.material_weight > 0) {
-        materialUnit += (item.material_weight * item.material.base_rate) * partQtyPerModel;
+        materialUnit += (item.material_weight * (item.material.base_rate || 0)) * partQtyPerModel;
     }
 
     // 2. Labor Unit Cost

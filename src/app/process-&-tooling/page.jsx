@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { laborRateService, bopRateService } from '@/services/rates';
-import ActionButtons from '@/components/shared/ActionButtons';
+import ActionButtons from '@/components/ui/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 
 export default function ToolingRatePage() {

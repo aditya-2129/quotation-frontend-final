@@ -9,7 +9,7 @@ import { materialService } from '@/services/materials';
 import { laborRateService, bopRateService } from '@/services/rates';
 import { userService } from '@/services/users';
 import { useRouter } from 'next/navigation';
-import CustomerModal from '@/components/modals/CustomerModal';
+import { CustomerModal } from '@/features/customers/components/CustomerModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import ValidationModal from '@/components/modals/ValidationModal';
 import ScopeAndIdentity from '@/features/quotations/components/ScopeAndIdentity';
@@ -255,7 +255,8 @@ export default function NewQuotationPage() {
             if (!item.material) {
                missingFields.push(`${pName}: Material Selection`);
             } else {
-               if (!item.material.base_rate || item.material.base_rate <= 0) {
+               const isSpecialJob = item.jobType === 'rework' || item.jobType === 'labour';
+               if (!isSpecialJob && (!item.material.base_rate || item.material.base_rate <= 0)) {
                   missingFields.push(`${pName}: Material Base Rate`);
                }
                if (!item.material_weight || item.material_weight <= 0) {

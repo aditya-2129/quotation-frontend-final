@@ -128,7 +128,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
 
   return (
     <div 
-      className={`bg-white border border-zinc-200 rounded-xl overflow-visible mb-2.5 transition-all hover:border-zinc-300 relative ${isOpen ? 'z-[50]' : 'z-0'}`}
+      className={`bg-white border border-zinc-200 rounded-xl overflow-visible mb-2.5 transition-all hover:border-zinc-300 relative ${isOpen ? 'z-[50]' : 'z-0'} ${item.jobType === 'rework' ? 'ring-1 ring-amber-500/20 bg-amber-50/5' : item.jobType === 'labour' ? 'ring-1 ring-blue-500/20 bg-blue-50/5' : ''}`}
     >
       <div className="flex items-stretch min-h-[50px]">
         {/* Step Indicator Sidebar */}
@@ -148,31 +148,54 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
         {/* Dynamic Workspace */}
         <div className="flex-1 p-2 flex flex-wrap items-center gap-4">
             {/* Section 0: Part Profile */}
-            <div className="w-48 border-r border-zinc-100 pr-4 flex items-center gap-3">
-               {item.part_image ? (
-                  <div className="h-10 w-10 rounded-lg border border-zinc-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
-                     <img 
-                        src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")}
-                        alt="Component" 
-                        className="h-full w-full object-cover"
-                     />
+            <div className="w-48 border-r border-zinc-100 pr-4 flex flex-col gap-2">
+               <div className="flex items-center gap-3">
+                  {item.part_image ? (
+                     <div className="h-10 w-10 rounded-lg border border-zinc-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
+                        <img 
+                           src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")}
+                           alt="Component" 
+                           className="h-full w-full object-cover"
+                        />
+                     </div>
+                  ) : (
+                     <div className="h-10 w-10 rounded-lg border-2 border-dashed border-zinc-100 bg-zinc-50 flex items-center justify-center flex-shrink-0">
+                        <ImageIcon className="h-4 w-4 text-zinc-200" />
+                     </div>
+                  )}
+                  <div className="min-w-0">
+                     <span className="font-black text-zinc-300 uppercase tracking-widest block mb-0.5" style={{ fontSize: '9px' }}>Part Name</span>
+                     <h4 className="font-black text-zinc-950 truncate leading-tight" style={{ fontSize: THEME.FONT_SIZE.BASE }}>{item.part_name}</h4>
                   </div>
-               ) : (
-                  <div className="h-10 w-10 rounded-lg border-2 border-dashed border-zinc-100 bg-zinc-50 flex items-center justify-center flex-shrink-0">
-                     <ImageIcon className="h-4 w-4 text-zinc-200" />
-                  </div>
-               )}
-               <div className="min-w-0">
-                  <span className="font-black text-zinc-300 uppercase tracking-widest block mb-0.5" style={{ fontSize: '9px' }}>Part Name</span>
-                  <h4 className="font-black text-zinc-950 truncate leading-tight mb-0.5" style={{ fontSize: THEME.FONT_SIZE.BASE }}>{item.part_name}</h4>
-                  <span className="font-bold text-zinc-400 font-mono italic" style={{ fontSize: '8px' }}>REF: {item.id}</span>
+               </div>
+               <div className="flex gap-1">
+                  <button 
+                    onClick={() => {
+                       const newType = item.jobType === 'rework' ? 'standard' : 'rework';
+                       onUpdate({ jobType: newType });
+                    }}
+                    className={`flex-1 px-1.5 py-1 rounded-lg text-[7px] font-black uppercase tracking-tight border transition-all text-center ${item.jobType === 'rework' ? 'bg-amber-500 border-amber-600 text-white shadow-sm shadow-amber-500/20' : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50'}`}
+                  >
+                     Rework
+                  </button>
+                  <button 
+                    onClick={() => {
+                       const newType = item.jobType === 'labour' ? 'standard' : 'labour';
+                       onUpdate({ jobType: newType });
+                    }}
+                    className={`flex-1 px-1.5 py-1 rounded-lg text-[7px] font-black uppercase tracking-tight border transition-all text-center ${item.jobType === 'labour' ? 'bg-blue-600 border-blue-700 text-white shadow-sm shadow-blue-500/20' : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50'}`}
+                  >
+                     Labour
+                  </button>
                </div>
             </div>
 
             {/* Step 1: Material Selection */}
             <div className={`flex-[1.5] min-w-[280px] transition-all duration-500 ${step > 1 && !isOpen ? 'opacity-80 scale-[0.99]' : ''}`}>
                <div className={`relative group ${isOpen ? 'z-[100]' : 'z-0'}`}>
-                 <span className="font-black text-zinc-400 uppercase tracking-widest block mb-1.5 flex items-center gap-1" style={{ fontSize: '9px' }}>01. Pick Material Grade <span className="text-red-500 font-extrabold">*</span></span>
+                 <div className="flex items-center mb-1.5">
+                    <span className="font-black text-zinc-400 uppercase tracking-widest flex items-center gap-1" style={{ fontSize: '9px' }}>01. Pick Material Grade <span className="text-red-500 font-extrabold">*</span></span>
+                 </div>
                  <div className="flex gap-2">
                     <div className="relative flex-1">
                        <input 
@@ -281,7 +304,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                    </>
                  )}
 
-                 {item.material?.isManual && (
+                 {item.material?.isManual && item.jobType === 'standard' && (
                     <div className="mt-4 p-3.5 rounded-xl bg-amber-50/50 border border-amber-100/50 animate-in fade-in slide-in-from-top-2 duration-500">
                        <div className="flex items-center gap-2 mb-2">
                           <div className="h-4 w-4 rounded-full bg-amber-500 flex items-center justify-center">
@@ -455,7 +478,9 @@ const RawMaterial = ({
     });
   };
 
-  const isComplete = formData.items.every(item => item.material && item.shape && (item.material_weight > 0));
+  const isComplete = formData.items.every(item => {
+    return item.material && item.shape && item.material_weight > 0;
+  });
 
   return (
     <FeaturePanel

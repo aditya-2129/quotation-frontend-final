@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { THEME } from '@/constants/ui';
 import { Search, Plus, Trash2, Edit3, Package, Database } from 'lucide-react';
-import ActionButtons from '@/components/shared/ActionButtons';
+import ActionButtons from '@/components/ui/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
-import Pagination from '@/components/shared/Pagination';
+import Pagination from '@/components/ui/Pagination';
 import { useMaterials, useDeleteMaterial } from '@/features/inventory/api/useMaterials';
 import { MaterialModal } from '@/features/inventory/components/MaterialModal';
 

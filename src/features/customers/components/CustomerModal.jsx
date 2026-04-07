@@ -5,7 +5,7 @@ import { THEME } from '@/constants/ui';
 import { X, User, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
 import { useCreateCustomer, useUpdateCustomer } from '../api/useCustomers';
 
-export const CustomerModal = ({ customer, onClose, onError }) => {
+export const CustomerModal = ({ customer, onClose, onError, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: customer?.name || '',
     contact_person: customer?.contact_person || '',
@@ -13,19 +13,62 @@ export const CustomerModal = ({ customer, onClose, onError }) => {
     phone: customer?.phone || '',
     location: customer?.location || ''
   });
+  const [errors, setErrors] = useState({});
 
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const isSubmitting = createCustomer.isPending || updateCustomer.isPending;
 
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.contact_person.trim()) newErrors.contact_person = "Contact is required";
+    if (!formData.location.trim()) newErrors.location = "Location is required";
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Invalid email";
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone is required";
+    } else if (!phoneRegex.test(formData.phone)) {
+      newErrors.phone = "Must be 10 digits";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const toTitleCase = (str) => {
+    if (!str) return '';
+    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+
     try {
+      const formattedData = {
+        ...formData,
+        name: toTitleCase(formData.name),
+        contact_person: toTitleCase(formData.contact_person),
+        location: toTitleCase(formData.location),
+        email: formData.email.toLowerCase().trim()
+      };
+
+      let result;
       if (customer) {
-        await updateCustomer.mutateAsync({ id: customer.$id, data: formData });
+        result = await updateCustomer.mutateAsync({ id: customer.$id, data: formattedData });
       } else {
-        await createCustomer.mutateAsync(formData);
+        result = await createCustomer.mutateAsync(formattedData);
       }
+      
+      if (onSuccess) onSuccess(result || formattedData);
       onClose();
     } catch (err) {
       onError(err.message || "Failed to update record.");
@@ -34,21 +77,23 @@ export const CustomerModal = ({ customer, onClose, onError }) => {
 
   const InputField = ({ label, icon: Icon, type = "text", field, placeholder, required = false }) => (
     <div className="space-y-1.5">
-      <label className="block font-bold text-zinc-400 uppercase tracking-widest" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="block font-bold text-zinc-400 uppercase tracking-widest flex justify-between" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
+        <span>{label} {required && <span className="text-red-500">*</span>}</span>
+        {errors[field] && <span className="text-red-500 normal-case font-bold">{errors[field]}</span>}
       </label>
       <div className="relative group">
         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within:text-brand-primary transition-colors">
           <Icon className="h-4 w-4" />
         </div>
         <input
-          required={required}
-          type={type}
-          className="w-full h-11 pl-10 pr-4 rounded-xl bg-zinc-50 border border-zinc-200 font-bold focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all placeholder:font-normal"
+          className={`w-full h-11 pl-10 pr-4 rounded-xl border font-bold focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all placeholder:font-normal ${errors[field] ? 'border-red-500 bg-red-50' : 'bg-zinc-50 border-zinc-200'}`}
           style={{ fontSize: THEME.FONT_SIZE.BASE }}
           placeholder={placeholder}
           value={formData[field]}
-          onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+          onChange={(e) => {
+            const val = field === 'phone' ? e.target.value.replace(/\D/g, '') : e.target.value;
+            setFormData({ ...formData, [field]: val });
+          }}
         />
       </div>
     </div>
