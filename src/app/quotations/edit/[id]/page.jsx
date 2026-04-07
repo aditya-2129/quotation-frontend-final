@@ -11,13 +11,13 @@ import { userService } from '@/services/users';
 import CustomerModal from '@/components/modals/CustomerModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import ValidationModal from '@/components/modals/ValidationModal';
-import ScopeAndIdentity from '@/components/quotations/ScopeAndIdentity';
-import BOMRegistry from '@/components/quotations/BOMRegistry';
-import RawMaterial from '@/components/quotations/RawMaterial';
-import MachiningLogic from '@/components/quotations/MachiningLogic';
-import BroughtOutParts from '@/components/quotations/BroughtOutParts';
-import CommercialAdjustments from '@/components/quotations/CommercialAdjustments';
-import ValuationLedger from '@/components/quotations/ValuationLedger';
+import ScopeAndIdentity from '@/features/quotations/components/ScopeAndIdentity';
+import BOMRegistry from '@/features/quotations/components/BOMRegistry';
+import RawMaterial from '@/features/quotations/components/RawMaterial';
+import MachiningLogic from '@/features/quotations/components/MachiningLogic';
+import BroughtOutParts from '@/features/quotations/components/BroughtOutParts';
+import CommercialAdjustments from '@/features/quotations/components/CommercialAdjustments';
+import ValuationLedger from '@/features/quotations/components/ValuationLedger';
 import SuccessModal from '@/components/modals/SuccessModal';
 import RejectionModal from '@/components/modals/RejectionModal';
 import { useAuth } from '@/context/AuthContext';
@@ -372,7 +372,6 @@ export default function EditQuotationPage() {
     if (!formData.inquiry_date) missingFields.push("Date Received");
     if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
     if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
-    if (!formData.project_image) missingFields.push("Project Model / Snapshot Image");
 
     if (formData.items.length === 0) {
        missingFields.push("At least one BOM item");

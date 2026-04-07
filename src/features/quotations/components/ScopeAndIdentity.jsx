@@ -478,12 +478,12 @@ const ScopeAndIdentity = ({
                     </div>
                     
                     <div className="flex-1 min-w-0 py-0.5">
-                       <div className="flex items-center gap-2 mb-1.5">
+                       {/* <div className="flex items-center gap-2 mb-1.5">
                           <div className={`h-2 w-2 rounded-full ${formData.project_image ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-zinc-300 shadow-sm'}`} />
                           <span className={`text-[9px] font-black uppercase tracking-widest ${formData.project_image ? 'text-emerald-600' : 'text-zinc-400'}`}>
                              {formData.project_image ? 'Registered' : 'Optional'}
                           </span>
-                       </div>
+                       </div> */}
                        <p className="text-[10px] font-semibold text-zinc-400 italic leading-snug">
                           Technical snapshot or 3D model image (if available).
                        </p>

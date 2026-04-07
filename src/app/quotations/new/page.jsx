@@ -240,7 +240,6 @@ export default function NewQuotationPage() {
       if (!formData.inquiry_date) missingFields.push("Date Received");
       if (!formData.delivery_date) missingFields.push("Expected Delivery Date");
       if (!formData.quantity || formData.quantity <= 0) missingFields.push("Quantity to Make (Total)");
-      if (!formData.project_image) missingFields.push("Project Model / Snapshot Image");
 
       if (formData.items.length === 0) {
          missingFields.push("At least one BOM item");
