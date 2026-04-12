@@ -9,6 +9,7 @@ export const quotationService = {
         try {
             const queries = [
                 Query.notEqual('status', 'Cancelled'),
+                Query.notEqual('status', 'Approved'),
                 Query.orderDesc("quotation_no"),
                 Query.limit(limit),
                 Query.offset(offset)
