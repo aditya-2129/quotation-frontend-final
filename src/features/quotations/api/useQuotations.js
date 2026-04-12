@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { quotationService } from '@/services/quotations';
+import { quotationService } from '@/services/quotations-draft';
 
 /**
  * Hook for listing quotations from the database

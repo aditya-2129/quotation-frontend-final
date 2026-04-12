@@ -59,16 +59,7 @@
     if (!src) throw new Error("No source");
 
     try {
-      let fetchUrl = src;
-      if (src.includes('appwrite') && src.includes('/files/')) {
-        const parts = src.split('/files/');
-        const fileId = parts[1]?.split('/')[0];
-        if (fileId) {
-          fetchUrl = `/api/storage/${fileId}`;
-        }
-      }
-
-      const response = await fetch(fetchUrl);
+      const response = await fetch(src);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
 

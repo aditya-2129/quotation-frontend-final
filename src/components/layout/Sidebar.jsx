@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { THEME, LAYOUT } from '@/constants/ui';
-import { LayoutDashboard, FileText, Users, Box, Hammer, Package, UserCog, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, FileText, CheckCircle, Users, Box, Hammer, Package, UserCog, ChevronLeft } from 'lucide-react';
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isHovered, setIsHovered, isAdmin }) => {
   const showFull = !isCollapsed || isHovered;
@@ -10,7 +10,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isHovered, setIsHovered, isAdmin
   
   const allMenuItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, adminOnly: true },
-    { name: 'Quotations', href: '/quotations', icon: FileText },
+    { name: 'Quotations Draft', href: '/quotations-draft', icon: FileText },
+    { name: 'Quotations Approved', href: '/quotations-approved', icon: CheckCircle },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Materials List', href: '/materials', icon: Box },
     { name: 'Labor & Processes', href: '/labor-rates', icon: Hammer },

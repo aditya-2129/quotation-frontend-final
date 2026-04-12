@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { quotationService } from '@/services/quotations';
+import { quotationService } from '@/services/quotations-draft';
 import { assetService } from '@/services/assets';
 
 const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {

@@ -6,7 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 
 // Routes that regular (non-admin) users CAN access
 const USER_ALLOWED_ROUTES = [
-    '/quotations',
+    '/quotations-draft',
+    '/quotations-approved',
     '/customers',
     '/materials',
     '/labor-rates',
@@ -15,7 +16,7 @@ const USER_ALLOWED_ROUTES = [
 
 /**
  * Checks if a pathname is allowed for a regular user.
- * Handles exact matches and sub-routes (e.g. /quotations/new, /quotations/edit/[id]).
+ * Handles exact matches and sub-routes (e.g. /quotations-draft/new, /quotations-draft/edit/[id]).
  */
 function isRouteAllowed(pathname, isAdmin) {
     if (isAdmin) return true;
@@ -37,7 +38,7 @@ export default function AuthGuard({ children }) {
 
         // Authenticated but not allowed on this route
         if (!isRouteAllowed(pathname, isAdmin)) {
-            router.replace('/quotations');
+            router.replace('/quotations-draft');
         }
     }, [isAuthenticated, isAdmin, isLoading, pathname, router]);
 
