@@ -7,13 +7,16 @@ import { toast } from 'react-hot-toast';
 import { quotationService } from '@/services/quotations-draft';
 import { assetService } from '@/services/assets';
 import { useRouter } from 'next/navigation';
-import { Plus, FileText, Database, ShieldAlert, Download } from 'lucide-react';
+import { Plus, Database, Search, X, Calendar, ChevronRight } from 'lucide-react';
+import { format } from 'date-fns';
+
 import ActionButtons from '@/components/ui/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import QuotationPreviewModal from '@/components/modals/QuotationPreviewModal';
 import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
 import PdfPreviewModal from '@/components/modals/PdfPreviewModal';
 import Pagination from '@/components/ui/Pagination';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import { generateQuotationPDF } from '@/utils/generateQuotationPDF';
 import { generateMaterialListPDF } from '@/utils/generateMaterialListPDF';
 import { generateSinglePagePDF } from '@/utils/generateSinglePagePDF';
@@ -26,9 +29,25 @@ export default function QuotationsPage() {
   const { isAdmin } = useAuth();
   const [page, setPage] = useState(1);
   const limit = 25;
+  const [filters, setFilters] = useState({ 
+    search: '', 
+    dateRange: { start: null, end: null, label: 'All Time' } 
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const { data, isLoading } = useQuotations(limit, (page - 1) * limit);
+  const { data, isLoading } = useQuotations(limit, (page - 1) * limit, filters);
   const deleteQuotation = useDeleteQuotation();
+
+  const handleSearchChange = (e) => {
+    setFilters(prev => ({ ...prev, search: e.target.value }));
+    setPage(1);
+  };
+
+  const handleDateRangeChange = (range) => {
+    setFilters(prev => ({ ...prev, dateRange: range }));
+    setShowDatePicker(false);
+    setPage(1);
+  };
 
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, row: null });
   const [previewId, setPreviewId] = useState(null);
@@ -105,12 +124,12 @@ export default function QuotationsPage() {
 
   return (
     <DashboardLayout 
-      title="Project Quotations"
+      title="Project Quotations Repository"
       primaryAction={
         <button 
           onClick={() => router.push('/quotations-draft/new')}
           className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 border border-brand-primary/20"
-          style={{ fontSize: THEME.FONT_SIZE.BASE, fontWeight: 'bold' }}
+          style={{ fontSize: THEME.FONT_SIZE.SMALL, fontWeight: 'bold' }}
         >
           <Plus className="h-4 w-4" />
           Create New Quotation
@@ -118,7 +137,55 @@ export default function QuotationsPage() {
       }
     >
       <div className="flex flex-col gap-6">
-        <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex flex-col">
+        {/* Filters */}
+        <section className="rounded-xl border border-zinc-200 bg-zinc-50/30 p-3.5 shadow-sm flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 flex flex-col gap-1.5">
+            <label className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] px-1">Global Query Search</label>
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 group-focus-within:text-brand-primary transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Find by ID, Client Narrative, or Part Number..."
+                value={filters.search}
+                onChange={handleSearchChange}
+                className="w-full h-9.5 pl-9.5 pr-8 rounded-lg border border-zinc-200 bg-white text-[12px] font-medium focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all outline-none shadow-sm"
+              />
+              {filters.search && (
+                <button 
+                  onClick={() => { setFilters(prev => ({ ...prev, search: '' })); setPage(1); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-700 transition"
+                  title="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 md:max-w-[240px] flex flex-col gap-1.5">
+            <label className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] px-1">Batch Period</label>
+            <div className="relative group">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 group-focus-within:text-brand-primary transition-colors" />
+              <button 
+                onClick={() => setShowDatePicker(true)}
+                className="w-full h-9.5 pl-9.5 pr-8 rounded-lg border border-zinc-200 bg-white text-[12px] font-bold text-left focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all outline-none shadow-sm"
+              >
+                {filters.dateRange.start && filters.dateRange.end ? (
+                  <span className="truncate block">
+                    {format(filters.dateRange.start, 'MMM d')} - {format(filters.dateRange.end, 'y')}
+                  </span>
+                ) : (
+                  "All Time"
+                )}
+              </button>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-300">
+                <ChevronRight className="h-3.5 w-3.5 rotate-90" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex flex-col min-h-[400px]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-zinc-50 border-b border-zinc-200">
@@ -134,15 +201,20 @@ export default function QuotationsPage() {
               </thead>
               <tbody className="divide-y divide-zinc-200">
                 {isLoading ? (
-                  [1,2,3,4,5].map(i => (
+                  [1,2,3,4,5,6].map(i => (
                     <tr key={i} className="animate-pulse">
-                       <td colSpan="7" className="h-16 px-6 bg-zinc-50/10" />
+                       <td colSpan="7" className="px-6 py-5">
+                          <div className="h-5 bg-zinc-100 rounded w-full" />
+                       </td>
                     </tr>
                   ))
                 ) : quotations.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-20 text-center text-zinc-400 italic" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>
-                       No valuations found in central repository.
+                    <td colSpan="7" className="px-6 py-32 text-center text-zinc-400 italic">
+                       <div className="flex flex-col items-center gap-3">
+                          <Database className="h-8 w-8 text-zinc-200" />
+                          <p style={{ fontSize: THEME.FONT_SIZE.SMALL }}>No matching valuations found.</p>
+                       </div>
                     </td>
                   </tr>
                 ) : (
@@ -151,7 +223,6 @@ export default function QuotationsPage() {
                       <td className="px-6 py-4">
                          <div className="flex flex-col">
                             <span className="text-brand-primary font-bold" style={{ fontSize: THEME.FONT_SIZE.BASE }}>{row.quotation_no || row.$id.substring(0,8)}</span>
-                            <span className="font-mono text-zinc-400 uppercase tracking-tighter" style={{ fontSize: '10px' }}>{row.part_number || 'No Part Ref'}</span>
                          </div>
                       </td>
                       <td className="px-6 py-4 text-zinc-600 font-medium">
@@ -223,13 +294,23 @@ export default function QuotationsPage() {
         quotationNo={downloadModal.quotation?.quotation_no}
       />
 
-      <PdfPreviewModal 
-        isOpen={pdfPreview.open}
-        onClose={() => setPdfPreview({ ...pdfPreview, open: false })}
-        pdfDoc={pdfPreview.doc}
-        title={pdfPreview.title}
-        filename={pdfPreview.filename}
-      />
+      {pdfPreview.open && (
+        <PdfPreviewModal 
+          isOpen={pdfPreview.open}
+          onClose={() => setPdfPreview({ ...pdfPreview, open: false })}
+          pdfDoc={pdfPreview.doc}
+          title={pdfPreview.title}
+          filename={pdfPreview.filename}
+        />
+      )}
+
+      {showDatePicker && (
+        <DateRangePicker 
+          value={filters.dateRange}
+          onChange={handleDateRangeChange}
+          onClose={() => setShowDatePicker(false)}
+        />
+      )}
     </DashboardLayout>
   );
 }

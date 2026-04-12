@@ -13,3 +13,14 @@ export const useApprovedQuotations = (limit = 25, offset = 0, filters = {}) => {
     queryFn: () => approvedQuotationService.listApprovedQuotations(limit, offset, filters),
   });
 };
+
+/**
+ * Hook for fetching summary metrics for approved quotations
+ * @param {object} filters 
+ */
+export const useApprovedMetrics = (filters = {}) => {
+  return useQuery({
+    queryKey: ['approved-metrics', { filters }],
+    queryFn: () => approvedQuotationService.getApprovedMetrics(filters),
+  });
+};

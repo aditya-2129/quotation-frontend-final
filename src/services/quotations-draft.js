@@ -5,17 +5,33 @@ const { DATABASE_ID, COLLECTIONS } = APPWRITE_CONFIG;
 
 export const quotationService = {
     // List all quotations
-    async listQuotations(limit = 25, offset = 0) {
+    async listQuotations(limit = 25, offset = 0, filters = {}) {
         try {
+            const queries = [
+                Query.notEqual('status', 'Cancelled'),
+                Query.orderDesc("quotation_no"),
+                Query.limit(limit),
+                Query.offset(offset)
+            ];
+
+            const searchTerm = (filters.search || '').trim();
+            if (searchTerm) {
+                queries.push(Query.or([
+                    Query.contains('quotation_no', searchTerm),
+                    Query.contains('part_number', searchTerm),
+                    Query.contains('supplier_name', searchTerm)
+                ]));
+            }
+
+            if (filters.dateRange && filters.dateRange.start && filters.dateRange.end) {
+                queries.push(Query.greaterThanEqual('$createdAt', new Date(filters.dateRange.start).toISOString()));
+                queries.push(Query.lessThanEqual('$createdAt', new Date(filters.dateRange.end).toISOString()));
+            }
+
             const response = await databases.listDocuments(
                 DATABASE_ID,
                 COLLECTIONS.QUOTATIONS,
-                [
-                    Query.notEqual('status', 'Cancelled'),
-                    Query.orderDesc("quotation_no"),
-                    Query.limit(limit),
-                    Query.offset(offset)
-                ]
+                queries
             );
             return response;
         } catch (error) {

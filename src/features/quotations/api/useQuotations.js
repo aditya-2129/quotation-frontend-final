@@ -6,10 +6,10 @@ import { quotationService } from '@/services/quotations-draft';
  * @param {number} limit 
  * @param {number} offset 
  */
-export const useQuotations = (limit = 25, offset = 0) => {
+export const useQuotations = (limit = 25, offset = 0, filters = {}) => {
   return useQuery({
-    queryKey: ['quotations', { limit, offset }],
-    queryFn: () => quotationService.listQuotations(limit, offset),
+    queryKey: ['quotations', { limit, offset, filters }],
+    queryFn: () => quotationService.listQuotations(limit, offset, filters),
   });
 };
 
