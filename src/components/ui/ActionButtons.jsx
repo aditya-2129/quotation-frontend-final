@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ActionButtons({ onPreview, onDownload, onEdit, onDelete, downloadDisabled, editDisabled, deleteDisabled }) {
+export default function ActionButtons({ onPreview, onDownload, onEmail, onEdit, onDelete, downloadDisabled, editDisabled, deleteDisabled }) {
   return (
     <div className="flex justify-end gap-1.5">
       {onPreview && (
@@ -24,6 +24,17 @@ export default function ActionButtons({ onPreview, onDownload, onEdit, onDelete,
            title={downloadDisabled ? "Finalize quotation to unlock PDF export" : "Download PDF"}
         >
            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+        </button>
+      )}
+      {onEmail && (
+        <button 
+           onClick={onEmail} 
+           className="h-8.5 w-8.5 inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+           title="Send via Email"
+        >
+           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+           </svg>
         </button>
       )}
       <button 
@@ -53,3 +64,4 @@ export default function ActionButtons({ onPreview, onDownload, onEdit, onDelete,
     </div>
   );
 }
+

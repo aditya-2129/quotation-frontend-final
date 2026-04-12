@@ -7,6 +7,7 @@ import { THEME } from '@/constants/ui';
 import { toast } from 'react-hot-toast';
 import { approvedQuotationService } from '@/services/quotations-approved';
 import { assetService } from '@/services/assets';
+import { COMPANY } from '@/constants/pdfConstants';
 import QuotationPreviewModal from '@/components/modals/QuotationPreviewModal';
 import DownloadOptionsModal from '@/components/modals/DownloadOptionsModal';
 import PdfPreviewModal from '@/components/modals/PdfPreviewModal';
@@ -135,6 +136,79 @@ export default function ApprovedQuotationsPage() {
       setPdfPreview({ open: true, doc, title, filename });
     } catch (err) {
       toast.error("Export failed.");
+    }
+  };
+
+  const handleSendEmail = async (quotation) => {
+    try {
+      toast.loading("Preparing professional quotation export...");
+      const fullQuote = await approvedQuotationService.getQuotation(quotation.$id);
+      
+      // Temporarily disabled project image loading to prevent CORS fetch errors
+      // Will revisit this once Appwrite platform domains are fully propagated
+      let projectImageUrl = null;
+      /*
+      if (fullQuote.project_image) {
+        try {
+          const rawImg = fullQuote.project_image;
+          const parsedImage = typeof rawImg === 'string' ? JSON.parse(rawImg) : rawImg;
+          if (parsedImage && parsedImage.$id) {
+            projectImageUrl = assetService.getFileView(parsedImage.$id)?.toString();
+          }
+        } catch (e) {
+          console.warn("Project image ignored for email logic:", e);
+        }
+      }
+      */
+
+      // 1. Generate and Save the Single Page PDF
+      await generateSinglePagePDF(fullQuote, null, { save: true });
+      
+      // 2. Prepare Professional MNC Body
+      const clientName = fullQuote.supplier_name || 'Valued Client';
+      const engineer = fullQuote.quoting_engineer || 'Engineering Team';
+      const projectName = fullQuote.project_name || 'Project Specified';
+      const qtnNo = fullQuote.quotation_no || fullQuote.$id;
+      const contactNo = fullQuote.contact_phone || '';
+
+      const subject = encodeURIComponent(`Technical Quotation: ${qtnNo} | ${projectName}`);
+      
+      const bodyText = [
+        `Dear ${clientName},`,
+        '',
+        `SUBJECT: SUBMISSION OF TECHNICAL QUOTATION - ${qtnNo}`,
+        '',
+        `We are pleased to submit our formal technical proposal for "${projectName}" as per your recent inquiry.`,
+        '',
+        `Please find the detailed single-page quotation attached for your review. This proposal has been engineered to meet your specific technical requirements and quality standards.`,
+        '',
+        `Should you have any technical queries or require further clarification regarding the commercial terms, please do not hesitate to reach out to our project division.`,
+        '',
+        `Best Regards,`,
+        '',
+        `${engineer}`,
+        `Project Division | ${COMPANY.NAME}`,
+        '',
+        '_________________________________________________',
+        `${COMPANY.NAME.toUpperCase()}`,
+        `${COMPANY.TAGLINE}`,
+        '_________________________________________________',
+        `${COMPANY.ADDRESS}`,
+        `T: +91 ${COMPANY.PHONE} | E: ${COMPANY.EMAIL}`,
+        '',
+        'CONFIDENTIALITY NOTE: The information contained in this email is intended only for the use of the individual or entity named above and may contain information that is privileged, confidential and exempt from disclosure under applicable law.'
+      ].join('\n');
+
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${fullQuote.contact_email || ''}&su=${subject}&body=${encodeURIComponent(bodyText)}`;
+      
+      toast.dismiss();
+      toast.success("Quotation Ready! Drag and drop the downloaded PDF into Gmail.");
+      
+      window.open(gmailUrl, '_blank');
+    } catch (err) {
+      toast.dismiss();
+      toast.error("Failed to prepare professional export.");
+      console.error(err);
     }
   };
 
@@ -351,6 +425,16 @@ export default function ApprovedQuotationsPage() {
                                title="Export Assets"
                            >
                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                           </button>
+                           {/* Email */}
+                           <button 
+                               onClick={() => handleSendEmail(row)}
+                               className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm active:scale-90"
+                               title="Send via Email"
+                           >
+                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                               </svg>
                            </button>
                          </div>
                        </td>
