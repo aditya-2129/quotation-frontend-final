@@ -1,15 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { quotationService } from '@/services/quotations';
+import { quotationService } from '@/services/quotations-draft';
 
 /**
  * Hook for listing quotations from the database
  * @param {number} limit 
  * @param {number} offset 
  */
-export const useQuotations = (limit = 25, offset = 0) => {
+export const useQuotations = (limit = 25, offset = 0, filters = {}) => {
   return useQuery({
-    queryKey: ['quotations', { limit, offset }],
-    queryFn: () => quotationService.listQuotations(limit, offset),
+    queryKey: ['quotations', { limit, offset, filters }],
+    queryFn: () => quotationService.listQuotations(limit, offset, filters),
   });
 };
 

@@ -33,7 +33,11 @@ export async function generateSinglePagePDF(quote, projectImageUrl = null, { sav
   // Logo (left side)
   try {
     const { dataUrl } = await loadImage('/KE_Logo.png');
-    doc.addImage(dataUrl, 'PNG', margin, margin + 9.5, 52, 14);
+    if (dataUrl) {
+      doc.addImage(dataUrl, 'PNG', margin, margin + 9.5, 52, 14);
+    } else {
+      throw new Error("Logo missing");
+    }
   } catch (e) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -288,7 +292,9 @@ export async function generateSinglePagePDF(quote, projectImageUrl = null, { sav
   // Digital Signature Image
   try {
     const { dataUrl } = await loadImage('/signature.png');
-    doc.addImage(dataUrl, 'PNG', margin + 5, sigDividerY + 16, 40, 15);
+    if (dataUrl) {
+      doc.addImage(dataUrl, 'PNG', margin + 5, sigDividerY + 16, 40, 15);
+    }
   } catch (e) {
     // No action needed if signature is missing
   }
@@ -301,21 +307,25 @@ export async function generateSinglePagePDF(quote, projectImageUrl = null, { sav
   if (projectImageUrl) {
     try {
       const { dataUrl, width, height } = await loadImage(projectImageUrl);
-      const boxW = pageWidth - margin - splitFooterX - 4;
-      const boxH = tcBoxH - 4;
-      const imgRatio = width / height;
-      const boxRatio = boxW / boxH;
-      let dW, dH;
-      if (imgRatio > boxRatio) {
-        dW = boxW;
-        dH = boxW / imgRatio;
+      if (dataUrl) {
+        const boxW = pageWidth - margin - splitFooterX - 4;
+        const boxH = tcBoxH - 4;
+        const imgRatio = width / height;
+        const boxRatio = boxW / boxH;
+        let dW, dH;
+        if (imgRatio > boxRatio) {
+          dW = boxW;
+          dH = boxW / imgRatio;
+        } else {
+          dH = boxH;
+          dW = boxH * imgRatio;
+        }
+        const dX = splitFooterX + 2 + (boxW - dW) / 2;
+        const dY = tcBoxY + 2 + (boxH - dH) / 2;
+        doc.addImage(dataUrl, 'PNG', dX, dY, dW, dH, undefined, 'FAST');
       } else {
-        dH = boxH;
-        dW = boxH * imgRatio;
+        throw new Error("Image missing");
       }
-      const dX = splitFooterX + 2 + (boxW - dW) / 2;
-      const dY = tcBoxY + 2 + (boxH - dH) / 2;
-      doc.addImage(dataUrl, 'PNG', dX, dY, dW, dH, undefined, 'FAST');
     } catch (e) {
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);

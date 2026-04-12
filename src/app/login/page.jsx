@@ -18,7 +18,7 @@ export default function LoginPage() {
   // If already logged in, redirect
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace(isAdmin ? '/' : '/quotations');
+      router.replace(isAdmin ? '/' : '/quotations-draft');
     }
   }, [isAuthenticated, isAdmin, isLoading, router]);
 
@@ -35,7 +35,7 @@ export default function LoginPage() {
       setIsSubmitting(true);
       const { profile } = await login(email.trim(), password);
       const isAdminUser = profile?.role === 'admin';
-      router.replace(isAdminUser ? '/' : '/quotations');
+      router.replace(isAdminUser ? '/' : '/quotations-draft');
     } catch (err) {
       // Keep logs clean for common password typos
       if (err?.code !== 401 && err?.type !== 'user_invalid_credentials') {

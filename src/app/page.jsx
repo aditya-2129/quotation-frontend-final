@@ -113,7 +113,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
-      router.replace('/quotations');
+      router.replace('/quotations-draft');
     }
   }, [authLoading, isAdmin, router]);
 
@@ -131,7 +131,7 @@ export default function Home() {
       title="Command Center"
       primaryAction={
         <button
-          onClick={() => router.push('/quotations/new')}
+          onClick={() => router.push('/quotations-draft/new')}
           className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-white shadow-lg shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-95 border border-brand-primary/20"
           style={{ fontSize: THEME.FONT_SIZE.BASE, fontWeight: 'bold' }}
         >
@@ -192,7 +192,7 @@ export default function Home() {
                 <p className="mt-0.5 text-zinc-400" style={{ fontSize: '11px' }}>Latest project valuations from the registry</p>
               </div>
               <button
-                onClick={() => router.push("/quotations")}
+                onClick={() => router.push("/quotations-draft")}
                 className="font-bold text-brand-primary hover:underline transition-colors"
                 style={{ fontSize: THEME.FONT_SIZE.TINY }}
               >
@@ -230,7 +230,7 @@ export default function Home() {
                     recent.map((row) => (
                       <tr
                         key={row.$id}
-                        onClick={() => router.push(`/quotations/edit/${row.$id}`)}
+                        onClick={() => router.push(`/quotations-draft/edit/${row.$id}`)}
                         className="group cursor-pointer transition-all duration-200 hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC]"
                       >
                         <td className="px-6 py-4">

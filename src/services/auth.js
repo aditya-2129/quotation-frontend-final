@@ -76,19 +76,7 @@ export const authService = {
      */
     async createAuthAccount(email, password, name) {
         try {
-            const response = await fetch('/api/admin/create-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, name })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || 'Failed to create user.');
-                error.code = response.status;
-                throw error;
-            }
+            throw new Error('User Management is currently only available in the Web Version. Please use the Appwrite Console for administrative tasks.');
 
             return data;
         } catch (error) {
@@ -102,19 +90,7 @@ export const authService = {
      */
     async resetUserPassword(userId, password) {
         try {
-            const response = await fetch('/api/admin/reset-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, password })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || 'Failed to reset password.');
-                error.code = response.status;
-                throw error;
-            }
+            throw new Error('Password Control is currently only available in the Web Version.');
 
             return data;
         } catch (error) {

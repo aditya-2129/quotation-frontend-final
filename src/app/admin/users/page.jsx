@@ -25,7 +25,7 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
-      router.replace('/quotations');
+      router.replace('/quotations-draft');
     }
   }, [authLoading, isAdmin, router]);
 

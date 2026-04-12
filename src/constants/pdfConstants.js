@@ -5,7 +5,7 @@
 
   // --- COMPANY CONFIGURATION (superset of all fields used across PDF files) ---
   export const COMPANY = {
-    NAME: 'KAIVALYA ENGINERING',
+    NAME: 'KAIVALYA ENGINEERING',
     TAGLINE: 'Manufacturing & Supply of SPM, Precision Tools, Die & Components',
     ADDRESS: 'Pavana Industrial Premises, Bhoseri, PCMC, Pune 411044',
     ADDRESS_L1: 'Pavana Industrial Premises, Bhoseri, PCMC, Pune 411044',
@@ -56,37 +56,36 @@
 
   // --- APPWRITE-AWARE IMAGE LOADER ---
   export async function loadImage(src) {
-    if (!src) throw new Error("No source");
+    if (!src) return { dataUrl: null };
 
     try {
-      let fetchUrl = src;
-      if (src.includes('appwrite') && src.includes('/files/')) {
-        const parts = src.split('/files/');
-        const fileId = parts[1]?.split('/')[0];
-        if (fileId) {
-          fetchUrl = `/api/storage/${fileId}`;
-        }
+      // Use no-cache to avoid some browser-level CORS issues hitting cached responses
+      const response = await fetch(src, { mode: 'cors' });
+      if (!response.ok) {
+        console.warn(`loadImage: Server returned ${response.status} for ${src}`);
+        return { dataUrl: null };
       }
-
-      const response = await fetch(fetchUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const dataUrl = reader.result;
           const img = new Image();
+          img.crossOrigin = "anonymous";
           img.onload = () => resolve({ dataUrl, width: img.width, height: img.height });
-          img.onerror = () => reject(new Error("Image decode failed"));
+          img.onerror = () => {
+            console.warn("loadImage: Image decode failed for", src);
+            resolve({ dataUrl: null });
+          };
           img.src = dataUrl;
         };
-        reader.onerror = reject;
+        reader.onerror = () => resolve({ dataUrl: null });
         reader.readAsDataURL(blob);
       });
     } catch (err) {
-      console.error("loadImage failed:", src, err);
-      throw err;
+      console.warn("loadImage failed (likely CORS or Network):", src);
+      return { dataUrl: null }; // Return object so destructuring { dataUrl } doesn't fail
     }
   }
 
