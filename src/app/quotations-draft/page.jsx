@@ -90,7 +90,12 @@ export default function QuotationsPage() {
       } else if (optionId === 'single') {
         doc = await generateSinglePagePDF(fullQuote, projectImageUrl, { save: false });
         title = "Single Page Quotation";
-        filename = `SinglePage_${fullQuote.quotation_no}.pdf`;
+        const sanitizedClient = (fullQuote.supplier_name || 'Client').replace(/[/\\?%*:|"<>]/g, '');
+        const sanitizedQtn = (fullQuote.quotation_no || 'QTN').replace(/[/\\?%*:|"<>]/g, '');
+        const qtnDate = fullQuote.inquiry_date 
+          ? new Date(fullQuote.inquiry_date).toLocaleDateString('en-GB').replace(/\//g, '-') 
+          : new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+        filename = `${sanitizedClient} ${sanitizedQtn} ${qtnDate}.pdf`.trim();
       } else if (optionId === 'process') {
         doc = await generateProcessSheetPDF(fullQuote, { save: false });
         title = "Manufacturing Process Sheet";
@@ -245,7 +250,7 @@ export default function QuotationsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-mono font-bold text-brand-primary" style={{ fontSize: THEME.FONT_SIZE.BASE }}>
-                        ₹{parseFloat(row.total_amount || 0).toLocaleString()}
+                        ₹{parseFloat(row.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                        <td className="px-6 py-4 text-right">
                          <ActionButtons 

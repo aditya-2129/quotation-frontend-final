@@ -30,8 +30,14 @@ export const approvedQuotationService = {
             }
 
             if (filters.dateRange && filters.dateRange.start && filters.dateRange.end) {
-                queries.push(Query.greaterThanEqual('$createdAt', new Date(filters.dateRange.start).toISOString()));
-                queries.push(Query.lessThanEqual('$createdAt', new Date(filters.dateRange.end).toISOString()));
+                const startDate = new Date(filters.dateRange.start);
+                startDate.setHours(0, 0, 0, 0);
+
+                const endDate = new Date(filters.dateRange.end);
+                endDate.setHours(23, 59, 59, 999);
+
+                queries.push(Query.greaterThanEqual('$createdAt', startDate.toISOString()));
+                queries.push(Query.lessThanEqual('$createdAt', endDate.toISOString()));
             } else if (filters.timePeriod && filters.timePeriod !== 'All Time') {
                 const now = new Date();
                 let pastDate = new Date();

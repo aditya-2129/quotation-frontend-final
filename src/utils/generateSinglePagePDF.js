@@ -393,7 +393,15 @@ export async function generateSinglePagePDF(quote, projectImageUrl = null, { sav
     { align: 'center' }
   );
 
-  const filename = `SinglePage_${quote.quotation_no || 'QTN'}.pdf`;
+  // Sanitize filename components
+  const sanitizedClient = (quote.supplier_name || 'Client').replace(/[/\\?%*:|"<>]/g, '');
+  const sanitizedQtn = (quote.quotation_no || 'QTN').replace(/[/\\?%*:|"<>]/g, '');
+  const qtnDate = quote.inquiry_date 
+    ? new Date(quote.inquiry_date).toLocaleDateString('en-GB').replace(/\//g, '-') 
+    : new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+
+  const filename = `${sanitizedClient} ${sanitizedQtn} ${qtnDate}.pdf`.trim();
+  
   if (save) doc.save(filename);
   return doc;
 }
