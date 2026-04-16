@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx-js-style';
-
+ 
 /**
  * Exports an array of quotation data to an Excel file.
  * @param {Array} data - Array of quotation objects
