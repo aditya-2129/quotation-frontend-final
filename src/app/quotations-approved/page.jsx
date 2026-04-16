@@ -118,7 +118,12 @@ export default function ApprovedQuotationsPage() {
       } else if (optionId === 'single') {
         doc = await generateSinglePagePDF(fullQuote, projectImageUrl, { save: false });
         title = "Single Page Quotation";
-        filename = `SinglePage_${fullQuote.quotation_no}.pdf`;
+        const sanitizedClient = (fullQuote.supplier_name || 'Client').replace(/[/\\?%*:|"<>]/g, '');
+        const sanitizedQtn = (fullQuote.quotation_no || 'QTN').replace(/[/\\?%*:|"<>]/g, '');
+        const qtnDate = fullQuote.inquiry_date 
+          ? new Date(fullQuote.inquiry_date).toLocaleDateString('en-GB').replace(/\//g, '-') 
+          : new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+        filename = `${sanitizedClient} ${sanitizedQtn} ${qtnDate}.pdf`.trim();
       } else if (optionId === 'process') {
         doc = await generateProcessSheetPDF(fullQuote, { save: false });
         title = "Manufacturing Process Sheet";
@@ -162,7 +167,7 @@ export default function ApprovedQuotationsPage() {
       */
 
       // 1. Generate and Save the Single Page PDF
-      await generateSinglePagePDF(fullQuote, null, { save: true });
+      // await generateSinglePagePDF(fullQuote, null, { save: true });
       
       // 2. Prepare Professional MNC Body
       const clientName = fullQuote.supplier_name || 'Valued Client';
@@ -239,7 +244,7 @@ export default function ApprovedQuotationsPage() {
                   <div>
                      <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest leading-none">Total Value in Scope</p>
                      <p className="mt-1 text-lg font-black text-emerald-950 tracking-tight leading-none">
-                        {metricsLoading ? "Calculating..." : `₹${(metrics?.totalValue || 0).toLocaleString()}`}
+                        {metricsLoading ? "Calculating..." : `₹${(metrics?.totalValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                      </p>
                   </div>
                </div>
@@ -267,7 +272,7 @@ export default function ApprovedQuotationsPage() {
                   <div>
                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Average Valuation</p>
                      <p className="mt-1 text-lg font-black text-zinc-950 tracking-tight leading-none">
-                        {metricsLoading ? "..." : `₹${Math.round(metrics?.averageValue || 0).toLocaleString()}`}
+                        {metricsLoading ? "..." : `₹${(metrics?.averageValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                      </p>
                   </div>
                </div>
@@ -406,7 +411,7 @@ export default function ApprovedQuotationsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-mono font-black text-emerald-900" style={{ fontSize: THEME.FONT_SIZE.BASE }}>
-                        ₹{parseFloat(row.total_amount || 0).toLocaleString()}
+                        ₹{parseFloat(row.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                        <td className="px-6 py-4 text-right">
                          <div className="flex justify-end gap-2">

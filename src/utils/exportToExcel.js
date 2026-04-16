@@ -1,5 +1,5 @@
-import * as XLSX from 'xlsx';
-
+import * as XLSX from 'xlsx-js-style';
+ 
 /**
  * Exports an array of quotation data to an Excel file.
  * @param {Array} data - Array of quotation objects
@@ -13,31 +13,100 @@ export const exportQuotationsToExcel = (data, fileName = 'Approved_Quotations.xl
     'Quotation No': q.quotation_no || q.$id.substring(0, 8),
     'Customer': q.supplier_name || 'N/A',
     'Project Name': q.project_name || 'N/A',
-    'Part Number': q.part_number || 'N/A',
     'Incharge': q.quoting_engineer || 'Unassigned',
     'Date Approved': new Date(q.$createdAt).toLocaleDateString('en-GB'),
-    'Status': q.status,
-    'Currency': 'INR',
-    'Total Amount': q.total_amount || 0,
-    'Unit Price': q.unit_price || 0,
+    'Unit Price': Math.round((parseFloat(q.unit_price) || 0) * 100) / 100,
+    'Total Amount': Math.round((parseFloat(q.total_amount) || 0) * 100) / 100,
     'Quantity': q.quantity || 1
   }));
+
+  // Calculate sum of total amounts
+  const sumTotal = transformedData.reduce((acc, curr) => acc + curr['Total Amount'], 0);
+
+  // Append a Total Row at the bottom
+  transformedData.push({
+    'Quotation No': 'GRAND TOTAL',
+    'Customer': '',
+    'Project Name': '',
+    'Incharge': '',
+    'Date Approved': '',
+    'Unit Price': '',
+    'Total Amount': Math.round(sumTotal * 100) / 100,
+    'Quantity': ''
+  });
 
   // Create worksheet
   const worksheet = XLSX.utils.json_to_sheet(transformedData);
   
+  // Apply beautiful styling loop
+  const range = XLSX.utils.decode_range(worksheet['!ref']);
+  
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!worksheet[cellAddress]) continue;
+
+      const isHeader = R === 0;
+      const isTotalRow = R === range.e.r;
+      const isEvenRow = R % 2 === 0 && !isHeader && !isTotalRow;
+      const isNumberCol = (C === 5 || C === 6 || C === 7); // Unit Price(5), Total Amount(6), Quantity(7)
+
+      let fillStyle = null;
+      let fontStyle = { name: "Calibri", sz: 11 };
+      let alignmentStyle = isNumberCol ? { horizontal: "right", vertical: "center" } : { horizontal: "left", vertical: "center" };
+      let borderStyle = {};
+
+      if (isHeader) {
+        fillStyle = { fgColor: { rgb: "0F172A" } }; // Slate 900
+        fontStyle = { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } };
+        alignmentStyle = { horizontal: "center", vertical: "center" };
+      } else if (isTotalRow) {
+        fillStyle = { fgColor: { rgb: "ECFDF5" } }; // Emerald 50
+        fontStyle = { name: "Calibri", sz: 12, bold: true, color: { rgb: "065F46" } }; // Emerald 800
+        if (C === 0) alignmentStyle = { horizontal: "center", vertical: "center" }; // Center "GRAND TOTAL"
+        borderStyle = { 
+          top: { style: "thick", color: { rgb: "10B981" } },
+          bottom: { style: "thick", color: { rgb: "10B981" } } 
+        };
+      } else {
+        if (isEvenRow) fillStyle = { fgColor: { rgb: "F8FAFC" } }; // Slate 50 Zebra
+        borderStyle = { bottom: { style: "thin", color: { rgb: "E2E8F0" } } };
+      }
+
+      // Special currency formats so Excel treats them as numbers, not raw text
+      if (!isHeader && (C === 5 || C === 6) && worksheet[cellAddress].v !== '') {
+        worksheet[cellAddress].z = '₹#,##0.00';
+      }
+
+      worksheet[cellAddress].s = {
+        font: fontStyle,
+        alignment: alignmentStyle,
+        border: borderStyle,
+        ...(fillStyle ? { fill: fillStyle } : {})
+      };
+    }
+  }
+
+  // Custom Row Heights
+  const rowHeights = [];
+  for (let R = 0; R <= range.e.r; ++R) {
+    rowHeights.push({ hpt: R === 0 ? 30 : (R === range.e.r ? 35 : 22) });
+  }
+  worksheet['!rows'] = rowHeights;
+
+  // Enable auto-filter for the header and all data rows (excluding the GRAND TOTAL row)
+  // 8 Columns: A to H
+  worksheet['!autofilter'] = { ref: `A1:H${data.length + 1}` };
+
   // Set column widths
   const wscols = [
     { wch: 15 }, // Quotation No
-    { wch: 25 }, // Customer
-    { wch: 25 }, // Project Name
-    { wch: 20 }, // Part Number
-    { wch: 15 }, // Incharge
+    { wch: 30 }, // Customer
+    { wch: 30 }, // Project Name
+    { wch: 18 }, // Incharge
     { wch: 15 }, // Date Approved
-    { wch: 10 }, // Status
-    { wch: 10 }, // Currency
-    { wch: 15 }, // Total Amount
-    { wch: 15 }, // Unit Price
+    { wch: 18 }, // Unit Price
+    { wch: 20 }, // Total Amount
     { wch: 10 }  // Quantity
   ];
   worksheet['!cols'] = wscols;

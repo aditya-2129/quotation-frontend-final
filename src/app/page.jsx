@@ -230,7 +230,7 @@ export default function Home() {
                     recent.map((row) => (
                       <tr
                         key={row.$id}
-                        onClick={() => router.push(`/quotations-draft/edit/${row.$id}`)}
+                        onClick={() => router.push(`/quotations-draft/edit?id=${row.$id}`)}
                         className="group cursor-pointer transition-all duration-200 hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC]"
                       >
                         <td className="px-6 py-4">

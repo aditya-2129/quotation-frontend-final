@@ -76,7 +76,26 @@ export const authService = {
      */
     async createAuthAccount(email, password, name) {
         try {
-            throw new Error('User Management is currently only available in the Web Version. Please use the Appwrite Console for administrative tasks.');
+            // Check if we are running in Tauri (Desktop)
+            const isTauri = typeof window !== 'undefined' && (window.__TAURI__ || window.__TAURI_IPC__);
+            
+            if (isTauri) {
+                throw new Error('User Management is currently only available in the Web Version. Please use the Appwrite Console for administrative tasks.');
+            }
+
+            const response = await fetch('/api/admin/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, name })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const error = new Error(data.error || 'Failed to create user.');
+                error.code = response.status;
+                throw error;
+            }
 
             return data;
         } catch (error) {
@@ -90,7 +109,25 @@ export const authService = {
      */
     async resetUserPassword(userId, password) {
         try {
-            throw new Error('Password Control is currently only available in the Web Version.');
+            const isTauri = typeof window !== 'undefined' && (window.__TAURI__ || window.__TAURI_IPC__);
+            
+            if (isTauri) {
+                throw new Error('Password Control is currently only available in the Web Version.');
+            }
+
+            const response = await fetch('/api/admin/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const error = new Error(data.error || 'Failed to reset password.');
+                error.code = response.status;
+                throw error;
+            }
 
             return data;
         } catch (error) {
