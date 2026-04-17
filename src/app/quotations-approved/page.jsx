@@ -20,9 +20,11 @@ import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { exportQuotationsToExcel } from '@/utils/exportToExcel';
 import { useApprovedQuotations, useApprovedMetrics } from '@/features/quotations/api/useApprovedQuotations';
 import { useUsers } from '@/features/admin/api/useUsers';
-import { Search, Filter, X, Calendar, BarChart3, FileCheck, TrendingUp, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { Search, Filter, X, Calendar, BarChart3, FileCheck, TrendingUp, ChevronRight, FileSpreadsheet, Briefcase } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import LogPoModal from '@/components/modals/LogPoModal';
 
 export default function ApprovedQuotationsPage() {
   const router = useRouter();
@@ -35,6 +37,9 @@ export default function ApprovedQuotationsPage() {
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const queryClient = useQueryClient();
+
+  const [logPoModal, setLogPoModal] = useState({ open: false, quotation: null });
 
   const { data: usersData } = useUsers();
   const engineers = usersData?.documents || [];
@@ -82,6 +87,11 @@ export default function ApprovedQuotationsPage() {
   const [previewId, setPreviewId] = useState(null);
   const [downloadModal, setDownloadModal] = useState({ open: false, quotation: null });
   const [pdfPreview, setPdfPreview] = useState({ open: false, doc: null, title: '', filename: '' });
+
+  const handlePoLogged = () => {
+    queryClient.invalidateQueries({ queryKey: ['approved-quotations'] });
+    queryClient.invalidateQueries({ queryKey: ['approved-metrics'] });
+  };
 
   const quotations = data?.documents || [];
   const total = data?.total || 0;
@@ -441,6 +451,14 @@ export default function ApprovedQuotationsPage() {
                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                </svg>
                            </button>
+                           {/* Log PO */}
+                           <button 
+                               onClick={() => setLogPoModal({ open: true, quotation: row })}
+                               className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm active:scale-90"
+                               title="Log Purchase Order"
+                           >
+                               <Briefcase className="h-4 w-4" />
+                           </button>
                          </div>
                        </td>
                     </tr>
@@ -482,6 +500,13 @@ export default function ApprovedQuotationsPage() {
           onClose={() => setShowDatePicker(false)}
         />
       )}
+
+      <LogPoModal 
+        isOpen={logPoModal.open}
+        onClose={() => setLogPoModal({ open: false, quotation: null })}
+        quotation={logPoModal.quotation}
+        onSuccess={handlePoLogged}
+      />
     </DashboardLayout>
   );
 }
