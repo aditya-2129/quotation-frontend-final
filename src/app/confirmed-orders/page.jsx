@@ -91,6 +91,14 @@ export default function ConfirmedOrdersPage() {
   const orders = data?.documents || [];
   const total = data?.total || 0;
 
+  const getDueBadge = (deliveryDate) => {
+    if (!deliveryDate) return null;
+    const daysLeft = Math.ceil((new Date(deliveryDate) - new Date()) / 86400000);
+    if (daysLeft < 0) return { label: 'Overdue', cls: 'text-red-500 font-black' };
+    if (daysLeft <= 7) return { label: `${daysLeft}d left`, cls: 'text-amber-500 font-black' };
+    return null;
+  };
+
   const getStatusStyle = (status) => {
     switch (status) {
       case 'In Production': return 'bg-blue-50 text-blue-600 border-blue-100';
@@ -232,6 +240,7 @@ export default function ConfirmedOrdersPage() {
                    <th className="px-6 py-4 font-black text-zinc-400 uppercase tracking-[0.2em]">Customer / Project</th>
                    <th className="px-6 py-4 font-black text-zinc-400 uppercase tracking-[0.2em]">Lead Engineer</th>
                    <th className="px-6 py-4 font-black text-zinc-400 uppercase tracking-[0.2em] text-center">PO Date</th>
+                   <th className="px-6 py-4 font-black text-zinc-400 uppercase tracking-[0.2em] text-center">Delivery</th>
                    <th className="px-6 py-4 font-black text-zinc-400 uppercase tracking-[0.2em] text-center">Status</th>
                    <th className="px-6 py-4 font-black text-zinc-400 uppercase tracking-[0.2em] text-right">Order Value</th>
                    <th className="px-6 py-4 font-black text-zinc-400 uppercase tracking-[0.2em] text-right">Actions</th>
@@ -241,12 +250,12 @@ export default function ConfirmedOrdersPage() {
                 {isLoading ? (
                   [1,2,3,4,5].map(i => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan="7" className="px-6 py-5 align-middle"><div className="h-5 w-full bg-zinc-50 rounded" /></td>
+                      <td colSpan="8" className="px-6 py-5 align-middle"><div className="h-5 w-full bg-zinc-50 rounded" /></td>
                     </tr>
                   ))
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-24 text-center">
+                    <td colSpan="8" className="px-6 py-24 text-center">
                        <div className="flex flex-col items-center gap-3 text-zinc-400">
                           <Briefcase className="h-10 w-10 text-zinc-200" />
                           <p className="text-sm font-medium italic">No confirmed orders found matching your criteria.</p>
@@ -274,6 +283,14 @@ export default function ConfirmedOrdersPage() {
                       <td className="px-6 py-4 text-center font-bold font-mono text-zinc-400" style={{ fontSize: '10px' }}>
                          {order.po_date ? new Date(order.po_date).toLocaleDateString('en-GB') : '—'}
                       </td>
+                      <td className="px-6 py-4 text-center" style={{ fontSize: '10px' }}>
+                        {order.delivery_date ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="font-bold font-mono text-zinc-400">{new Date(order.delivery_date).toLocaleDateString('en-GB')}</span>
+                            {(() => { const b = getDueBadge(order.delivery_date); return b ? <span className={`text-[9px] uppercase tracking-widest ${b.cls}`}>{b.label}</span> : null; })()}
+                          </div>
+                        ) : <span className="text-zinc-300">—</span>}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <div className="relative inline-block">
                           <select 
@@ -299,10 +316,10 @@ export default function ConfirmedOrdersPage() {
                       </td>
                        <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
-                           {order.po_scan_file_id && (
-                             <button 
+                           {order.po_file_id && (
+                             <button
                                onClick={() => setPreviewFile({
-                                 url: assetService.getFileView(order.po_scan_file_id),
+                                 url: assetService.getFileView(order.po_file_id),
                                  title: "Client Purchase Order",
                                  filename: `PO_${order.po_number}.pdf`
                                })}

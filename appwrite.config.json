@@ -721,12 +721,39 @@
                     "encrypt": false
                 },
                 {
+                    "key": "quotation_no",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "project_name",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
                     "key": "items",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 50000,
                     "default": "[]",
+                    "encrypt": false
+                },
+                {
+                    "key": "delivery_date",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
                     "encrypt": false
                 }
             ],
