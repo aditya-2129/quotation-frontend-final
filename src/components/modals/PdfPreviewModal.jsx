@@ -8,7 +8,8 @@ const PdfPreviewModal = ({
   isOpen, 
   onClose, 
   pdfDoc, 
-  title = "PDF Preview",
+  url,
+  title = "Document Preview",
   filename = "document.pdf"
 }) => {
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -16,31 +17,43 @@ const PdfPreviewModal = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen && pdfDoc) {
-      setLoading(true);
-      try {
-        const blob = pdfDoc.output('blob');
-        const url = URL.createObjectURL(blob);
+    if (isOpen) {
+      if (url) {
         setPdfUrl(url);
-      } catch (err) {
-        console.error("Failed to generate PDF URL:", err);
-      } finally {
         setLoading(false);
+      } else if (pdfDoc) {
+        setLoading(true);
+        try {
+          const blob = pdfDoc.output('blob');
+          const previewUrl = URL.createObjectURL(blob);
+          setPdfUrl(previewUrl);
+        } catch (err) {
+          console.error("Failed to generate PDF URL:", err);
+        } finally {
+          setLoading(false);
+        }
       }
     }
 
     return () => {
-      if (pdfUrl) {
+      if (pdfUrl && !url) {
         URL.revokeObjectURL(pdfUrl);
       }
     };
-  }, [isOpen, pdfDoc]);
+  }, [isOpen, pdfDoc, url]);
 
   if (!isOpen) return null;
 
   const handleDownload = () => {
     if (pdfDoc) {
       pdfDoc.save(filename);
+    } else if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 

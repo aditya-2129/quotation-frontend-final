@@ -133,5 +133,22 @@ export const approvedQuotationService = {
             console.error("Appwrite Service Error [getApprovedQuotation]:", error);
             throw error;
         }
+    },
+
+    /**
+     * Update quotation status (e.g., to 'Converted to PO')
+     */
+    async updateStatus(id, status) {
+        try {
+            return await databases.updateDocument(
+                DATABASE_ID,
+                COLLECTIONS.QUOTATIONS,
+                id,
+                { status }
+            );
+        } catch (error) {
+            console.error("Appwrite Service Error [updateQuotationStatus]:", error);
+            throw error;
+        }
     }
 };
