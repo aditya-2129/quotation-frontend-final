@@ -12,6 +12,7 @@ const LogPoModal = ({ isOpen, onClose, quotation, onSuccess }) => {
   const [formData, setFormData] = useState({
     poNumber: '',
     poDate: new Date().toISOString().split('T')[0],
+    deliveryDate: '',
   });
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,24 +58,27 @@ const LogPoModal = ({ isOpen, onClose, quotation, onSuccess }) => {
         project_name: quotation.project_name || "Unnamed Project",
         total_amount: parseFloat(quotation.total_amount || 0),
         status: 'Received',
-        po_scan_file_id: fileId,
+        po_file_id: fileId,
         engineer_name: quotation.quoting_engineer || "Unassigned",
-        items_snapshot: quotation.items ? JSON.stringify(quotation.items) : "[]"
+        items: quotation.items ? JSON.stringify(quotation.items) : "[]",
+        delivery_date: formData.deliveryDate || null
       };
 
+      let createdOrder;
       try {
-        await purchaseOrderService.createOrder(orderData);
+        createdOrder = await purchaseOrderService.createOrder(orderData);
       } catch (appwriteError) {
         console.error("Appwrite PO Creation Detailed Error:", appwriteError);
         throw new Error(appwriteError.message || "Appwrite rejected the document structure");
       }
 
-      // 3. Update Quotation Status
+      // 3. Update Quotation Status — rollback PO if this fails
       try {
         await approvedQuotationService.updateStatus(quotation.$id, 'Converted to PO');
       } catch (qUpdateError) {
-        // Log but don't fail, as the PO is already created
-        console.warn("Quotation status update failed:", qUpdateError);
+        console.error("Quotation status update failed, rolling back PO:", qUpdateError);
+        await purchaseOrderService.deleteOrder(createdOrder.$id).catch(() => {});
+        throw new Error("Failed to update quotation status. Purchase Order has been rolled back.");
       }
 
       toast.dismiss();
@@ -142,6 +146,19 @@ const LogPoModal = ({ isOpen, onClose, quotation, onSuccess }) => {
                   required
                   value={formData.poDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, poDate: e.target.value }))}
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-zinc-200 bg-zinc-50/30 text-[13px] font-bold focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="group flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Expected Delivery Date (Optional)</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-300 group-focus-within:text-emerald-500 transition-colors" />
+                <input
+                  type="date"
+                  value={formData.deliveryDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, deliveryDate: e.target.value }))}
                   className="w-full h-11 pl-10 pr-4 rounded-xl border border-zinc-200 bg-zinc-50/30 text-[13px] font-bold focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none"
                 />
               </div>

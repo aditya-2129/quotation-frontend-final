@@ -123,5 +123,14 @@ export const purchaseOrderService = {
             console.error("Appwrite Service Error [updateOrderStatus]:", error);
             throw error;
         }
+    },
+
+    async deleteOrder(id) {
+        try {
+            return await databases.deleteDocument(DATABASE_ID, COLLECTIONS.PURCHASE_ORDERS, id);
+        } catch (error) {
+            console.error("Appwrite Service Error [deleteOrder]:", error);
+            throw error;
+        }
     }
 };
