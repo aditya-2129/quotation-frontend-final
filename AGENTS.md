@@ -26,7 +26,7 @@
 
 - **No API Keys:** Never hardcode API keys, secrets, or database connection strings in the code. Always use `process.env.VARIABLE_NAME` and remind the user to update their `.env.local` file.
 - **Package Additions:** NEVER install new npm packages using the terminal. If a task requires a new package, suggest the installation command and wait for the user to run it manually.
-- **Static Export Readiness:** For projects using Tauri/Electron with Next.js, always prioritize client-side data fetching (`use client`, `useEffect`, or TanStack Query) over server-side features like `getServerSideProps` or Server Actions to ensure the app can be exported as a static desktop binary.
+- **Client-side Data Fetching:** Always prioritize client-side data fetching (`use client`, `useEffect`, or TanStack Query) over server-side features like `getServerSideProps` or Server Actions.
 
 ## 1.4 Output Preferences
 
@@ -60,9 +60,7 @@
 This is NOT the Next.js you know. This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-## 2.2 Tauri & Static Desktop Compatibility
-
-This project is a **Hybrid App** (Web + Tauri Desktop). All future code MUST remain compatible with **Next.js Static Export** (`output: 'export'`).
+## 2.2 Next.js Routing & Architecture
 
 ### Routing & Navigation
 - **NO Dynamic Path Segments**: Avoid `[id]/page.jsx`.
@@ -70,16 +68,12 @@ This project is a **Hybrid App** (Web + Tauri Desktop). All future code MUST rem
 - **Suspense Wrapping**: Any component using `useSearchParams()` MUST be wrapped in a `<Suspense>` boundary to prevent build failures.
 
 ### API & Backend
-- **NO /api Routes**: The `src/app/api` directory is deleted during build.
 - **Direct Appwrite Calls**: Always talk to the Appwrite SDK/REST API directly from the client.
 - **No Server-side Secrets**: Never use `node-appwrite` or `APPWRITE_API_KEY` in frontend code.
 
 ### Assets & Images
 - **Direct URLs**: Fetch images/files directly from Appwrite URLs. Do not use server-side proxies.
 - **Unoptimized Images**: The Next.js `<Image>` component must have `unoptimized: true` in `next.config.mjs`.
-
-### Admin Features
-- Features requiring the **Appwrite Admin API Key** (like creating users or force-resetting passwords) are **restricted to the Web version**. Always add a check and an error message for these features in the Desktop environment.
 
 ---
 
@@ -89,24 +83,18 @@ This project is a **Hybrid App** (Web + Tauri Desktop). All future code MUST rem
 
 ```bash
 npm run dev        # Start Next.js dev server on port 3000
-npm run build      # Static export to /out (required before Tauri build)
+npm run build      # Build the Next.js app
+npm run start      # Start the production server
 npm run lint       # Run ESLint
-npm run tauri      # Run Tauri desktop app commands (e.g. npm run tauri dev)
 ```
 
 ## 3.2 Critical Config: `next.config.mjs`
 
 ```js
-const isProd = process.env.NODE_ENV === 'production';
-const internalHost = process.env.TAURI_DEV_HOST || 'localhost';
 export default {
-  output: isProd ? 'export' : undefined,
   images: { unoptimized: true },
-  assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
 };
 ```
-
-`output: 'export'` is only set in production; dev runs SSR normally so hot-reload works.
 
 ## 3.3 Environment Variables
 
@@ -115,23 +103,21 @@ NEXT_PUBLIC_APPWRITE_PROJECT_ID=machine-shop-quotation
 NEXT_PUBLIC_APPWRITE_PROJECT_NAME=Machine Shop Quotation
 NEXT_PUBLIC_APPWRITE_ENDPOINT=https://sgp.cloud.appwrite.io/v1
 APPWRITE_API_KEY=<server-side only, for admin API routes — never expose to client>
-TAURI_DEV_HOST=<optional, set by Tauri during mobile dev builds>
 ```
 
 - All `NEXT_PUBLIC_*` vars are safe for client-side use.
-- `APPWRITE_API_KEY` must only be used inside `/api` routes (web-only).
+- `APPWRITE_API_KEY` must only be used inside `/api` routes.
 
 ## 3.4 Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router, static export), React 19 |
+| Framework | Next.js 16 (App Router), React 19 |
 | Styling | Tailwind CSS 4 (utility-first), inline `THEME` tokens |
 | Server state | TanStack Query 5 (`staleTime: 60s`, `refetchOnWindowFocus: false`) |
 | Client state | React Context (`AuthContext`) + `useState` per component |
 | Forms | Manual `useState` + `setFormData` — React Hook Form and Zod are installed but not yet used |
 | Backend | Appwrite (BaaS) — auth, database, file storage; no custom backend server |
-| Desktop | Tauri 2 (wraps the static `/out` export) |
 | PDF export | jsPDF + jsPDF-AutoTable |
 | Excel export | xlsx-js-style |
 | Icons | Lucide React |
@@ -163,7 +149,6 @@ lucide-react@^1.7.0
 tailwindcss@^4
 clsx@^2.1.1
 tailwind-merge@^3.5.0
-@tauri-apps/cli@^2.10.1
 ```
 
 ## 3.6 Naming Conventions
@@ -411,9 +396,8 @@ Stores both draft and approved quotations. Key fields:
 - `logout()` → `account.deleteSession('current')`
 - `getCurrentUser()` → `account.get()`
 - `createRecovery(email)`, `updateRecovery(userId, secret, password)`
-- `createAuthAccount(email, password, name)` → POSTs to `/api/admin/create-user` (web-only)
-- `resetUserPassword(userId, password)` → POSTs to `/api/admin/reset-password` (web-only)
-- **Throws** if `window.__TAURI__` detected for admin operations
+- `createAuthAccount(email, password, name)` → POSTs to `/api/admin/create-user`
+- `resetUserPassword(userId, password)` → POSTs to `/api/admin/reset-password`
 
 ### `users.js`
 - `getUserByAuthId(authId)` — `Query.equal('auth_id', authId)`
@@ -651,20 +635,3 @@ Query.or([Query.contains('name', q), Query.contains('email', q)])
 - Max documents per request: 5000 (`Query.limit(5000)`) — used in metrics aggregation
 - Default pagination: 25 per page
 
-## 4.13 Tauri Desktop Configuration
-
-**`src-tauri/tauri.conf.json`:**
-- Product name: `"Kaivalya Quotation Maker"`
-- Identifier: `"com.krupa.quotation-maker"`
-- Window: 800×600px, resizable
-- `frontendDist: "../out"` — reads from Next.js static export
-- `devUrl: "http://localhost:3000"`
-- `beforeDevCommand: "npm run dev"`
-- `beforeBuildCommand: "npm run build"`
-- CSP: `null` (allows inline scripts for dev flexibility)
-
-**Tauri-specific guards in code:**
-```js
-// In auth.js — block admin operations in desktop app
-if (window.__TAURI__) throw new Error("Admin features not available in desktop app");
-```
