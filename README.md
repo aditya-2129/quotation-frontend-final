@@ -5,7 +5,6 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev)
 [![Appwrite](https://img.shields.io/badge/Appwrite-23-f02e65?logo=appwrite)](https://appwrite.io)
-[![Tauri](https://img.shields.io/badge/Tauri-2-24c8db?logo=tauri)](https://tauri.app)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-38b2ac?logo=tailwindcss)](https://tailwindcss.com)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -32,14 +31,13 @@
 
 ## Overview
 
-**Quotation Maker** is a production-ready hybrid application (web + desktop) designed specifically for machine shops and manufacturing facilities. It streamlines the quotation process by:
+**Quotation Maker** is a production-ready web application designed specifically for machine shops and manufacturing facilities. It streamlines the quotation process by:
 
 - **Creating complex quotations** with 7-step wizard forms covering scope, materials, machining logic, and commercial adjustments
 - **Managing quotation lifecycle** from draft to approval to completion with full audit trails
 - **Maintaining inventory** of materials, labor rates, and bought-out parts with real-time cost calculations
 - **Generating professional documents** in multiple formats (PDF variants, Excel workbooks) with company branding
 - **Tracking business metrics** with revenue trends, cost breakdowns, and purchase order analytics
-- **Supporting dual deployment** as a web application and offline-capable desktop application via Tauri
 
 ### Who Is This For?
 
@@ -52,9 +50,8 @@
 
 1. **Real-Time Cost Calculations** – Instantly see cost updates as you modify quotations
 2. **Multi-Format Export** – Generate specialized PDFs (cost summary, material list, manufacturing process sheet, BOP list) or Excel workbooks
-3. **Hybrid Deployment** – Run as a web app or offline desktop application
-4. **Role-Based Access** – Admin and regular user roles with distinct permissions
-5. **Professional Document Generation** – Branded, publication-ready PDFs and Excel exports
+3. **Role-Based Access** – Admin and regular user roles with distinct permissions
+4. **Professional Document Generation** – Branded, publication-ready PDFs and Excel exports
 
 ---
 
@@ -145,12 +142,6 @@ Create detailed quotations through a 7-section wizard form:
 - **Organized Storage** – Files organized by project in Appwrite storage buckets
 - **Integration** – Files linked to quotations and accessible throughout the form
 
-### 8. Dual Deployment
-
-- **Web Version** – Full-featured SaaS application accessible via browser
-- **Desktop Version** – Tauri-based packaged app for Windows/macOS/Linux with offline capability
-- **Shared Codebase** – Single Next.js codebase deployed to both web and desktop
-
 ---
 
 ## Tech Stack
@@ -177,10 +168,6 @@ Create detailed quotations through a 7-section wizard form:
 - **jsPDF** – PDF generation from HTML/DOM
 - **jsPDF-AutoTable** – Table rendering in PDFs
 - **xlsx-js-style** – Excel workbook generation with cell styling
-
-### Desktop & Build
-- **Tauri 2** – Rust-based desktop application framework
-- **Static Export** – Next.js static generation for offline compatibility
 
 ### Utilities
 - **date-fns** – Date manipulation and formatting
@@ -279,10 +266,6 @@ quotation-maker/
 │   └── hooks/
 │       └── useAssets.js              # File upload/delete wrapper
 │
-├── src-tauri/                        # Tauri desktop configuration
-│   ├── tauri.conf.json               # Desktop app settings
-│   └── src/                          # Rust backend code
-│
 ├── public/                           # Static assets
 ├── package.json                      # Dependencies & scripts
 ├── next.config.mjs                   # Next.js configuration
@@ -296,13 +279,13 @@ quotation-maker/
 ├── appwrite.config.json              # Appwrite collections & roles
 ├── CLAUDE.md                         # Comprehensive architectural guide
 ├── ARCHITECTURE.md                   # Module organization details
-├── AGENTS.md                         # Critical breaking changes & Tauri rules
+├── AGENTS.md                         # Critical breaking changes & coding rules
 └── README.md                         # This file
 ```
 
 **Key Directories Explained**
 
-- **`app/`** – Next.js page components (no dynamic segments for Tauri compatibility)
+- **`app/`** – Next.js page components
 - **`features/`** – Feature-based modules organized by domain
 - **`services/`** – Low-level Appwrite SDK wrappers
 - **`components/`** – Reusable UI components and layout components
@@ -364,16 +347,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```bash
 npm run build
 npm run start
-```
-
-#### Desktop Version (Development - Tauri)
-```bash
-npm run tauri:dev
-```
-
-#### Desktop Version (Production Build - Tauri)
-```bash
-npm run tauri:build
 ```
 
 ### First Login
@@ -648,13 +621,6 @@ export function calculateQuotationTotals(formData) {
 }
 ```
 
-### Static Export Constraint
-
-For Tauri desktop compatibility:
-- **No dynamic route segments** `[id]` – All routes must be static
-- **No API routes** `/api` in production – Use services layer instead
-- **Static generation** – `output: 'export'` in `next.config.mjs`
-
 ### Error Handling
 
 Consistent error handling across the app:
@@ -671,11 +637,9 @@ Consistent error handling across the app:
 | Script | Purpose |
 |--------|---------|
 | `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build for production (static export) |
+| `npm run build` | Build for production |
 | `npm run start` | Run production build locally |
 | `npm run lint` | Run ESLint on codebase |
-| `npm run tauri:dev` | Run Tauri desktop app in dev mode |
-| `npm run tauri:build` | Build Tauri desktop app for distribution |
 
 ### Adding New Features
 
@@ -701,11 +665,8 @@ When adding a new feature:
 
 ⚠️ **Critical Limitations**
 
-1. **No Dynamic Route Segments** – Cannot use `[id]` or `[slug]` in routes (Tauri limitation)
-2. **No API Routes** – Cannot create `/api` routes in production (static export)
-3. **No SSR** – All pages must be static or client-side rendered
-4. **Image Optimization** – Set `unoptimized: true` in next.config.mjs for Tauri
-5. **Data Fetching** – Use services + TanStack Query; avoid getStaticProps/getServerSideProps
+1. **No Dynamic Route Segments** – Use search params (`?id=XYZ`) instead of `[id]` or `[slug]`
+2. **Data Fetching** – Use services + TanStack Query; avoid getStaticProps/getServerSideProps
 
 For detailed architectural constraints and patterns, see [CLAUDE.md](CLAUDE.md).
 
@@ -715,17 +676,14 @@ For detailed architectural constraints and patterns, see [CLAUDE.md](CLAUDE.md).
 
 ### Web Version
 
-The web version is built as a static Next.js export.
-
 **Deployment Platforms**
 - **Vercel** – Recommended; optimal for Next.js
 - **Netlify** – Static site hosting
-- **AWS S3 + CloudFront** – Self-managed CDN
-- **Self-Hosted** – Any static file server (nginx, Apache)
+- **Self-Hosted** – Any Node.js server (nginx reverse proxy)
 
 **Deployment Steps**
 1. Build application: `npm run build`
-2. Upload `out/` directory to hosting platform
+2. Deploy to your hosting platform
 3. Set environment variables on hosting platform
 4. Configure Appwrite CORS to allow your domain
 
@@ -734,29 +692,6 @@ The web version is built as a static Next.js export.
 npm i -g vercel
 vercel
 ```
-
-### Desktop Version (Tauri)
-
-Build packaged desktop applications for Windows, macOS, and Linux.
-
-**Build Process**
-```bash
-npm run tauri:build
-```
-
-**Artifacts**
-- `src-tauri/target/release/bundle/` contains installers for each OS
-- Windows: `.exe` or `.msi`
-- macOS: `.dmg`
-- Linux: `.AppImage` or `.deb`
-
-**Code Signing**
-- Configure signing keys in `src-tauri/tauri.conf.json`
-- Required for auto-updates and distribution
-
-**Distribution**
-- Host installers on release platform (GitHub Releases, etc.)
-- Configure auto-update endpoint
 
 ### Environment Considerations
 
@@ -877,23 +812,6 @@ The application implements a consistent error handling approach:
 - Verify bucket has correct permissions for authenticated users
 - Check file size limits in Appwrite configuration
 
-### Desktop App (Tauri) Issues
-
-**Q: Application won't start from Tauri**
-- **A**: Ensure `npm run build` completes successfully first
-- Check that `output: 'export'` is set in `next.config.mjs`
-- Verify Tauri dev server is configured correctly in `src-tauri/tauri.conf.json`
-
-**Q: PDF generation fails in desktop app**
-- **A**: PDFs require specific font handling in Tauri
-- Check browser console for detailed errors
-- Ensure all images in PDFs are valid URLs or base64-encoded
-
-**Q: Database not syncing between web and desktop**
-- **A**: Both versions connect to same Appwrite instance
-- Clear application cache/localStorage if data is stale
-- Verify API credentials are identical in both environments
-
 ### PDF Generation Issues
 
 **Q: "Image load error" in PDF**
@@ -926,14 +844,13 @@ The application implements a consistent error handling approach:
 
 - **[CLAUDE.md](CLAUDE.md)** – Comprehensive architectural guide with detailed constraints, patterns, and implementation specifics
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** – Module organization and design patterns
-- **[AGENTS.md](AGENTS.md)** – Critical breaking changes for Next.js 16 and Tauri integration rules
+- **[AGENTS.md](AGENTS.md)** – Critical breaking changes for Next.js 16 and coding rules
 
 ### External Resources
 
 - **[Next.js Documentation](https://nextjs.org/docs)** – Framework documentation
 - **[React Documentation](https://react.dev)** – React patterns and best practices
 - **[Appwrite Documentation](https://appwrite.io/docs)** – Backend service setup
-- **[Tauri Documentation](https://tauri.app/docs)** – Desktop app development
 - **[Tailwind CSS Docs](https://tailwindcss.com/docs)** – CSS framework reference
 - **[TanStack Query Documentation](https://tanstack.com/query)** – Server state management
 
@@ -950,7 +867,6 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) file for 
 **Built with**
 - Next.js 16 and React 19
 - Appwrite Backend-as-a-Service
-- Tauri for desktop applications
 - Tailwind CSS for styling
 - TanStack Query for server state management
 
