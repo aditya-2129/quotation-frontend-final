@@ -40,11 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# tauri
-src-tauri/target
-src-tauri/gen
-src-tauri/bin
-
 # IDE and OS files
 .vscode/
 .idea/
