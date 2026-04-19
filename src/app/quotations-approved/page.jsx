@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { client } from '@/lib/appwrite';
+import { APPWRITE_CONFIG } from '@/constants/appwrite';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { THEME } from '@/constants/ui';
@@ -23,7 +26,6 @@ import { useUsers } from '@/features/admin/api/useUsers';
 import { Search, Filter, X, Calendar, BarChart3, FileCheck, TrendingUp, ChevronRight, FileSpreadsheet, Briefcase, CheckCircle2 } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { format } from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query';
 import LogPoModal from '@/components/modals/LogPoModal';
 
 export default function ApprovedQuotationsPage() {
@@ -38,6 +40,24 @@ export default function ApprovedQuotationsPage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
+
+  // Implement Realtime Auto-refresh
+  useEffect(() => {
+    const channel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${APPWRITE_CONFIG.COLLECTIONS.QUOTATIONS}.documents`;
+    
+    const unsubscribe = client.subscribe(channel, (response) => {
+      if (response.events.some(event => 
+        event.includes('.create') || 
+        event.includes('.update') || 
+        event.includes('.delete')
+      )) {
+        queryClient.invalidateQueries({ queryKey: ['approved-quotations'] });
+        queryClient.invalidateQueries({ queryKey: ['approved-metrics'] });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [queryClient]);
 
   const [logPoModal, setLogPoModal] = useState({ open: false, quotation: null });
 

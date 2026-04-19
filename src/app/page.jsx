@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { client } from "@/lib/appwrite";
+import { APPWRITE_CONFIG } from "@/constants/appwrite";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { THEME } from "@/constants/ui";
 import { useRouter } from "next/navigation";
@@ -106,6 +109,32 @@ function StatusDistributionBar({ draft, completed, approved, rejected, total, lo
 export default function Home() {
   const router = useRouter();
   const { isAdmin, isLoading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Implement Realtime auto-refresh for all dashboard metrics
+  useEffect(() => {
+    const collections = [
+      APPWRITE_CONFIG.COLLECTIONS.QUOTATIONS,
+      APPWRITE_CONFIG.COLLECTIONS.CUSTOMERS,
+      APPWRITE_CONFIG.COLLECTIONS.MATERIALS
+    ];
+
+    const subscriptions = collections.map(collectionId => {
+      const channel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${collectionId}.documents`;
+      return client.subscribe(channel, (response) => {
+        if (response.events.some(event => 
+          event.includes('.create') || 
+          event.includes('.update') || 
+          event.includes('.delete')
+        )) {
+          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['recent-quotations'] });
+        }
+      });
+    });
+
+    return () => subscriptions.forEach(unsubscribe => unsubscribe());
+  }, [queryClient]);
 
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: recent, isLoading: recentLoading } = useRecentQuotations(6);

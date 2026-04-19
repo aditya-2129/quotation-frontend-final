@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { client } from '@/lib/appwrite';
+import { APPWRITE_CONFIG } from '@/constants/appwrite';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { THEME } from '@/constants/ui';
 import { usePurchaseOrders, useOrderMetrics } from '@/features/quotations/api/usePurchaseOrders';
@@ -24,7 +27,6 @@ import DateRangePicker from '@/components/ui/DateRangePicker';
 import { format } from 'date-fns';
 import { assetService } from '@/services/assets';
 import { purchaseOrderService } from '@/services/purchase-orders';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import PdfPreviewModal from '@/components/modals/PdfPreviewModal';
 import OrderDetailsModal from '@/components/modals/OrderDetailsModal';
@@ -41,6 +43,25 @@ export default function ConfirmedOrdersPage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const queryClient = useQueryClient();
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  
+  // Realtime subscription
+  useEffect(() => {
+    const channel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${APPWRITE_CONFIG.COLLECTIONS.PURCHASE_ORDERS}.documents`;
+    
+    const unsubscribe = client.subscribe(channel, (response) => {
+      // Refresh on any document event in this collection
+      if (response.events.some(event => 
+        event.includes('.create') || 
+        event.includes('.update') || 
+        event.includes('.delete')
+      )) {
+        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['order-metrics'] });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [queryClient]);
   
   // Modal states
   const [previewFile, setPreviewFile] = useState(null);

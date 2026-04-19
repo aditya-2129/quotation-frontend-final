@@ -381,12 +381,28 @@ export default function NewQuotationPage() {
        } catch (e) {
           console.error("Save Error:", e);
           const isConflict = e.code === 409 || (e.message && e.message.includes("already exists"));
-          setErrorDetails({ 
-             open: true, 
-             message: isConflict 
-                ? `Quotation ID "${payload.quotation_no}" already exists in the central registry. Please refresh the page or manually increment the ID.` 
-                : (e.message || "Unknown persistence error") 
-          });
+          
+          if (isConflict) {
+            // Try to auto-resolve by suggesting the next one
+            try {
+              const freshId = await quotationService.generateNextQuotationID();
+              setErrorDetails({ 
+                open: true, 
+                message: `Quotation ID "${payload.quotation_no}" was just taken by another user. \n\nSuggested available ID: ${freshId}\n\nPlease update your ID and try again.` 
+              });
+              // We don't auto-set it to avoid confusion, but we provide the fresh one
+            } catch (idErr) {
+              setErrorDetails({ 
+                open: true, 
+                message: `Quotation ID "${payload.quotation_no}" already exists. Please manually increment it and try again.` 
+              });
+            }
+          } else {
+            setErrorDetails({ 
+              open: true, 
+              message: e.message || "Unknown persistence error" 
+            });
+          }
        } finally {
          setIsProcessing(false);
          setIsSaveConfirmOpen(false);
