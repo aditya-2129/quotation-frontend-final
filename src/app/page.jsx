@@ -60,6 +60,7 @@ const statusColor = (s) => {
   if (s === "Approved") return "bg-emerald-50 text-emerald-700 border-emerald-200";
   if (s === "Completed") return "bg-amber-50 text-amber-700 border-amber-200";
   if (s === "Rejected") return "bg-red-50 text-red-700 border-red-200";
+  if (s === "CONVERTED TO PO") return "bg-brand-primary/10 text-brand-primary border-brand-primary/20";
   return "bg-zinc-100 text-zinc-600 border-zinc-200";
 };
 
@@ -143,7 +144,7 @@ function RevenueBanner({ stats, loading }) {
         <div className="text-center min-w-[80px]">
           <p className="font-bold uppercase tracking-widest text-slate-500" style={{ fontSize: "9px" }}>POs Logged</p>
           {loading ? <Pulse className="mt-1 h-7 w-10 mx-auto" /> : (
-            <p className="mt-1 font-black text-violet-400" style={{ fontSize: "22px" }}>{stats?.poCount ?? "—"}</p>
+            <p className="mt-1 font-black text-[#a78bfa]" style={{ fontSize: "22px" }}>{stats?.poCount ?? "—"}</p>
           )}
           <p className="text-slate-500 font-medium" style={{ fontSize: "9px" }}>total</p>
         </div>
@@ -356,9 +357,9 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5 shrink-0">
               <div className="flex items-center gap-2.5">
                 <h2 className="font-bold text-zinc-900" style={{ fontSize: "14px" }}>Pending Approval</h2>
-                {!reviewLoading && (reviewQueue?.length ?? 0) > 0 && (
+                {!statsLoading && (stats?.completedCount ?? 0) > 0 && (
                   <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 font-bold text-amber-700" style={{ fontSize: "10px" }}>
-                    {reviewQueue.length} awaiting you
+                    {stats.completedCount} awaiting you
                   </span>
                 )}
               </div>

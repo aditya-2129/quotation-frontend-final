@@ -51,7 +51,7 @@ Thumbs.db
 .gemini/
 .antigravity/
 .mcp.json
-
+.superpowers/
 
 # Extra local environment overrides
 .env.local

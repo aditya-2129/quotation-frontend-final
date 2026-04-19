@@ -99,7 +99,7 @@ export const dashboardService = {
                 : thisMonthRevenue > 0 ? '+100' : '0';
 
             const pipelineValue = allQuotations.documents
-                .filter(d => d.status !== "Approved")
+                .filter(d => d.status !== "Approved" && d.status !== "Rejected")
                 .reduce((sum, doc) => sum + (parseFloat(doc.total_amount) || 0), 0);
 
             const oldestReviewCreatedAt = oldestReviewDocs.documents[0]?.$createdAt ?? null;
