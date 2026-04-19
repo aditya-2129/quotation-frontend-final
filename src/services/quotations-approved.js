@@ -10,7 +10,7 @@ export const approvedQuotationService = {
     async listApprovedQuotations(limit = 25, offset = 0, filters = {}) {
         try {
             const queries = [
-                Query.or([Query.equal('status', 'Approved'), Query.equal('status', 'Converted to PO')]),
+                Query.equal('status', 'Approved'),
                 Query.orderDesc("quotation_no"),
                 Query.limit(limit),
                 Query.offset(offset)
@@ -69,7 +69,7 @@ export const approvedQuotationService = {
     async getApprovedMetrics(filters = {}) {
         try {
             const queries = [
-                Query.or([Query.equal('status', 'Approved'), Query.equal('status', 'Converted to PO')]),
+                Query.equal('status', 'Approved'),
                 Query.limit(5000),
                 Query.select(['total_amount'])
             ];

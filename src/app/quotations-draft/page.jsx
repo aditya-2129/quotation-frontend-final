@@ -277,15 +277,15 @@ export default function QuotationsPage() {
                         ₹{parseFloat(row.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                        <td className="px-6 py-4 text-right">
-                         <ActionButtons 
-                            onPreview={() => setPreviewId(row.$id)}
-                            onDownload={() => setDownloadModal({ open: true, quotation: row })}
-                            downloadDisabled={!(row.status === 'Completed' || row.status === 'Approved')}
-                            onEdit={() => router.push(`/quotations-draft/edit?id=${row.$id}`)} 
-                            editDisabled={row.status === 'Approved' && !isAdmin}
-                            onDelete={() => setDeleteConfirm({ open: true, row: row })} 
-                            deleteDisabled={row.status === 'Approved' && !isAdmin}
-                          />
+                          <ActionButtons 
+                             onPreview={() => setPreviewId(row.$id)}
+                             onDownload={() => setDownloadModal({ open: true, quotation: row })}
+                             downloadDisabled={row.status === 'Draft'}
+                             onEdit={() => router.push(`/quotations-draft/edit?id=${row.$id}`)} 
+                             editDisabled={row.status === 'Approved' && !isAdmin}
+                             onDelete={() => setDeleteConfirm({ open: true, row: row })} 
+                             deleteDisabled={row.status === 'Approved' && !isAdmin}
+                           />
                        </td>
                     </tr>
                   ))

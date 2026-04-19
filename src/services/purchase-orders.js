@@ -55,7 +55,7 @@ export const purchaseOrderService = {
         try {
             const queries = [
                 Query.limit(5000),
-                Query.select(['total_amount', 'status'])
+                Query.select(['total_amount', 'actual_valuation', 'status'])
             ];
 
             // Re-use filter logic or keep it simple for metrics
@@ -65,7 +65,7 @@ export const purchaseOrderService = {
                 queries
             );
 
-            const totalValue = response.documents.reduce((sum, doc) => sum + (parseFloat(doc.total_amount) || 0), 0);
+            const totalValue = response.documents.reduce((sum, doc) => sum + (parseFloat(doc.actual_valuation || doc.total_amount) || 0), 0);
             const activeOrders = response.documents.filter(doc => doc.status !== 'Completed' && doc.status !== 'Cancelled').length;
             
             return {

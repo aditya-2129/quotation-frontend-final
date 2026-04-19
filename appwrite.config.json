@@ -96,15 +96,6 @@
                     "max": 1000000000
                 },
                 {
-                    "key": "unit_price",
-                    "type": "double",
-                    "required": false,
-                    "array": false,
-                    "default": 0,
-                    "min": 0,
-                    "max": 1000000000
-                },
-                {
                     "key": "items",
                     "type": "string",
                     "required": false,
@@ -318,6 +309,15 @@
                     "size": 255,
                     "default": null,
                     "encrypt": false
+                },
+                {
+                    "key": "unit_price",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": 0,
+                    "min": 0,
+                    "max": 1000000000
                 }
             ],
             "indexes": []
@@ -679,6 +679,15 @@
                     "max": 1000000000
                 },
                 {
+                    "key": "actual_valuation",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": 0,
+                    "min": 0,
+                    "max": 1000000000
+                },
+                {
                     "key": "status",
                     "type": "string",
                     "required": false,
@@ -721,24 +730,6 @@
                     "encrypt": false
                 },
                 {
-                    "key": "quotation_no",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 50,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "project_name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
                     "key": "items",
                     "type": "string",
                     "required": false,
@@ -753,6 +744,24 @@
                     "required": false,
                     "array": false,
                     "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "quotation_no",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "project_name",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
                     "default": null,
                     "encrypt": false
                 }

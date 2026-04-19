@@ -113,7 +113,13 @@ const OrderDetailsModal = ({ isOpen, onClose, order }) => {
             <InfoCard icon={Hash} label="PO Reference" value={order.po_number} subValue={`QTN: ${order.quotation_no}`} color="primary" />
             <InfoCard icon={Calendar} label="Issue Date" value={order.po_date ? format(new Date(order.po_date), 'dd MMM yyyy') : '—'} color="blue" />
             <InfoCard icon={User} label="Lead Engineer" value={order.engineer_name || 'Unassigned'} color="purple" />
-            <InfoCard icon={IndianRupee} label="Order Value" value={`₹${parseFloat(order.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} color="emerald" />
+            <InfoCard 
+              icon={IndianRupee} 
+              label="Agreed Valuation" 
+              value={`₹${parseFloat(order.actual_valuation || order.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} 
+              subValue={order.actual_valuation && Math.abs(order.actual_valuation - order.total_amount) > 0.01 ? `Quoted: ₹${parseFloat(order.total_amount || 0).toLocaleString('en-IN')}` : null}
+              color="emerald" 
+            />
           </div>
 
           {/* Items Section */}
@@ -154,9 +160,11 @@ const OrderDetailsModal = ({ isOpen, onClose, order }) => {
                   </tbody>
                   <tfoot className="bg-zinc-50/50">
                     <tr>
-                      <td colSpan="3" className="px-6 py-4 text-right text-[10px] font-black text-zinc-400 uppercase tracking-widest">Total Order Sum</td>
+                      <td className="px-6 py-4 text-right text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                        {order.actual_valuation && Math.abs(order.actual_valuation - order.total_amount) > 0.01 ? 'Final Agreed Sum' : 'Total Order Sum'}
+                      </td>
                       <td className="px-6 py-4 text-right font-mono font-black text-emerald-700 text-[14px]">
-                        ₹{parseFloat(order.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        ₹{parseFloat(order.actual_valuation || order.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
                   </tfoot>

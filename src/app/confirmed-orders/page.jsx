@@ -332,8 +332,17 @@ export default function ConfirmedOrdersPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right font-mono font-black text-emerald-900" style={{ fontSize: THEME.FONT_SIZE.BASE }}>
-                        ₹{parseFloat(order.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      <td className="px-6 py-4 text-right">
+                         <div className="flex flex-col items-end">
+                            <span className="font-mono font-black text-emerald-900" style={{ fontSize: THEME.FONT_SIZE.BASE }}>
+                               ₹{parseFloat(order.actual_valuation || order.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                            {order.actual_valuation && Math.abs(order.actual_valuation - order.total_amount) > 0.01 && (
+                               <span className="text-[9px] font-bold text-zinc-400 line-through tracking-tighter decoration-emerald-500/30">
+                                  ₹{parseFloat(order.total_amount || 0).toLocaleString('en-IN')}
+                               </span>
+                            )}
+                         </div>
                       </td>
                        <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">

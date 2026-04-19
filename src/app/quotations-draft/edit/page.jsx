@@ -666,14 +666,26 @@ function EditQuotationContent() {
                    <button 
                        type="button"
                        onClick={() => setIsRejectionModalOpen(true)}
-                       className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-red-600 border border-red-200 hover:bg-red-50 rounded-xl transition-all cursor-pointer pointer-events-auto bg-white/50"
+                       disabled={formData.status === 'Draft'}
+                       className={`px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest rounded-xl transition-all border ${
+                         formData.status === 'Draft' 
+                         ? 'text-zinc-400 border-zinc-200 bg-zinc-50 cursor-not-allowed opacity-60' 
+                         : 'text-red-600 border-red-200 hover:bg-red-50 cursor-pointer bg-white/50'
+                       }`}
+                       title={formData.status === 'Draft' ? "Quotation must be submitted for review before it can be rejected" : "Reject"}
                      >
                        Reject
                    </button>
                    <button 
                        type="button"
                        onClick={handleApprove}
-                       className="px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest text-emerald-600 border border-emerald-200 hover:bg-emerald-50 rounded-xl transition-all cursor-pointer pointer-events-auto bg-white/50"
+                       disabled={formData.status === 'Draft'}
+                       className={`px-6 h-10 flex items-center justify-center text-[11px] font-extrabold uppercase tracking-widest rounded-xl transition-all border ${
+                         formData.status === 'Draft' 
+                         ? 'text-zinc-400 border-zinc-200 bg-zinc-50 cursor-not-allowed opacity-60' 
+                         : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 cursor-pointer bg-white/50'
+                       }`}
+                       title={formData.status === 'Draft' ? "Quotation must be submitted for review before approval" : "Approve"}
                      >
                        Approve
                    </button>

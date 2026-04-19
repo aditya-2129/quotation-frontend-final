@@ -436,15 +436,9 @@ export default function ApprovedQuotationsPage() {
                          {new Date(row.$createdAt).toLocaleDateString('en-GB')}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {row.status === 'Converted to PO' ? (
-                          <span className="inline-flex rounded-lg px-2.5 py-1 font-black uppercase tracking-widest leading-none border bg-teal-50 text-teal-600 border-teal-100" style={{ fontSize: '9px' }}>
-                            PO Logged
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-lg px-2.5 py-1 font-black uppercase tracking-widest leading-none border bg-emerald-50 text-emerald-600 border-emerald-100" style={{ fontSize: '9px' }}>
-                            Approved
-                          </span>
-                        )}
+                        <span className="inline-flex rounded-lg px-2.5 py-1 font-black uppercase tracking-widest leading-none border bg-emerald-50 text-emerald-600 border-emerald-100" style={{ fontSize: '9px' }}>
+                          Approved
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-right font-mono font-black text-emerald-900" style={{ fontSize: THEME.FONT_SIZE.BASE }}>
                         ₹{parseFloat(row.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -478,22 +472,13 @@ export default function ApprovedQuotationsPage() {
                                </svg>
                            </button>
                            {/* Log PO */}
-                           {row.status === 'Converted to PO' ? (
-                             <div
-                               className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-teal-100 bg-teal-50 text-teal-400 cursor-default"
-                               title="PO Already Logged"
-                             >
-                               <CheckCircle2 className="h-4 w-4" />
-                             </div>
-                           ) : (
-                             <button
-                               onClick={() => setLogPoModal({ open: true, quotation: row })}
-                               className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm active:scale-90"
-                               title="Log Purchase Order"
-                             >
-                               <Briefcase className="h-4 w-4" />
-                             </button>
-                           )}
+                           <button
+                             onClick={() => setLogPoModal({ open: true, quotation: row })}
+                             className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm active:scale-90"
+                             title="Log Purchase Order"
+                           >
+                             <Briefcase className="h-4 w-4" />
+                           </button>
                          </div>
                        </td>
                     </tr>
