@@ -83,9 +83,10 @@ export const dashboardService = {
             const thisMonthRevenue = sumPOValue(thisMonthPOs);
             const lastMonthRevenue = sumPOValue(lastMonthPOs);
 
-            const revenueTrend = lastMonthRevenue > 0
+            const rawTrend = lastMonthRevenue > 0
                 ? (((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
-                : thisMonthRevenue > 0 ? '+100' : '0';
+                : thisMonthRevenue > 0 ? '100' : '0';
+            const revenueTrend = parseFloat(rawTrend) >= 0 ? `+${rawTrend}` : rawTrend;
 
             // Pipeline: What's strictly in motion (not yet approved/rejected/cancelled)
             const pipelineValue = allQuotations.documents
@@ -138,7 +139,8 @@ export const dashboardService = {
                 COLLECTIONS.QUOTATIONS,
                 [
                     Query.notEqual("status", "Cancelled"),
-                    Query.orderDesc("$createdAt"),
+                    Query.notEqual("supplier_name", "Anonymous Draft"),
+                    Query.orderDesc("$updatedAt"),
                     Query.limit(limit),
                 ]
             );

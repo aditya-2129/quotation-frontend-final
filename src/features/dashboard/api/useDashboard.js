@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardService } from '@/services/dashboard';
 import { approvedQuotationService } from '@/services/quotations-approved';
+import toast from 'react-hot-toast';
 
 /**
  * Hook for dashboard statistics
@@ -45,6 +46,9 @@ export const useApproveQuotation = () => {
       queryClient.invalidateQueries({ queryKey: ['review-queue'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['recent-quotations'] });
+    },
+    onError: () => {
+      toast.error('Failed to approve quotation. Please try again.');
     },
   });
 };

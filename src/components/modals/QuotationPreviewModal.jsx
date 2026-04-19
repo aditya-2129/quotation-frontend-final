@@ -39,6 +39,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
   let projectImage = null;
   let inquiryPdfs = [];
   let inquiryCadFiles = [];
+  let bopItems = [];
 
   if (quote) {
     try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
@@ -49,19 +50,32 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
     } catch (e) { 
        projectImage = null; 
     }
-    // 2. Parse Inquiry Files (Project Level)
-    let inquiryPdfs = [];
-    let inquiryCadFiles = [];
+    // 2. Parse Inquiry Files (Project Level) — read directly from quote fields
     try {
-      const breakdown = typeof quote.detailed_breakdown === 'string' ? JSON.parse(quote.detailed_breakdown || '{}') : (quote.detailed_breakdown || {});
-      
-      const rawPdfs = breakdown.inquiry_pdfs || breakdown.inquiry_files || [];
-      inquiryPdfs = Array.isArray(rawPdfs) ? rawPdfs : (typeof rawPdfs === 'string' ? JSON.parse(rawPdfs) : []);
-      
-      const rawCads = breakdown.inquiry_cad_files || [];
-      inquiryCadFiles = Array.isArray(rawCads) ? rawCads : (typeof rawCads === 'string' ? JSON.parse(rawCads) : []);
+      const rawPdfs = quote.inquiry_pdfs || [];
+      inquiryPdfs = (Array.isArray(rawPdfs) ? rawPdfs : JSON.parse(rawPdfs || '[]'))
+        .map(f => (typeof f === 'string' ? JSON.parse(f) : f))
+        .filter(Boolean);
     } catch (e) {
-      console.warn("[QuotationPreviewModal] Failed to parse inquiry files:", e);
+      console.warn("[QuotationPreviewModal] Failed to parse inquiry PDFs:", e);
+    }
+    try {
+      const rawCads = quote.inquiry_cad_files || [];
+      inquiryCadFiles = (Array.isArray(rawCads) ? rawCads : JSON.parse(rawCads || '[]'))
+        .map(f => (typeof f === 'string' ? JSON.parse(f) : f))
+        .filter(Boolean);
+    } catch (e) {
+      console.warn("[QuotationPreviewModal] Failed to parse CAD files:", e);
+    }
+
+    // 3. Parse bought-out parts from quote field
+    try {
+      const rawBop = quote.bought_out_items || [];
+      bopItems = (Array.isArray(rawBop) ? rawBop : JSON.parse(rawBop || '[]'))
+        .map(b => (typeof b === 'string' ? JSON.parse(b) : b))
+        .filter(Boolean);
+    } catch (e) {
+      bopItems = [];
     }
   }
 
@@ -362,12 +376,12 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                 )}
 
                 {/* Section 2.5: Consolidated Purchased Items (BOP) */}
-                {breakdown.bought_out_items && breakdown.bought_out_items.length > 0 && (
+                {bopItems.length > 0 && (
                   <section className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
                     <SectionHeader 
                       icon={<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>}
                       title="Purchased Components (Project-Wide)"
-                      count={breakdown.bought_out_items.length}
+                      count={bopItems.length}
                     />
                     <div className="overflow-hidden rounded-xl border border-zinc-100">
                       <table className="w-full text-left text-sm">
@@ -381,7 +395,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50 bg-white">
-                          {breakdown.bought_out_items.map((b, bIdx) => (
+                          {bopItems.map((b, bIdx) => (
                             <tr key={bIdx} className="hover:bg-zinc-50/50 transition-colors">
                               <td className="px-6 py-4">
                                 <div className="font-bold text-zinc-800">{b.item_name || '—'}</div>
@@ -447,7 +461,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-0.5">Unit Manufacturing</span>
                         <span className="text-[8px] text-zinc-600 font-bold uppercase italic tracking-wider">Direct Factory Cost</span>
                       </div>
-                      <span className="text-lg font-mono font-black tracking-tighter italic text-white">₹{parseFloat(breakdown.subtotal || quote.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span className="text-lg font-mono font-black tracking-tighter italic text-white">₹{parseFloat(breakdown.unitSubtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
 
@@ -468,7 +482,7 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                       </div>
                       <div className="flex items-baseline gap-1">
                         <span className="text-xl font-mono font-black tracking-tighter text-brand-primary leading-none">
-                          ₹{parseFloat(quote.unit_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ₹{parseFloat(breakdown.unitFinal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                         <span className="text-[8px] font-bold text-zinc-600 uppercase ml-1">/ unit</span>
                       </div>

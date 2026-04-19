@@ -298,7 +298,7 @@ export default function Home() {
         </button>
       }
     >
-      <div className="flex flex-col gap-4 h-[calc(100vh-128px)] overflow-hidden">
+      <div className="flex flex-col gap-4">
         {/* Page heading */}
         <div className="shrink-0">
           <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
@@ -348,10 +348,10 @@ export default function Home() {
         </section>
 
         {/* Bottom grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
 
           {/* Main card — Pending Approval + Recent Quotations */}
-          <section className="xl:col-span-2 rounded-2xl border border-zinc-200/80 bg-white shadow-sm flex flex-col min-h-0 overflow-hidden">
+          <section className="xl:col-span-2 rounded-2xl border border-zinc-200/80 bg-white shadow-sm flex flex-col overflow-hidden self-start">
 
             {/* Pending Approval header */}
             <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3.5 shrink-0">
@@ -441,7 +441,7 @@ export default function Home() {
             </div>
 
             {/* Recent quotations table */}
-            <div className="overflow-y-auto flex-1">
+            <div>
               <table className="w-full text-left">
                 <thead className="bg-zinc-50/80 sticky top-0">
                   <tr>
@@ -505,7 +505,7 @@ export default function Home() {
           </section>
 
           {/* Right column */}
-          <div className="flex flex-col gap-4 overflow-y-auto pr-1 pb-1">
+          <div className="flex flex-col gap-4">
 
             {/* Pipeline Status */}
             <div className="shrink-0 rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
@@ -527,15 +527,15 @@ export default function Home() {
             </div>
 
             {/* Business Overview */}
-            <div className="shrink-0 rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
+            {/* <div className="shrink-0 rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
               <h3 className="font-bold text-zinc-900" style={{ fontSize: "13px" }}>Business Overview</h3>
               <p className="mt-0.5 text-zinc-400 mb-4" style={{ fontSize: "10px" }}>Key operational numbers</p>
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { label: "Customers", value: stats?.totalCustomers, color: "text-brand-primary", icon: Users },
-                  { label: "Approved", value: stats?.approvedCount, color: "text-emerald-600", icon: CheckCircle },
-                  { label: "Materials", value: stats?.totalMaterials, color: "text-zinc-700", icon: Package },
-                  { label: "Drafts", value: stats?.draftCount, color: "text-amber-600", icon: BarChart2 },
+                  { label: "Customers", value: stats?.totalCustomers, color: "text-brand-primary" },
+                  { label: "PO Logged", value: stats?.poCount, color: "text-[#a78bfa]" },
+                  { label: "Rejected", value: stats?.rejectedCount, color: "text-red-500" },
+                  { label: "In Review", value: stats?.completedCount, color: "text-amber-600" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="rounded-xl bg-zinc-50 p-3 text-center">
                     <p className="font-bold uppercase tracking-wider text-zinc-400 mb-1" style={{ fontSize: "9px" }}>{label}</p>
@@ -547,7 +547,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
           </div>
         </div>
