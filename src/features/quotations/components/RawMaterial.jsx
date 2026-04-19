@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { THEME } from '@/constants/ui';
-import { Search, Plus, Trash2, ChevronDown, Check, Info, Box, Square, Circle, Hexagon, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Trash2, ChevronDown, Check, Info, Box, Square, Circle, Hexagon, Image as ImageIcon, FileText } from 'lucide-react';
 import { assetService } from '@/services/assets';
 import { FeaturePanel } from '@/components/ui/FeaturePanel';
+import AssetPreviewModal from '@/components/modals/AssetPreviewModal';
 
 const SHAPES = [
   { id: 'rect', name: 'Rect Bar / Plate', icon: Square },
@@ -42,7 +43,7 @@ const DimensionInput = ({ label, field, value, allowance, onChange }) => (
   </div>
 );
 
-const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
+const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate, onPreviewFile }) => {
   const [step, setStep] = useState(1); // 1: Material, 2: Shape, 3: Dimensions/Result
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -153,8 +154,8 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                   {item.part_image ? (
                      <div className="h-10 w-10 rounded-lg border border-zinc-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
                         <img 
-                           src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")}
-                           alt="Component" 
+                           src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFileView(item.part_image.$id)?.toString() : "")}
+                           alt="Component"
                            className="h-full w-full object-cover"
                         />
                      </div>
@@ -169,7 +170,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                   </div>
                </div>
                <div className="flex gap-1">
-                  <button 
+                  <button
                     onClick={() => {
                        const newType = item.jobType === 'rework' ? 'standard' : 'rework';
                        onUpdate({ jobType: newType });
@@ -178,7 +179,7 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                   >
                      Rework
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                        const newType = item.jobType === 'labour' ? 'standard' : 'labour';
                        onUpdate({ jobType: newType });
@@ -188,6 +189,33 @@ const MaterialConfigurationRow = ({ item, idx, libraries, onUpdate }) => {
                      Labour
                   </button>
                </div>
+               {item.design_files?.length > 0 && (
+                 <div className="flex flex-wrap gap-1 mt-1.5">
+                   {item.design_files.map((file, fIdx) => {
+                     const isCAD = ['.stp', '.step', '.dwg', '.dxf'].some(ext => file.name?.toLowerCase().endsWith(ext));
+                     const baseName = file.name?.replace(/\.[^/.]+$/, '') ?? '';
+                     const ext = file.name?.split('.').pop()?.toUpperCase() ?? '';
+                     return (
+                       <button
+                         key={fIdx}
+                         type="button"
+                         onClick={() => onPreviewFile(file)}
+                         className={`flex items-center gap-1 px-1.5 py-0.5 rounded border transition-all hover:scale-105 active:scale-95 ${isCAD ? 'bg-cyan-50 border-cyan-200 hover:border-cyan-400' : 'bg-red-50 border-red-200 hover:border-red-400'}`}
+                       >
+                         {isCAD ? (
+                           <svg className="h-2.5 w-2.5 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                           </svg>
+                         ) : (
+                           <FileText className="h-2.5 w-2.5 text-red-500 flex-shrink-0" />
+                         )}
+                         <span className={`font-bold uppercase tracking-tight truncate max-w-[80px] ${isCAD ? 'text-cyan-800' : 'text-red-800'}`} style={{ fontSize: '8px' }}>{baseName}</span>
+                         <span className={`font-black uppercase opacity-50 flex-shrink-0 ${isCAD ? 'text-cyan-700' : 'text-red-700'}`} style={{ fontSize: '7px' }}>.{ext}</span>
+                       </button>
+                     );
+                   })}
+                 </div>
+               )}
             </div>
 
             {/* Step 1: Material Selection */}
@@ -469,6 +497,7 @@ const RawMaterial = ({
   libraries,
   panelIndex = 3
 }) => {
+  const [previewFile, setPreviewFile] = useState(null);
   const isExpanded = activePhase === 'material';
   const updateItem = (idx, updates) => {
     setFormData(prev => {
@@ -492,15 +521,21 @@ const RawMaterial = ({
     >
        <div className="p-2.5 bg-zinc-50/10">
           {formData.items.map((item, idx) => (
-             <MaterialConfigurationRow 
+             <MaterialConfigurationRow
                 key={item.id}
                 item={item}
                 idx={idx}
                 libraries={libraries}
                 onUpdate={(updates) => updateItem(idx, updates)}
+                onPreviewFile={setPreviewFile}
              />
           ))}
        </div>
+      <AssetPreviewModal
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+        file={previewFile}
+      />
     </FeaturePanel>
   );
 };

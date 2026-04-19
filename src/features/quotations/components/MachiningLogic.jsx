@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { THEME } from '@/constants/ui';
-import { Plus, Trash2, ChevronDown, RefreshCw, Layers } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, RefreshCw, Layers, FileText } from 'lucide-react';
 import { assetService } from '@/services/assets';
 import { FeaturePanel } from '@/components/ui/FeaturePanel';
+import AssetPreviewModal from '@/components/modals/AssetPreviewModal';
 
 const INTEGER_UNITS = ['per_hole', 'per_rim', 'per_tap', 'pcs'];
 
@@ -118,7 +119,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
                   onUpdate({ dim1: d1, cycle_time: area });
                 }}
               />
-              <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-400" style={{ fontSize: '6px' }}>
+              <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-500" style={{ fontSize: '9px' }}>
                 {isWireCut ? 'PERIM' : (item?.shape === 'round' ? 'DIA' : 'LENGTH')}
               </span>
             </div>
@@ -140,7 +141,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
                   onUpdate({ dim2: d2, cycle_time: area });
                 }}
               />
-              <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-400" style={{ fontSize: '6px' }}>
+              <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-500" style={{ fontSize: '9px' }}>
                 {isWireCut ? 'HEIGHT' : (item?.shape === 'round' ? 'LENGTH' : 'WIDTH')}
               </span>
             </div>
@@ -160,7 +161,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
                 onUpdate({ cycle_time: Math.max(0, Math.round(val)) });
               }}
             />
-            <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-400" style={{ fontSize: '7px' }}>
+            <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-500" style={{ fontSize: '9px' }}>
               {unit === 'hr' ? 'MINS/PART' : unit.toUpperCase()}
             </span>
           </div>
@@ -179,7 +180,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
               value={process.setup_time ?? 0}
               onChange={(e) => onUpdate({ setup_time: Math.max(0, Math.round(parseFloat(e.target.value) || 0)) })}
             />
-            <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter text-zinc-400" style={{ fontSize: '7px' }}>SETUP MINS</span>
+            <span className="absolute -bottom-4 left-0 right-0 font-bold uppercase tracking-tighter text-zinc-500" style={{ fontSize: '9px' }}>SETUP MINS</span>
           </div>
         ) : (
           <span className="font-bold italic text-zinc-300" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>N/A</span>
@@ -198,7 +199,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
             value={rate}
             onChange={(e) => onUpdate({ rate: Math.max(0, Math.round(parseFloat(e.target.value) || 0)) })}
           />
-          <span className="absolute -bottom-4 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-400" style={{ fontSize: '7px' }}>
+          <span className="absolute -bottom-4 right-0 font-bold uppercase tracking-tighter transition-opacity whitespace-nowrap text-zinc-500" style={{ fontSize: '9px' }}>
             RATE / {unit.toUpperCase()}
           </span>
         </div>
@@ -222,7 +223,7 @@ const MachiningProcessRow = ({ process, quantity, libraries, onUpdate, onRemove,
   );
 };
 
-const PartMachiningBlock = ({ item, idx, libraries, onUpdate }) => {
+const PartMachiningBlock = ({ item, idx, libraries, onUpdate, onPreviewFile }) => {
   const addProcess = () => {
     const newProcesses = [...(item.processes || []), { id: Date.now(), process_name: '', hourly_rate: 0, cycle_time: 0, setup_time: 0 }];
     onUpdate({ processes: newProcesses });
@@ -245,8 +246,8 @@ const PartMachiningBlock = ({ item, idx, libraries, onUpdate }) => {
           {item.part_image ? (
             <div className="h-9 w-9 rounded border border-zinc-200 overflow-hidden bg-white shadow-sm flex-shrink-0">
                <img 
-                  src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFilePreview(item.part_image.$id)?.toString() : "")}
-                  alt="Part" 
+                  src={item.part_image.localPreview || (item.part_image.$id ? assetService.getFileView(item.part_image.$id)?.toString() : "")}
+                  alt="Part"
                   className="h-full w-full object-cover"
                />
             </div>
@@ -260,11 +261,33 @@ const PartMachiningBlock = ({ item, idx, libraries, onUpdate }) => {
           )}
           <div>
             <h4 className="font-black text-brand-primary uppercase tracking-tight" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>{item.part_name}</h4>
-            <div className="flex items-center gap-2 mt-0.5">
-               <span className="text-zinc-400 font-bold uppercase tracking-[0.1em] italic font-mono leading-none" style={{ fontSize: '9px' }}>Manufacturing Steps</span>
-               <div className="h-1 w-1 rounded-full bg-zinc-200" />
-               <span className="text-zinc-300 font-bold uppercase font-mono italic" style={{ fontSize: '9px' }}>Ref: {item.id}</span>
-            </div>
+            {item.design_files?.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                {item.design_files.map((file, fIdx) => {
+                  const isCAD = ['.stp', '.step', '.dwg', '.dxf'].some(ext => file.name?.toLowerCase().endsWith(ext));
+                  const baseName = file.name?.replace(/\.[^/.]+$/, '') ?? '';
+                  const ext = file.name?.split('.').pop()?.toUpperCase() ?? '';
+                  return (
+                    <button
+                      key={fIdx}
+                      type="button"
+                      onClick={() => onPreviewFile(file)}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded border transition-all hover:scale-105 active:scale-95 ${isCAD ? 'bg-cyan-50 border-cyan-200 hover:border-cyan-400' : 'bg-red-50 border-red-200 hover:border-red-400'}`}
+                    >
+                      {isCAD ? (
+                        <svg className="h-2.5 w-2.5 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      ) : (
+                        <FileText className="h-2.5 w-2.5 text-red-500 flex-shrink-0" />
+                      )}
+                      <span className={`font-bold uppercase tracking-tight truncate max-w-[100px] leading-none ${isCAD ? 'text-cyan-800' : 'text-red-800'}`} style={{ fontSize: '8px' }}>{baseName}</span>
+                      <span className={`font-black uppercase opacity-50 flex-shrink-0 leading-none ${isCAD ? 'text-cyan-700' : 'text-red-700'}`} style={{ fontSize: '8px' }}>.{ext}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-6">
@@ -349,6 +372,7 @@ const MachiningLogic = ({
   libraries,
   panelIndex = 4
 }) => {
+  const [previewFile, setPreviewFile] = useState(null);
   const isExpanded = activePhase === 'machining';
 
   const updateItem = (idx, updates) => {
@@ -379,15 +403,21 @@ const MachiningLogic = ({
     >
        <div className="p-2.5 bg-zinc-50/10">
           {formData.items.map((item, idx) => (
-             <PartMachiningBlock 
+             <PartMachiningBlock
                 key={item.id}
                 item={item}
                 idx={idx}
                 libraries={libraries}
                 onUpdate={(updates) => updateItem(idx, updates)}
+                onPreviewFile={setPreviewFile}
              />
           ))}
        </div>
+      <AssetPreviewModal
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+        file={previewFile}
+      />
     </FeaturePanel>
   );
 };

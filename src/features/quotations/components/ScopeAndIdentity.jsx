@@ -170,7 +170,7 @@ const ScopeAndIdentity = ({
                   style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                placeholder="Personnel Name"
                value={formData.contact_person || ""}
-               onChange={(e) => setFormData({...formData, contact_person: e.target.value})}
+               onChange={(e) => setFormData(prev => ({ ...prev, contact_person: e.target.value }))}
              />
           </div>
           <div>
@@ -186,7 +186,7 @@ const ScopeAndIdentity = ({
                style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                placeholder="10-digit number..."
                value={formData.contact_phone || ""}
-               onChange={(e) => setFormData({...formData, contact_phone: e.target.value.replace(/\D/g, '')})}
+               onChange={(e) => setFormData(prev => ({ ...prev, contact_phone: e.target.value.replace(/\D/g, '') }))}
              />
           </div>
           <div>
@@ -201,7 +201,7 @@ const ScopeAndIdentity = ({
                style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                placeholder="engineering@client.com"
                value={formData.contact_email || ""}
-               onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+               onChange={(e) => setFormData(prev => ({ ...prev, contact_email: e.target.value }))}
              />
           </div>
 
@@ -232,7 +232,7 @@ const ScopeAndIdentity = ({
                className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black shadow-sm"
                style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                value={formData.inquiry_date || ""}
-               onChange={(e) => setFormData({...formData, inquiry_date: e.target.value})}
+               onChange={(e) => setFormData(prev => ({ ...prev, inquiry_date: e.target.value }))}
              />
           </div>
           <div>
@@ -246,7 +246,7 @@ const ScopeAndIdentity = ({
                className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black shadow-sm"
                style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                value={formData.delivery_date || ""}
-               onChange={(e) => setFormData({...formData, delivery_date: e.target.value})}
+               onChange={(e) => setFormData(prev => ({ ...prev, delivery_date: e.target.value }))}
              />
           </div>
 
@@ -363,7 +363,7 @@ const ScopeAndIdentity = ({
                 style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                 placeholder="e.g. Main Conveyor Assembly"
                 value={formData.project_name || ""}
-                onChange={(e) => setFormData({...formData, project_name: e.target.value})}
+                onChange={(e) => setFormData(prev => ({ ...prev, project_name: e.target.value }))}
              />
           </div>
 
@@ -379,7 +379,7 @@ const ScopeAndIdentity = ({
                className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-mono font-semibold text-black shadow-sm"
                style={{ fontSize: THEME.FONT_SIZE.BASE }}
                value={formData.quantity ?? 1}
-               onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 1})}
+               onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
              />
           </div>
           <div>
@@ -392,7 +392,7 @@ const ScopeAndIdentity = ({
                   className="w-full h-8.5 px-4 rounded-lg bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-zinc-950 focus:bg-white outline-none transition-all font-semibold text-black shadow-sm appearance-none cursor-pointer"
                   style={{ fontSize: THEME.FONT_SIZE.SMALL }}
                   value={formData.production_mode || "Batch"}
-                  onChange={(e) => setFormData({...formData, production_mode: e.target.value})}
+                  onChange={(e) => setFormData(prev => ({ ...prev, production_mode: e.target.value }))}
                 >
                    <option value="Prototype">Prototype</option>
                    <option value="Batch">Batch / Lot</option>
@@ -420,7 +420,7 @@ const ScopeAndIdentity = ({
                                 <img 
                                    src={formData.project_image.localPreview || (formData.project_image.$id ? assetService.getFilePreview(formData.project_image.$id)?.toString() : "")} 
                                    alt="Project Model" 
-                                   className="h-full w-full object-cover transition-transform group-hover/img:scale-110"
+                                   className="h-full w-full object-contain"
                                    onError={(e) => {
                                       if (e.target.src.includes('preview')) {
                                          e.target.src = formData.project_image.localPreview || assetService.getFileView(formData.project_image.$id)?.toString();
@@ -436,7 +436,7 @@ const ScopeAndIdentity = ({
                              </div>
                              <button 
                                type="button"
-                               onClick={() => setFormData({...formData, project_image: null})}
+                               onClick={() => setFormData(prev => ({ ...prev, project_image: null }))}
                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 shadow-lg opacity-0 group-hover/upload:opacity-100 flex items-center justify-center transition-all z-30 scale-75 group-hover/upload:scale-100"
                              >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -460,7 +460,7 @@ const ScopeAndIdentity = ({
                                   try {
                                      const uploaded = await assetService.uploadFile(file);
                                      const localPreviewUrl = URL.createObjectURL(file);
-                                     setFormData({...formData, project_image: { ...uploaded, localPreview: localPreviewUrl }});
+                                     setFormData(prev => ({ ...prev, project_image: { ...uploaded, localPreview: localPreviewUrl } }));
                                   } catch (err) {
                                      alert("Image upload failed: " + err.message);
                                   } finally {
@@ -546,10 +546,9 @@ const ScopeAndIdentity = ({
                           >
                              <Trash2 className="h-3 w-3" />
                           </button>
-                          <a 
-                             href={assetService.getFileView(file.$id)} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
+                          <button 
+                             type="button"
+                             onClick={() => setPreviewFile(file)}
                              className="absolute inset-0 rounded-xl z-20"
                           />
                        </div>
@@ -612,10 +611,9 @@ const ScopeAndIdentity = ({
                           >
                              <Trash2 className="h-3 w-3" />
                           </button>
-                          <a 
-                             href={assetService.getFileView(file.$id)} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
+                          <button 
+                             type="button"
+                             onClick={() => setPreviewFile(file)}
                              className="absolute inset-0 rounded-xl z-20"
                           />
                        </div>

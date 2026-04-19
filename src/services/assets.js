@@ -54,6 +54,9 @@ export const assetService = {
             await storage.deleteFile(BUCKETS.INQUIRY_FILES, fileId);
             return true;
         } catch (error) {
+            if (error?.code === 404 || error?.message?.includes('not found')) {
+                return true;
+            }
             console.error("Appwrite Service Error [deleteFile]:", error);
             throw error;
         }

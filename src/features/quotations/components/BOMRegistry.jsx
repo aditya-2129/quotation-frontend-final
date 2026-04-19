@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AssetPreviewModal from '@/components/modals/AssetPreviewModal';
 import { FeaturePanel } from '@/components/ui/FeaturePanel';
 import { useAssets } from '@/hooks/useAssets';
+import { assetService } from '@/services/assets';
 import { Trash2 , Plus, ImageIcon, FileText } from 'lucide-react';
 
 /**
@@ -19,7 +20,32 @@ const BOMRegistry = ({
   onError,
 }) => {
   const [previewFile, setPreviewFile] = useState(null);
-  const { isUploading, uploadFile, uploadFiles, deleteFile, getPreviewUrl } = useAssets();
+  const [imageErrors, setImageErrors] = useState({});
+  const [uploadingItems, setUploadingItems] = useState(new Set());
+  const { uploadFile, uploadFiles, deleteFile, getPreviewUrl } = useAssets();
+
+  const setItemUploading = (itemId, val) =>
+    setUploadingItems((prev) => {
+      const next = new Set(prev);
+      val ? next.add(itemId) : next.delete(itemId);
+      return next;
+    });
+
+  const getPartImageSrc = (item) => {
+    if (!item.part_image?.$id) return null;
+    if (item.part_image.localPreview) return item.part_image.localPreview;
+    const errState = imageErrors[item.id];
+    if (errState === 'view') return assetService.getFileView(item.part_image.$id)?.toString() || null;
+    if (errState === 'failed') return null;
+    return getPreviewUrl(item.part_image.$id) || null;
+  };
+
+  const handlePartImageError = (itemId) => {
+    setImageErrors((prev) => {
+      if (prev[itemId] === 'failed') return prev;
+      return { ...prev, [itemId]: prev[itemId] === 'view' ? 'failed' : 'view' };
+    });
+  };
 
   const addPart = () => {
     setFormData((prev) => ({
@@ -65,9 +91,11 @@ const BOMRegistry = ({
   };
 
   const updateItem = (index, updates) => {
-    const newItems = [...formData.items];
-    newItems[index] = { ...newItems[index], ...updates };
-    setFormData({ ...formData, items: newItems });
+    setFormData((prev) => {
+      const newItems = [...prev.items];
+      newItems[index] = { ...newItems[index], ...updates };
+      return { ...prev, items: newItems };
+    });
   };
 
   const isExpanded = activePhase === 'bom';
@@ -141,6 +169,7 @@ const BOMRegistry = ({
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
+                        setItemUploading(item.id, true);
                         try {
                           const uploadedFile = await uploadFile(file);
                           updateItem(idx, {
@@ -152,6 +181,7 @@ const BOMRegistry = ({
                         } catch (err) {
                           onError?.('Failed to upload part snapshot. ' + err.message);
                         } finally {
+                          setItemUploading(item.id, false);
                           if (e.target) e.target.value = '';
                         }
                       }}
@@ -163,7 +193,8 @@ const BOMRegistry = ({
                           onClick={() => setPreviewFile(item.part_image)}
                         >
                           <img
-                            src={item.part_image.localPreview || getPreviewUrl(item.part_image.$id)}
+                            src={getPartImageSrc(item)}
+                            onError={imageErrors[item.id] !== 'failed' ? () => handlePartImageError(item.id) : undefined}
                             alt="Part"
                             className="h-full w-full object-cover transition-transform group-hover/img:scale-110"
                           />
@@ -185,7 +216,7 @@ const BOMRegistry = ({
                         htmlFor={`part-image-${item.id}`}
                         className="relative h-14 w-14 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center gap-0.5 text-zinc-300 hover:border-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer group/upload overflow-hidden flex-shrink-0"
                       >
-                        {isUploading && (
+                        {uploadingItems.has(item.id) && (
                           <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center">
                             <div className="h-3 w-3 border-[1.5px] border-brand-primary border-t-transparent rounded-full animate-spin" />
                           </div>
@@ -217,101 +248,91 @@ const BOMRegistry = ({
                     onChange={(e) => updateItem(idx, { qty: parseInt(e.target.value) || 1 })}
                   />
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-start">
-                    <input
-                      type="file"
-                      id={`drawing-${item.id}`}
-                      className="hidden"
-                      multiple
-                      accept=".pdf,.stp,.step,.dwg,.dxf"
-                      disabled={isUploading}
-                      onChange={async (e) => {
-                        const selectedFiles = Array.from(e.target.files || []);
-                        if (selectedFiles.length === 0) return;
-
-                        try {
-                          const uploadedFiles = await uploadFiles(selectedFiles);
-                          updateItem(idx, {
-                            design_files: [...(item.design_files || []), ...uploadedFiles],
-                          });
-                        } catch (err) {
-                          onError?.('Failed to upload assets. ' + err.message);
-                        } finally {
-                          if (e.target) e.target.value = '';
-                        }
-                      }}
-                    />
-                    {item.design_files?.length > 0 ? (
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <div className="flex flex-wrap justify-start gap-1.5 max-w-[400px] animate-in fade-in slide-in-from-top-1 duration-300">
-                          {item.design_files.map((file, fIdx) => {
-                             const isCAD = file.name?.toLowerCase().endsWith('.stp') || file.name?.toLowerCase().endsWith('.step') || file.name?.toLowerCase().endsWith('.dwg') || file.name?.toLowerCase().endsWith('.dxf');
-                             return (
-                               <div
-                                 key={fIdx}
-                                 className="relative group/file"
-                               >
-                                 <div
-                                   onClick={() => setPreviewFile(file)}
-                                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all shadow-sm cursor-pointer active:scale-95 ${isCAD ? 'bg-cyan-50/50 border-cyan-100 hover:border-cyan-400' : 'bg-red-50/50 border-red-100 hover:border-red-400'}`}
-                                 >
-                                   {isCAD ? (
-                                     <svg className="h-3 w-3 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                                   ) : (
-                                     <FileText className="h-3 w-3 text-red-500" />
-                                   )}
-                                   <span className={`text-[10px] font-bold uppercase tracking-tight truncate max-w-[120px] ${isCAD ? 'text-cyan-900' : 'text-red-900'}`}>
-                                     {file.name}
-                                   </span>
-                                 </div>
-                                 <button
-                                   onClick={async (e) => {
-                                     e.stopPropagation();
-                                     if (file.$id) await deleteFile(file.$id);
-                                     updateItem(idx, {
-                                       design_files: item.design_files.filter((_, i) => i !== fIdx),
-                                     });
-                                   }}
-                                   className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 shadow-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-10 scale-75 group-hover:scale-100"
-                                 >
-                                   <Trash2 className="h-2.5 w-2.5" />
-                                 </button>
-                               </div>
-                             );
-                           })}
-                          {isUploading ? (
-                            <div className="h-7 px-3 flex items-center gap-2 rounded-lg bg-zinc-50 border border-zinc-100 text-[9px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">
-                              <div className="h-3 w-3 border-[1.5px] border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                              Uploading...
-                            </div>
-                          ) : (
-                            <label
-                              htmlFor={`drawing-${item.id}`}
-                              className="h-7 w-7 flex items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary border border-brand-primary/20 cursor-pointer hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-90"
-                              title="Add More"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </label>
-                          )}
+                <td className="px-4 py-3 max-w-[320px]">
+                  <input
+                    type="file"
+                    id={`drawing-${item.id}`}
+                    className="hidden"
+                    multiple
+                    accept=".pdf,.stp,.step,.dwg,.dxf"
+                    disabled={uploadingItems.has(item.id)}
+                    onChange={async (e) => {
+                      const selectedFiles = Array.from(e.target.files || []);
+                      if (selectedFiles.length === 0) return;
+                      setItemUploading(item.id, true);
+                      try {
+                        const uploadedFiles = await uploadFiles(selectedFiles);
+                        updateItem(idx, {
+                          design_files: [...(item.design_files || []), ...uploadedFiles],
+                        });
+                      } catch (err) {
+                        onError?.('Failed to upload assets. ' + err.message);
+                      } finally {
+                        setItemUploading(item.id, false);
+                        if (e.target) e.target.value = '';
+                      }
+                    }}
+                  />
+                  <div className="flex flex-col gap-1">
+                    {item.design_files?.map((file, fIdx) => {
+                      const isCAD = ['.stp', '.step', '.dwg', '.dxf'].some((ext) =>
+                        file.name?.toLowerCase().endsWith(ext)
+                      );
+                      const baseName = file.name?.replace(/\.[^/.]+$/, '') ?? '';
+                      const ext = file.name?.split('.').pop()?.toUpperCase() ?? '';
+                      return (
+                        <div key={fIdx} className="relative group/file">
+                          <div
+                            onClick={() => setPreviewFile(file)}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md border transition-all cursor-pointer active:scale-95 ${
+                              isCAD
+                                ? 'bg-cyan-50 border-cyan-200 hover:border-cyan-400'
+                                : 'bg-red-50 border-red-200 hover:border-red-400'
+                            }`}
+                          >
+                            {isCAD ? (
+                              <svg className="h-3 w-3 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                              </svg>
+                            ) : (
+                              <FileText className="h-3 w-3 text-red-500 flex-shrink-0" />
+                            )}
+                            <span className={`text-[9px] font-bold uppercase tracking-tight truncate flex-1 min-w-0 ${isCAD ? 'text-cyan-800' : 'text-red-800'}`}>
+                              {baseName}
+                            </span>
+                            <span className={`text-[8px] font-black uppercase opacity-50 flex-shrink-0 ${isCAD ? 'text-cyan-700' : 'text-red-700'}`}>
+                              .{ext}
+                            </span>
+                          </div>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (file.$id) await deleteFile(file.$id);
+                              updateItem(idx, {
+                                design_files: item.design_files.filter((_, i) => i !== fIdx),
+                              });
+                            }}
+                            className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 shadow-md opacity-0 group-hover/file:opacity-100 flex items-center justify-center transition-all z-10"
+                          >
+                            <Trash2 className="h-2 w-2" />
+                          </button>
                         </div>
+                      );
+                    })}
+                    {uploadingItems.has(item.id) ? (
+                      <div className="h-6 px-2 flex items-center gap-1.5 rounded-md bg-zinc-50 border border-dashed border-zinc-200 text-[9px] font-black text-zinc-400 uppercase tracking-widest animate-pulse w-fit">
+                        <div className="h-2.5 w-2.5 border-[1.5px] border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                        Uploading…
                       </div>
                     ) : (
                       <label
                         htmlFor={`drawing-${item.id}`}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all group/upload shadow-sm-inset cursor-pointer ${
-                          isUploading
-                            ? 'bg-zinc-100 border-zinc-200 cursor-not-allowed'
-                            : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:bg-white hover:text-brand-primary hover:border-brand-primary'
-                        }`}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-dashed border-zinc-200 text-zinc-400 bg-transparent hover:border-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer w-fit"
+                        title="Attach files"
                       >
-                        {isUploading ? (
-                          <div className="h-3.5 w-3.5 border-[1.5px] border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Plus className="h-3.5 w-3.5" />
-                        )}
-                        <span className="text-[10px] font-black uppercase tracking-tight">
-                          {isUploading ? 'Uploading...' : 'Upload Blueprints'}
+                        <Plus className="h-3 w-3" />
+                        <span className="text-[9px] font-black uppercase tracking-tight">
+                          {item.design_files?.length > 0 ? 'Add More' : 'Attach Files'}
                         </span>
                       </label>
                     )}

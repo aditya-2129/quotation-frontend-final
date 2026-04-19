@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { quotationService } from '@/services/quotations-draft';
 import { assetService } from '@/services/assets';
+import AssetPreviewModal from '@/components/modals/AssetPreviewModal';
 
 const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
   const [quote, setQuote] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
 
   useEffect(() => {
     if (!isOpen || !quotationId) return;
@@ -35,15 +37,31 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
   let items = [];
   let breakdown = {};
   let projectImage = null;
+  let inquiryPdfs = [];
+  let inquiryCadFiles = [];
 
   if (quote) {
     try { items = JSON.parse(quote.items || '[]'); } catch (e) { items = []; }
     try { breakdown = JSON.parse(quote.detailed_breakdown || '{}'); } catch (e) { breakdown = {}; }
     try { 
-       projectImage = quote.project_image ? JSON.parse(quote.project_image) : null; 
+       projectImage = quote.project_image ? (typeof quote.project_image === 'string' ? JSON.parse(quote.project_image) : quote.project_image) : null; 
        if (projectImage && projectImage.localPreview) delete projectImage.localPreview;
     } catch (e) { 
        projectImage = null; 
+    }
+    // 2. Parse Inquiry Files (Project Level)
+    let inquiryPdfs = [];
+    let inquiryCadFiles = [];
+    try {
+      const breakdown = typeof quote.detailed_breakdown === 'string' ? JSON.parse(quote.detailed_breakdown || '{}') : (quote.detailed_breakdown || {});
+      
+      const rawPdfs = breakdown.inquiry_pdfs || breakdown.inquiry_files || [];
+      inquiryPdfs = Array.isArray(rawPdfs) ? rawPdfs : (typeof rawPdfs === 'string' ? JSON.parse(rawPdfs) : []);
+      
+      const rawCads = breakdown.inquiry_cad_files || [];
+      inquiryCadFiles = Array.isArray(rawCads) ? rawCads : (typeof rawCads === 'string' ? JSON.parse(rawCads) : []);
+    } catch (e) {
+      console.warn("[QuotationPreviewModal] Failed to parse inquiry files:", e);
     }
   }
 
@@ -168,22 +186,69 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                     <InfoField label="Production Mode" value={quote.production_mode} />
                   </div>
 
-                  {/* Project Image */}
-                  {projectImage && projectImage.$id && (
-                    <div className="mt-6 pt-5 border-t border-zinc-100">
-                      <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-[0.12em] leading-none block mb-3">Project Model / Snapshot</span>
-                      <div className="h-48 w-72 rounded-xl overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm">
-                        <img 
-                          src={projectImage.localPreview || (projectImage.$id ? assetService.getFilePreview(projectImage.$id)?.toString() : "")}
-                          onError={(e) => {
-                             if (e.target.src.includes('preview')) {
-                                e.target.src = projectImage.localPreview || assetService.getFileView(projectImage.$id)?.toString();
-                             }
-                          }} 
-                          alt="Project Model" 
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
+                  {/* Project Assets Row */}
+                  {(projectImage || inquiryPdfs.length > 0 || inquiryCadFiles.length > 0) && (
+                    <div className="mt-6 pt-5 border-t border-zinc-100 grid grid-cols-12 gap-6">
+                      {/* Project Image */}
+                      {projectImage && projectImage.$id && (
+                        <div className="col-span-12 md:col-span-4 lg:col-span-4">
+                          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-[0.12em] leading-none block mb-3">Model Snapshot</span>
+                          <button 
+                            type="button"
+                            onClick={() => setPreviewFile(projectImage)}
+                            className="h-40 w-full rounded-xl overflow-hidden border border-zinc-200 bg-zinc-50 shadow-sm group hover:border-brand-primary/50 transition-all"
+                          >
+                            <img 
+                              src={projectImage.localPreview || (projectImage.$id ? assetService.getFilePreview(projectImage.$id)?.toString() : "")}
+                              onError={(e) => {
+                                 if (e.target.src.includes('preview')) {
+                                    e.target.src = projectImage.localPreview || assetService.getFileView(projectImage.$id)?.toString();
+                                 }
+                              }} 
+                              alt="Project Model" 
+                              className="h-full w-full object-contain"
+                            />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Inquiry PDFs */}
+                      {inquiryPdfs.length > 0 && (
+                        <div className="col-span-12 md:col-span-4 lg:col-span-4">
+                          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-[0.12em] leading-none block mb-3">Inquiry PDFs</span>
+                          <div className="flex flex-wrap gap-2">
+                            {inquiryPdfs.map((f, fIdx) => (
+                              <button 
+                                key={fIdx} 
+                                onClick={() => setPreviewFile(f)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200 text-[10px] font-semibold text-zinc-700 hover:border-brand-primary/30 hover:bg-white transition-all w-full"
+                              >
+                                <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                <span className="truncate">{f.name || `PDF ${fIdx + 1}`}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* CAD Files */}
+                      {inquiryCadFiles.length > 0 && (
+                        <div className="col-span-12 md:col-span-4 lg:col-span-4">
+                          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-[0.12em] leading-none block mb-3">CAD / STP Files</span>
+                          <div className="flex flex-wrap gap-2">
+                            {inquiryCadFiles.map((f, fIdx) => (
+                              <button 
+                                key={fIdx} 
+                                onClick={() => setPreviewFile(f)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200 text-[10px] font-semibold text-zinc-700 hover:border-brand-primary/30 hover:bg-white transition-all w-full"
+                              >
+                                <svg className="h-4 w-4 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 011.06 1.888V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-6.112A2 2 0 015.06 11M19 11V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                <span className="truncate">{f.name || `CAD ${fIdx + 1}`}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </section>
@@ -277,10 +342,14 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
                                 <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Attached Design Assets</span>
                                 <div className="flex flex-wrap gap-2">
                                   {item.design_files.map((f, fIdx) => (
-                                    <div key={fIdx} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-100 border border-zinc-200 text-[11px] font-semibold text-zinc-600">
-                                      <svg className="h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                    <button 
+                                      key={fIdx} 
+                                      onClick={() => setPreviewFile(f)}
+                                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-100 border border-zinc-200 text-[11px] font-semibold text-zinc-600 hover:border-brand-primaryTransition transition-all group/asset"
+                                    >
+                                      <svg className="h-4 w-4 text-zinc-400 group-hover/asset:text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                                       {f.name || f.filename || `File ${fIdx + 1}`}
-                                    </div>
+                                    </button>
                                   ))}
                                 </div>
                               </div>
@@ -482,6 +551,12 @@ const QuotationPreviewModal = ({ isOpen, onClose, quotationId }) => {
             </>
           )}
         </div>
+
+        <AssetPreviewModal 
+          isOpen={!!previewFile} 
+          onClose={() => setPreviewFile(null)} 
+          file={previewFile}
+        />
       </div>
     </div>
   );
