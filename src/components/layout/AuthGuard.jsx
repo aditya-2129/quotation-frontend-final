@@ -12,6 +12,7 @@ const USER_ALLOWED_ROUTES = [
     '/materials',
     '/labor-rates',
     '/bop-library',
+    '/confirmed-orders',
 ];
 
 /**
