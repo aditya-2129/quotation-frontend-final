@@ -17,16 +17,18 @@ import {
   FileText,
   Clock,
   Settings2,
-  IndianRupee
+  IndianRupee,
+  FileSpreadsheet
 } from 'lucide-react';
 import Pagination from '@/components/ui/Pagination';
 import DateRangePicker from '@/components/ui/DateRangePicker';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { assetService } from '@/services/assets';
 import { purchaseOrderService } from '@/services/purchase-orders';
 import { toast } from 'react-hot-toast';
 import PdfPreviewModal from '@/components/modals/PdfPreviewModal';
 import OrderDetailsModal from '@/components/modals/OrderDetailsModal';
+import { exportPurchaseOrdersToExcel } from '@/utils/exportToExcel';
 
 export default function ConfirmedOrdersPage() {
   const [page, setPage] = useState(1);
@@ -40,6 +42,7 @@ export default function ConfirmedOrdersPage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const queryClient = useQueryClient();
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Realtime subscription
   useEffect(() => {
@@ -106,6 +109,31 @@ export default function ConfirmedOrdersPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      toast.loading("Preparing orders export...", { id: 'export-orders' });
+      
+      // Fetch data with current filters but higher limit for export
+      const exportData = await purchaseOrderService.listOrders(5000, 0, filters);
+      
+      if (!exportData?.documents || exportData.documents.length === 0) {
+        toast.error("No orders found to export", { id: 'export-orders' });
+        return;
+      }
+
+      const fileName = `Confirmed_Orders_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      exportPurchaseOrdersToExcel(exportData.documents, fileName);
+      
+      toast.success("Orders exported successfully", { id: 'export-orders' });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export orders", { id: 'export-orders' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const orders = data?.documents || [];
   const total = data?.total || 0;
 
@@ -128,7 +156,20 @@ export default function ConfirmedOrdersPage() {
   };
 
   return (
-    <DashboardLayout title="Confirmed Purchase Orders">
+    <DashboardLayout 
+      title="Confirmed Purchase Orders"
+      primaryAction={
+        <button
+          onClick={handleExportExcel}
+          disabled={isExporting || orders.length === 0}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-white shadow-lg shadow-emerald-200/50 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border border-emerald-500/20"
+          style={{ fontSize: THEME.FONT_SIZE.SMALL, fontWeight: 'bold' }}
+        >
+          <FileSpreadsheet className={`h-3.5 w-3.5 ${isExporting ? 'animate-bounce' : ''}`} />
+          {isExporting ? "Exporting..." : "Export Orders"}
+        </button>
+      }
+    >
       <div className="flex flex-col gap-6">
 
         {/* Metrics Bar */}
@@ -244,10 +285,15 @@ export default function ConfirmedOrdersPage() {
               onClick={() => setShowDatePicker(true)}
               className="w-full h-9.5 pl-3 pr-8 rounded-lg border border-zinc-200 bg-white text-[12px] font-bold text-left focus:border-brand-primary outline-none relative"
             >
-              {filters.dateRange.start ? format(filters.dateRange.start, 'MMM d, y') : "All Records"}
+              {filters.dateRange.start
+                ? filters.dateRange.end && !isSameDay(filters.dateRange.start, filters.dateRange.end)
+                  ? `${format(filters.dateRange.start, 'MMM d')} – ${format(filters.dateRange.end, 'MMM d, y')}`
+                  : format(filters.dateRange.start, 'MMM d, y')
+                : "All Records"}
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-300" />
             </button>
           </div>
+
         </section>
 
         {/* Table Section */}

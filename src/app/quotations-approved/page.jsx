@@ -25,7 +25,7 @@ import { useApprovedQuotations, useApprovedMetrics } from '@/features/quotations
 import { useUsers } from '@/features/admin/api/useUsers';
 import { Search, Filter, X, Calendar, BarChart3, FileCheck, TrendingUp, ChevronRight, FileSpreadsheet, Briefcase, CheckCircle2 } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import LogPoModal from '@/components/modals/LogPoModal';
 
 export default function ApprovedQuotationsPage() {
@@ -364,7 +364,9 @@ export default function ApprovedQuotationsPage() {
               >
                 {filters.dateRange.start && filters.dateRange.end ? (
                   <span className="truncate block">
-                    {format(filters.dateRange.start, 'MMM d')} - {format(filters.dateRange.end, 'y')}
+                    {isSameDay(filters.dateRange.start, filters.dateRange.end)
+                      ? format(filters.dateRange.start, 'MMM d, y')
+                      : `${format(filters.dateRange.start, 'MMM d')} – ${format(filters.dateRange.end, 'MMM d, y')}`}
                   </span>
                 ) : (
                   "All History"

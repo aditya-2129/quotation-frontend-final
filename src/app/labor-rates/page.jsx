@@ -106,27 +106,27 @@ export default function LaborRatesPage() {
                  <tbody className="divide-y divide-zinc-200">
                     {isLoading ? [1,2,3,4,5].map(i => (
                        <tr key={i} className="animate-pulse">
-                          <td className="px-6 py-5"><div className="h-4 w-48 bg-zinc-100 rounded" /></td>
-                          <td className="px-6 py-5"><div className="h-4 w-20 bg-zinc-100 rounded mx-auto" /></td>
-                          <td className="px-6 py-5 text-right"><div className="h-4 w-24 bg-zinc-100 rounded ml-auto" /></td>
-                          <td className="px-6 py-5 text-right"><div className="h-8 w-8 bg-zinc-100 rounded ml-auto" /></td>
+                          <td className="px-6 py-2.5"><div className="h-4 w-48 bg-zinc-100 rounded" /></td>
+                          <td className="px-6 py-2.5"><div className="h-4 w-20 bg-zinc-100 rounded mx-auto" /></td>
+                          <td className="px-6 py-2.5 text-right"><div className="h-4 w-24 bg-zinc-100 rounded ml-auto" /></td>
+                          <td className="px-6 py-2.5 text-right"><div className="h-8 w-8 bg-zinc-100 rounded ml-auto" /></td>
                        </tr>
                     )) : rates.length === 0 ? (
                        <tr><td colSpan="4" className="px-6 py-20 text-center text-zinc-400 italic font-medium uppercase tracking-widest" style={{ fontSize: THEME.FONT_SIZE.XSMALL }}>No processes found in this trajectory.</td></tr>
                     ) : rates.map(rate => (
                        <tr key={rate.$id} className="group hover:bg-brand-primary/[0.04] even:bg-[#F8FBFC] transition-all duration-200">
-                          <td className="px-6 py-5">
+                          <td className="px-6 py-2.5">
                              <span className="text-zinc-950 font-bold" style={{ fontSize: THEME.FONT_SIZE.BASE }}>{rate.process_name}</span>
                           </td>
-                           <td className="px-6 py-5 text-center">
+                           <td className="px-6 py-2.5 text-center">
                               <span className="inline-flex px-2 py-0.5 rounded border border-zinc-200 bg-white font-bold text-zinc-600 uppercase tracking-tight" style={{ fontSize: THEME.FONT_SIZE.TINY }}>
                                  {rate.unit || 'hr'}
                               </span>
                            </td>
-                           <td className="px-6 py-5 text-right">
+                           <td className="px-6 py-2.5 text-right">
                               <span className="font-mono font-bold text-emerald-700 italic" style={{ fontSize: THEME.FONT_SIZE.SMALL }}>₹{parseFloat(rate.rate || rate.hourly_rate || 0).toFixed(2)}</span>
                            </td>
-                           <td className="px-6 py-5 text-right">
+                           <td className="px-6 py-2.5 text-right">
                               <ActionButtons onEdit={() => openModal(rate)} onDelete={() => setDeleteConfirm({ open: true, row: rate })} />
                            </td>
                        </tr>

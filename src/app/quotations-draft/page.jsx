@@ -11,7 +11,7 @@ import { quotationService } from '@/services/quotations-draft';
 import { assetService } from '@/services/assets';
 import { useRouter } from 'next/navigation';
 import { Plus, Database, Search, X, Calendar, ChevronRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 
 import ActionButtons from '@/components/ui/ActionButtons';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
@@ -201,7 +201,9 @@ export default function QuotationsPage() {
               >
                 {filters.dateRange.start && filters.dateRange.end ? (
                   <span className="truncate block">
-                    {format(filters.dateRange.start, 'MMM d')} - {format(filters.dateRange.end, 'y')}
+                    {isSameDay(filters.dateRange.start, filters.dateRange.end)
+                      ? format(filters.dateRange.start, 'MMM d, y')
+                      : `${format(filters.dateRange.start, 'MMM d')} – ${format(filters.dateRange.end, 'MMM d, y')}`}
                   </span>
                 ) : (
                   "All Time"

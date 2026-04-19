@@ -52,6 +52,7 @@ Thumbs.db
 .antigravity/
 .mcp.json
 
+
 # Extra local environment overrides
 .env.local
 .env.development.local
@@ -60,3 +61,4 @@ Thumbs.db
 
 # Local reference/temp files
 supporting_files/
+/docs/
