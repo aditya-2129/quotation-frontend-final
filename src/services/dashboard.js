@@ -17,6 +17,9 @@ export const dashboardService = {
                 completedQuotations,
                 customersCount,
                 materialsCount,
+                pipelineDocs,
+                oldestReviewDocs,
+                poCount,
             ] = await Promise.all([
                 // All quotations (filter out cancelled)
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
@@ -52,6 +55,25 @@ export const dashboardService = {
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.MATERIALS, [
                     Query.limit(1),
                 ]),
+                // Pipeline value (Draft + Review only — excludes Approved, Rejected, Cancelled)
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
+                    Query.notEqual("status", "Cancelled"),
+                    Query.notEqual("status", "Rejected"),
+                    Query.notEqual("status", "Approved"),
+                    Query.limit(5000),
+                    Query.select(["total_amount"]),
+                ]),
+                // Oldest review item — for "Xd ago" sub-label on the KPI card
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
+                    Query.equal("status", "Completed"),
+                    Query.orderAsc("$createdAt"),
+                    Query.limit(1),
+                    Query.select(["$createdAt"]),
+                ]),
+                // PO count
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.PURCHASE_ORDERS, [
+                    Query.limit(1),
+                ]),
             ]);
 
             // Calculate total revenue (excluding cancelled)
@@ -85,6 +107,23 @@ export const dashboardService = {
                 ? (((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
                 : thisMonthRevenue > 0 ? '+100' : '0';
 
+            const pipelineValue = pipelineDocs.documents.reduce(
+                (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
+                0
+            );
+
+            const oldestReviewAge = oldestReviewDocs.documents[0]?.$createdAt ?? null;
+
+            const now2 = new Date();
+            const startOfThisMonth2 = new Date(now2.getFullYear(), now2.getMonth(), 1).toISOString();
+            const approvedThisMonthDocs = allQuotations.documents.filter(
+                (d) => d.status === "Approved" && d.$createdAt >= startOfThisMonth2
+            );
+            const approvedThisMonthValue = approvedThisMonthDocs.reduce(
+                (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
+                0
+            );
+
             return {
                 totalRevenue,
                 totalQuotations: allQuotations.total,
@@ -94,6 +133,11 @@ export const dashboardService = {
                 completedCount: completedQuotations.total,
                 totalCustomers: customersCount.total,
                 totalMaterials: materialsCount.total,
+                pipelineValue,
+                oldestReviewAge,
+                poCount: poCount.total,
+                approvedThisMonthCount: approvedThisMonthDocs.length,
+                approvedThisMonthValue,
                 trends: {
                     revenue: revenueTrend,
                     quotationsThisMonth: thisMonthDocs.length,
@@ -123,6 +167,24 @@ export const dashboardService = {
             return response.documents;
         } catch (error) {
             console.error("Dashboard Service Error [getRecentQuotations]:", error);
+            throw error;
+        }
+    },
+
+    async getReviewQueue(limit = 5) {
+        try {
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                COLLECTIONS.QUOTATIONS,
+                [
+                    Query.equal("status", "Completed"),
+                    Query.orderAsc("$createdAt"),
+                    Query.limit(limit),
+                ]
+            );
+            return response.documents;
+        } catch (error) {
+            console.error("Dashboard Service Error [getReviewQueue]:", error);
             throw error;
         }
     },
