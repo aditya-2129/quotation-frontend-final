@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardService } from '@/services/dashboard';
-import { databases } from '@/lib/appwrite';
-import { APPWRITE_CONFIG } from '@/constants/appwrite';
+import { approvedQuotationService } from '@/services/quotations-approved';
 
 /**
  * Hook for dashboard statistics
@@ -41,12 +40,7 @@ export const useApproveQuotation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (quotationId) =>
-      databases.updateDocument(
-        APPWRITE_CONFIG.DATABASE_ID,
-        APPWRITE_CONFIG.COLLECTIONS.QUOTATIONS,
-        quotationId,
-        { status: 'Approved' }
-      ),
+      approvedQuotationService.updateStatus(quotationId, 'Approved'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['review-queue'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
