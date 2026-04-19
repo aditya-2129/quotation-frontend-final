@@ -17,7 +17,6 @@ export const dashboardService = {
                 completedQuotations,
                 customersCount,
                 materialsCount,
-                pipelineDocs,
                 oldestReviewDocs,
                 poCount,
             ] = await Promise.all([
@@ -54,14 +53,6 @@ export const dashboardService = {
                 // Total materials
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.MATERIALS, [
                     Query.limit(1),
-                ]),
-                // Pipeline value (Draft + Review only — excludes Approved, Rejected, Cancelled)
-                databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
-                    Query.notEqual("status", "Cancelled"),
-                    Query.notEqual("status", "Rejected"),
-                    Query.notEqual("status", "Approved"),
-                    Query.limit(5000),
-                    Query.select(["total_amount"]),
                 ]),
                 // Oldest review item — for "Xd ago" sub-label on the KPI card
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
@@ -107,17 +98,14 @@ export const dashboardService = {
                 ? (((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
                 : thisMonthRevenue > 0 ? '+100' : '0';
 
-            const pipelineValue = pipelineDocs.documents.reduce(
-                (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
-                0
-            );
+            const pipelineValue = allQuotations.documents
+                .filter(d => d.status !== "Approved")
+                .reduce((sum, doc) => sum + (parseFloat(doc.total_amount) || 0), 0);
 
-            const oldestReviewAge = oldestReviewDocs.documents[0]?.$createdAt ?? null;
+            const oldestReviewCreatedAt = oldestReviewDocs.documents[0]?.$createdAt ?? null;
 
-            const now2 = new Date();
-            const startOfThisMonth2 = new Date(now2.getFullYear(), now2.getMonth(), 1).toISOString();
             const approvedThisMonthDocs = allQuotations.documents.filter(
-                (d) => d.status === "Approved" && d.$createdAt >= startOfThisMonth2
+                (d) => d.status === "Approved" && d.$createdAt >= startOfThisMonth
             );
             const approvedThisMonthValue = approvedThisMonthDocs.reduce(
                 (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
@@ -134,7 +122,7 @@ export const dashboardService = {
                 totalCustomers: customersCount.total,
                 totalMaterials: materialsCount.total,
                 pipelineValue,
-                oldestReviewAge,
+                oldestReviewCreatedAt,
                 poCount: poCount.total,
                 approvedThisMonthCount: approvedThisMonthDocs.length,
                 approvedThisMonthValue,
@@ -171,6 +159,9 @@ export const dashboardService = {
         }
     },
 
+    /**
+     * Get quotations awaiting admin approval (status = "Completed"), oldest-first.
+     */
     async getReviewQueue(limit = 5) {
         try {
             const response = await databases.listDocuments(
