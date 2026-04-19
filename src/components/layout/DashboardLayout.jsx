@@ -5,12 +5,15 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import AuthGuard from './AuthGuard';
 import { useAuth } from '@/context/AuthContext';
+import { useSessionExpiry } from '@/hooks/useSessionExpiry';
+import SessionExpiryWarning from '@/components/modals/SessionExpiryWarning';
 
 const DashboardLayout = ({ children, title, primaryAction }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const showFull = !isCollapsed || isHovered;
   const { userProfile, isAdmin, logout } = useAuth();
+  const { showWarning, expiresAt, dismiss } = useSessionExpiry();
 
   return (
     <AuthGuard>
@@ -35,6 +38,11 @@ const DashboardLayout = ({ children, title, primaryAction }) => {
           </main>
         </div>
       </div>
+      <SessionExpiryWarning
+        isOpen={showWarning}
+        expiresAt={expiresAt}
+        onDismiss={dismiss}
+      />
     </AuthGuard>
   );
 };

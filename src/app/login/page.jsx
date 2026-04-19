@@ -1,19 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+function LoginForm() {
   const { login, isAuthenticated, isAdmin, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attempts, setAttempts] = useState(0);
+
+  // Detect ?reason=expired, show banner, then clear the param
+  useEffect(() => {
+    if (searchParams.get('reason') === 'expired') {
+      setSessionExpiredNotice(true);
+      router.replace('/login');
+    }
+  }, [searchParams, router]);
 
   // If already logged in, redirect
   useEffect(() => {
@@ -37,14 +47,12 @@ export default function LoginPage() {
       const isAdminUser = profile?.role === 'admin';
       router.replace(isAdminUser ? '/' : '/quotations-draft');
     } catch (err) {
-      // Keep logs clean for common password typos
       if (err?.code !== 401 && err?.type !== 'user_invalid_credentials') {
         console.error("Login failed:", err);
       }
 
       if (err?.code === 401 || err?.type === 'user_invalid_credentials') {
         setAttempts(prev => prev + 1);
-        
         if (attempts >= 2) {
           setError('Incorrect details. Use "Forgot Password?" below if you cannot remember it.');
         } else {
@@ -60,7 +68,6 @@ export default function LoginPage() {
     }
   };
 
-  // Show nothing while checking existing session
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50">
@@ -69,7 +76,6 @@ export default function LoginPage() {
     );
   }
 
-  // Already authenticated — will redirect via useEffect
   if (isAuthenticated) return null;
 
   return (
@@ -101,6 +107,16 @@ export default function LoginPage() {
         {/* Login Card */}
         <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-xl shadow-zinc-200/40 p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Session Expired Banner */}
+            {sessionExpiredNotice && (
+              <div className="flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-[13px] font-medium text-amber-700 animate-in fade-in slide-in-from-top-1 duration-200">
+                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Your session has expired. Please log in again.
+              </div>
+            )}
+
             {/* Error Banner */}
             {error && (
               <div className="flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-[13px] font-medium text-red-600 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -206,5 +222,17 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+        <div className="h-10 w-10 rounded-full border-3 border-zinc-200 border-t-brand-primary animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

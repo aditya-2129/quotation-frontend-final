@@ -21,6 +21,19 @@ export function AuthProvider({ children }) {
     }, []);
 
     async function checkSession() {
+        // Pre-flight: if a login timestamp exists and 24h have elapsed, log out immediately
+        const raw = localStorage.getItem('session_login_at');
+        if (raw) {
+            const loginAt = parseInt(raw, 10);
+            if (Date.now() - loginAt >= 24 * 60 * 60 * 1000) {
+                localStorage.removeItem('session_login_at');
+                setUser(null);
+                setUserProfile(null);
+                setIsLoading(false);
+                return;
+            }
+        }
+
         try {
             setIsLoading(true);
             const authUser = await authService.getCurrentUser();
@@ -53,6 +66,8 @@ export function AuthProvider({ children }) {
         const profile = await userService.getUserByAuthId(authUser.$id);
         setUserProfile(profile);
 
+        localStorage.setItem('session_login_at', String(Date.now()));
+
         return { authUser, profile };
     }
 
@@ -60,6 +75,7 @@ export function AuthProvider({ children }) {
      * Logout and clear state.
      */
     async function logout() {
+        localStorage.removeItem('session_login_at');
         await authService.logout();
         setUser(null);
         setUserProfile(null);

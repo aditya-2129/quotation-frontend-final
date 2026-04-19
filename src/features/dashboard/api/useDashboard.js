@@ -52,3 +52,20 @@ export const useApproveQuotation = () => {
     },
   });
 };
+
+export const useRejectQuotation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (quotationId) =>
+      approvedQuotationService.updateStatus(quotationId, 'Rejected'),
+    onSuccess: () => {
+      toast.success('Quotation rejected.');
+      queryClient.invalidateQueries({ queryKey: ['review-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-quotations'] });
+    },
+    onError: () => {
+      toast.error('Failed to reject quotation. Please try again.');
+    },
+  });
+};
