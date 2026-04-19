@@ -135,7 +135,7 @@ export default function ConfirmedOrdersPage() {
       <div className="flex flex-col gap-6">
 
         {/* Metrics Bar */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-white p-3.5 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-50 text-zinc-600 border border-zinc-200/50">
@@ -173,20 +173,6 @@ export default function ConfirmedOrdersPage() {
                 <p className="text-[9px] font-bold text-amber-600/70 uppercase tracking-widest leading-none">Active Orders</p>
                 <p className="mt-1 text-lg font-black text-amber-950 tracking-tight leading-none">
                   {metricsLoading ? "..." : `${metrics?.activeCount || 0}`}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="group relative overflow-hidden rounded-xl border border-blue-100 bg-blue-50/30 p-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/50 text-blue-600 border border-blue-200/50">
-                <FileText className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-blue-600/70 uppercase tracking-widest leading-none">Avg. Order Size</p>
-                <p className="mt-1 text-lg font-black text-blue-950 tracking-tight leading-none">
-                  {metricsLoading ? "..." : `₹${(metrics?.averageValue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
                 </p>
               </div>
             </div>

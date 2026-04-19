@@ -153,7 +153,7 @@ export default function QuotationsPage() {
 
   return (
     <DashboardLayout 
-      title="Project Quotations Repository"
+      title="New Quotations Log"
       primaryAction={
         <button 
           onClick={() => router.push('/quotations-draft/new')}

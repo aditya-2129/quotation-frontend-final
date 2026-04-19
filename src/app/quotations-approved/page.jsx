@@ -258,7 +258,7 @@ export default function ApprovedQuotationsPage() {
           style={{ fontSize: THEME.FONT_SIZE.SMALL, fontWeight: 'bold' }}
         >
           <FileSpreadsheet className="h-3.5 w-3.5" />
-          {isExporting ? "Exporting..." : "Export Registry"}
+          {isExporting ? "Exporting..." : "Export Quotation"}
         </button>
       }
     >

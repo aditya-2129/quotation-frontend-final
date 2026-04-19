@@ -94,7 +94,7 @@ const OrderDetailsModal = ({ isOpen, onClose, order }) => {
                 className="flex items-center gap-2 px-4 h-10 rounded-xl bg-white border border-zinc-200 text-zinc-600 hover:text-brand-primary hover:border-brand-primary/30 transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm group"
               >
                 <FileText className="h-4 w-4 text-zinc-400 group-hover:text-brand-primary" />
-                View PO Scan
+                View PO
                 <ExternalLink className="h-3 w-3 opacity-50" />
               </a>
             )}
