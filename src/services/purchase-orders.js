@@ -53,30 +53,44 @@ export const purchaseOrderService = {
      */
     async getOrderMetrics(filters = {}) {
         try {
-            const queries = [
-                Query.limit(5000),
-                Query.select(['total_amount', 'actual_valuation', 'status'])
-            ];
+            const selectFields = Query.select(['total_amount', 'actual_valuation', 'status', '$createdAt']);
+            const baseLimit = Query.limit(5000);
 
-            // Re-use filter logic or keep it simple for metrics
-            const response = await databases.listDocuments(
-                DATABASE_ID,
-                COLLECTIONS.PURCHASE_ORDERS,
-                queries
-            );
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-            const totalValue = response.documents.reduce((sum, doc) => sum + (parseFloat(doc.actual_valuation || doc.total_amount) || 0), 0);
-            const activeOrders = response.documents.filter(doc => doc.status !== 'Completed' && doc.status !== 'Cancelled').length;
-            
+            const activeStatuses = ['Received', 'In Production', 'Shipped'];
+
+            const periodQueries = [baseLimit, selectFields];
+            if (filters.dateRange?.start && filters.dateRange?.end) {
+                periodQueries.push(Query.greaterThanEqual('$createdAt', new Date(filters.dateRange.start).toISOString()));
+                periodQueries.push(Query.lessThanEqual('$createdAt', new Date(filters.dateRange.end).toISOString()));
+            }
+
+            const [allRes, currentMonthRes, activeRes, periodRes] = await Promise.all([
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.PURCHASE_ORDERS, [baseLimit, Query.select(['$id'])]),
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.PURCHASE_ORDERS, [
+                    baseLimit, selectFields,
+                    Query.greaterThanEqual('$createdAt', monthStart),
+                ]),
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.PURCHASE_ORDERS, [
+                    baseLimit, selectFields,
+                    Query.or(activeStatuses.map(s => Query.equal('status', s))),
+                ]),
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.PURCHASE_ORDERS, periodQueries),
+            ]);
+
+            const sumValue = (docs) => docs.reduce((sum, doc) => sum + (parseFloat(doc.actual_valuation || doc.total_amount) || 0), 0);
+
             return {
-                count: response.total,
-                totalValue: totalValue,
-                activeCount: activeOrders,
-                averageValue: response.total > 0 ? totalValue / response.total : 0
+                count: allRes.total,
+                currentMonthValue: sumValue(currentMonthRes.documents),
+                activeValue: sumValue(activeRes.documents),
+                selectedPeriodValue: sumValue(periodRes.documents),
             };
         } catch (error) {
             console.error("Appwrite Service Error [getOrderMetrics]:", error);
-            return { count: 0, totalValue: 0, activeCount: 0, averageValue: 0 };
+            return { count: 0, currentMonthValue: 0, activeValue: 0, selectedPeriodValue: 0 };
         }
     },
 
