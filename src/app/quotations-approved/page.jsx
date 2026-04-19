@@ -23,7 +23,7 @@ import { generateBOPListPDF } from '@/utils/generateBOPListPDF';
 import { exportQuotationsToExcel } from '@/utils/exportToExcel';
 import { useApprovedQuotations, useApprovedMetrics } from '@/features/quotations/api/useApprovedQuotations';
 import { useUsers } from '@/features/admin/api/useUsers';
-import { Search, Filter, X, Calendar, BarChart3, FileCheck, TrendingUp, ChevronRight, FileSpreadsheet, Briefcase, CheckCircle2 } from 'lucide-react';
+import { Search, Filter, X, Calendar, FileCheck, TrendingUp, ChevronRight, FileSpreadsheet, Briefcase, Clock } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { format, isSameDay } from 'date-fns';
 import LogPoModal from '@/components/modals/LogPoModal';
@@ -265,49 +265,50 @@ export default function ApprovedQuotationsPage() {
       <div className="flex flex-col gap-6">
 
         {/* Metrics Bar */}
-         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="group relative overflow-hidden rounded-xl border border-emerald-100 bg-emerald-50/30 p-3.5 transition-all hover:bg-emerald-50/50">
-               <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100/50 text-emerald-600 border border-emerald-200/50 group-hover:scale-105 transition-transform">
-                     <TrendingUp className="h-5 w-5" />
-                  </div>
-                  <div>
-                     <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest leading-none">Total Value in Scope</p>
-                     <p className="mt-1 text-lg font-black text-emerald-950 tracking-tight leading-none">
-                        {metricsLoading ? "Calculating..." : `₹${(metrics?.totalValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                     </p>
-                  </div>
-               </div>
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="group relative overflow-hidden rounded-xl border border-emerald-100 bg-emerald-50/30 p-3.5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100/50 text-emerald-600 border border-emerald-200/50">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest leading-none">Total Value in Scope</p>
+                <p className="mt-1 text-lg font-black text-emerald-950 tracking-tight leading-none">
+                  {metricsLoading ? "..." : `₹${(metrics?.totalValue || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
+                </p>
+              </div>
             </div>
+          </div>
 
-            <div className="group relative overflow-hidden rounded-xl border border-blue-100 bg-blue-50/30 p-3.5 transition-all hover:bg-blue-50/50">
-               <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/50 text-blue-600 border border-blue-200/50 group-hover:scale-105 transition-transform">
-                     <FileCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                     <p className="text-[9px] font-bold text-blue-600/70 uppercase tracking-widest leading-none">Total Count</p>
-                     <p className="mt-1 text-lg font-black text-blue-950 tracking-tight leading-none">
-                        {metricsLoading ? "..." : `${metrics?.count || 0} Records`}
-                     </p>
-                  </div>
-               </div>
+          <div className="group relative overflow-hidden rounded-xl border border-blue-100 bg-blue-50/30 p-3.5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/50 text-blue-600 border border-blue-200/50">
+                <FileCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-blue-600/70 uppercase tracking-widest leading-none">Total Count</p>
+                <p className="mt-1 text-lg font-black text-blue-950 tracking-tight leading-none">
+                  {metricsLoading ? "..." : `${metrics?.count || 0} Records`}
+                </p>
+              </div>
             </div>
+          </div>
 
-            <div className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-white p-3.5 transition-all hover:border-zinc-300">
-               <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-50 text-zinc-600 border border-zinc-200/50 group-hover:scale-105 transition-transform">
-                     <BarChart3 className="h-5 w-5" />
-                  </div>
-                  <div>
-                     <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Average Valuation</p>
-                     <p className="mt-1 text-lg font-black text-zinc-950 tracking-tight leading-none">
-                        {metricsLoading ? "..." : `₹${(metrics?.averageValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                     </p>
-                  </div>
-               </div>
+          <div className="group relative overflow-hidden rounded-xl border border-amber-100 bg-amber-50/30 p-3.5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100/50 text-amber-600 border border-amber-200/50">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-amber-600/70 uppercase tracking-widest leading-none">This Month</p>
+                <p className="mt-1 text-lg font-black text-amber-950 tracking-tight leading-none">
+                  {metricsLoading ? "..." : `₹${(metrics?.thisMonthValue || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
+                </p>
+              </div>
             </div>
-         </section>
+          </div>
+
+        </section>
 
         {/* Filters Section */}
         <section className="rounded-xl border border-zinc-200 bg-zinc-50/30 p-3.5 shadow-sm flex flex-col md:flex-row gap-4 items-end">

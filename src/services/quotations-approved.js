@@ -68,53 +68,71 @@ export const approvedQuotationService = {
      */
     async getApprovedMetrics(filters = {}) {
         try {
-            const queries = [
-                Query.equal('status', 'Approved'),
-                Query.limit(5000),
-                Query.select(['total_amount'])
-            ];
-
+            const baseFilterQueries = [];
             const searchTerm = (filters.search || '').trim();
             if (searchTerm) {
-                queries.push(Query.or([
+                baseFilterQueries.push(Query.or([
                     Query.contains('quotation_no', searchTerm),
                     Query.contains('part_number', searchTerm),
                     Query.contains('supplier_name', searchTerm)
                 ]));
             }
-
             if (filters.engineer && filters.engineer !== 'All') {
-                queries.push(Query.equal('quoting_engineer', filters.engineer));
+                baseFilterQueries.push(Query.equal('quoting_engineer', filters.engineer));
             }
 
+            const dateQueries = [];
             if (filters.dateRange && filters.dateRange.start && filters.dateRange.end) {
-                queries.push(Query.greaterThanEqual('$createdAt', new Date(filters.dateRange.start).toISOString()));
-                queries.push(Query.lessThanEqual('$createdAt', new Date(filters.dateRange.end).toISOString()));
+                dateQueries.push(Query.greaterThanEqual('$createdAt', new Date(filters.dateRange.start).toISOString()));
+                dateQueries.push(Query.lessThanEqual('$createdAt', new Date(filters.dateRange.end).toISOString()));
             } else if (filters.timePeriod && filters.timePeriod !== 'All Time') {
                 const now = new Date();
                 let pastDate = new Date();
                 if (filters.timePeriod === 'Last 30 Days') pastDate.setDate(now.getDate() - 30);
                 else if (filters.timePeriod === 'Last 90 Days') pastDate.setDate(now.getDate() - 90);
                 else if (filters.timePeriod === 'This Year') pastDate = new Date(now.getFullYear(), 0, 1);
-                queries.push(Query.greaterThanEqual('$createdAt', pastDate.toISOString()));
+                dateQueries.push(Query.greaterThanEqual('$createdAt', pastDate.toISOString()));
             }
 
-            const response = await databases.listDocuments(
-                DATABASE_ID,
-                COLLECTIONS.QUOTATIONS,
-                queries
-            );
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
 
-            const totalValue = response.documents.reduce((sum, doc) => sum + (parseFloat(doc.total_amount) || 0), 0);
-            
+            const [scopeResponse, thisMonthResponse, pendingResponse] = await Promise.all([
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
+                    Query.equal('status', 'Approved'),
+                    Query.limit(5000),
+                    Query.select(['total_amount']),
+                    ...baseFilterQueries,
+                    ...dateQueries,
+                ]),
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
+                    Query.equal('status', 'Approved'),
+                    Query.limit(5000),
+                    Query.select(['total_amount']),
+                    Query.greaterThanEqual('$createdAt', monthStart),
+                    Query.lessThanEqual('$createdAt', monthEnd),
+                    ...baseFilterQueries,
+                ]),
+                databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
+                    Query.equal('status', 'Approved'),
+                    Query.limit(1),
+                    Query.select(['$id']),
+                ]),
+            ]);
+
+            const totalValue = scopeResponse.documents.reduce((sum, doc) => sum + (parseFloat(doc.total_amount) || 0), 0);
+            const thisMonthValue = thisMonthResponse.documents.reduce((sum, doc) => sum + (parseFloat(doc.total_amount) || 0), 0);
+
             return {
-                count: response.total,
-                totalValue: totalValue,
-                averageValue: response.total > 0 ? totalValue / response.total : 0
+                count: scopeResponse.total,
+                totalValue,
+                thisMonthValue,
+                pendingConversionCount: pendingResponse.total,
             };
         } catch (error) {
             console.error("Appwrite Service Error [getApprovedMetrics]:", error);
-            return { count: 0, totalValue: 0, averageValue: 0 };
+            return { count: 0, totalValue: 0, thisMonthValue: 0, pendingConversionCount: 0 };
         }
     },
 
