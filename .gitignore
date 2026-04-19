@@ -53,11 +53,8 @@ Thumbs.db
 .mcp.json
 .superpowers/
 
-# Extra local environment overrides
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Appwrite CLI local state
+.appwrite/
 
 # Local reference/temp files
 supporting_files/
