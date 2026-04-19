@@ -1,5 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardService } from '@/services/dashboard';
+import { databases } from '@/lib/appwrite';
+import { APPWRITE_CONFIG } from '@/constants/appwrite';
 
 /**
  * Hook for dashboard statistics
@@ -18,5 +20,37 @@ export const useRecentQuotations = (limit = 6) => {
   return useQuery({
     queryKey: ['recent-quotations', limit],
     queryFn: () => dashboardService.getRecentQuotations(limit),
+  });
+};
+
+/**
+ * Hook for quotations awaiting admin approval (status = "Completed"), oldest first.
+ */
+export const useReviewQueue = (limit = 5) => {
+  return useQuery({
+    queryKey: ['review-queue', limit],
+    queryFn: () => dashboardService.getReviewQueue(limit),
+  });
+};
+
+/**
+ * Mutation to approve a quotation from the dashboard review queue.
+ * Invalidates dashboard-stats, review-queue, and recent-quotations on success.
+ */
+export const useApproveQuotation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (quotationId) =>
+      databases.updateDocument(
+        APPWRITE_CONFIG.DATABASE_ID,
+        APPWRITE_CONFIG.COLLECTIONS.QUOTATIONS,
+        quotationId,
+        { status: 'Approved' }
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['review-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-quotations'] });
+    },
   });
 };
