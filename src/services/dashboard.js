@@ -18,7 +18,7 @@ export const dashboardService = {
                 customersCount,
                 materialsCount,
                 oldestReviewDocs,
-                poCount,
+                allPOs,
             ] = await Promise.all([
                 // All quotations (filter out cancelled)
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.QUOTATIONS, [
@@ -61,49 +61,40 @@ export const dashboardService = {
                     Query.limit(1),
                     Query.select(["$createdAt"]),
                 ]),
-                // PO count
+                // Fetch all POs for actual revenue tracking
                 databases.listDocuments(DATABASE_ID, COLLECTIONS.PURCHASE_ORDERS, [
-                    Query.limit(1),
+                    Query.limit(5000),
+                    Query.select(["total_amount", "actual_valuation", "$createdAt"]),
                 ]),
             ]);
 
-            // Calculate total revenue (excluding cancelled)
-            const totalRevenue = allQuotations.documents.reduce(
-                (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
-                0
-            );
+            // ACTUAL REVENUE: Based on POs, preferring actual_valuation (final bills) over initial quoted amount
+            const sumPOValue = (docs) => docs.reduce((sum, doc) => sum + (parseFloat(doc.actual_valuation || doc.total_amount) || 0), 0);
+            const totalRevenue = sumPOValue(allPOs.documents);
 
-            // Calculate monthly trends
+            // Calculate monthly trends based on ACTUAL (PO) data
             const now = new Date();
             const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
             const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
 
-            const thisMonthDocs = allQuotations.documents.filter(
-                (d) => d.$createdAt >= startOfThisMonth
-            );
-            const lastMonthDocs = allQuotations.documents.filter(
-                (d) => d.$createdAt >= startOfLastMonth && d.$createdAt < startOfThisMonth
-            );
+            const thisMonthPOs = allPOs.documents.filter(d => d.$createdAt >= startOfThisMonth);
+            const lastMonthPOs = allPOs.documents.filter(d => d.$createdAt >= startOfLastMonth && d.$createdAt < startOfThisMonth);
 
-            const thisMonthRevenue = thisMonthDocs.reduce(
-                (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
-                0
-            );
-            const lastMonthRevenue = lastMonthDocs.reduce(
-                (sum, doc) => sum + (parseFloat(doc.total_amount) || 0),
-                0
-            );
+            const thisMonthRevenue = sumPOValue(thisMonthPOs);
+            const lastMonthRevenue = sumPOValue(lastMonthPOs);
 
             const revenueTrend = lastMonthRevenue > 0
                 ? (((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
                 : thisMonthRevenue > 0 ? '+100' : '0';
 
+            // Pipeline: What's strictly in motion (not yet approved/rejected/cancelled)
             const pipelineValue = allQuotations.documents
                 .filter(d => d.status !== "Approved" && d.status !== "Rejected")
                 .reduce((sum, doc) => sum + (parseFloat(doc.total_amount) || 0), 0);
 
             const oldestReviewCreatedAt = oldestReviewDocs.documents[0]?.$createdAt ?? null;
 
+            // Metrics for approved quotations specifically
             const approvedThisMonthDocs = allQuotations.documents.filter(
                 (d) => d.status === "Approved" && d.$createdAt >= startOfThisMonth
             );
@@ -123,13 +114,12 @@ export const dashboardService = {
                 totalMaterials: materialsCount.total,
                 pipelineValue,
                 oldestReviewCreatedAt,
-                poCount: poCount.total,
+                poCount: allPOs.total,
                 approvedThisMonthCount: approvedThisMonthDocs.length,
                 approvedThisMonthValue,
                 trends: {
                     revenue: revenueTrend,
-                    quotationsThisMonth: thisMonthDocs.length,
-                    quotationsLastMonth: lastMonthDocs.length,
+                    quotationsThisMonth: allQuotations.documents.filter(d => d.$createdAt >= startOfThisMonth).length,
                 },
             };
         } catch (error) {

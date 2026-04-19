@@ -73,7 +73,7 @@ const Pulse = ({ className }) => (
 function RevenueBanner({ stats, loading }) {
   const conversionRate =
     stats && stats.totalQuotations > 0
-      ? Math.round((stats.approvedCount / stats.totalQuotations) * 100)
+      ? Math.round((stats.poCount / stats.totalQuotations) * 100)
       : 0;
 
   const isPositive =
