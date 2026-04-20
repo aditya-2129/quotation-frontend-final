@@ -39,7 +39,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isHovered, setIsHovered, isAdmin
       >
         {showFull && (
           <div className="flex w-full items-center justify-center py-2 h-12">
-            <img src="/KE_Logo.png" alt="KRUPA ENGINEERING" className="h-full w-auto object-contain max-w-[160px]" />
+            <img src="/KE_Logo.png" alt="Kaivalya Engineering" className="h-full w-auto object-contain max-w-[160px]" />
           </div>
         )}
         {!showFull && (

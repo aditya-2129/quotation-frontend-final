@@ -88,8 +88,8 @@ function RevenueBanner({ stats, loading }) {
     <div
       className="relative overflow-hidden rounded-2xl border border-brand-primary/30 p-5"
       style={{
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #134e4a 100%)",
-        boxShadow: "0 4px 24px rgba(94,192,194,0.12)",
+        background: "linear-gradient(135deg, #000000 0%, #0f172a 40%, var(--brand-teal-dark) 100%)",
+        boxShadow: "0 8px 32px rgba(94, 192, 194, 0.15)",
       }}
     >
       <div
@@ -136,9 +136,9 @@ function RevenueBanner({ stats, loading }) {
         <div className="text-center min-w-[80px]">
           <p className="font-bold uppercase tracking-widest text-amber-500/80" style={{ fontSize: "9px" }}>⚡ Awaiting</p>
           {loading ? <Pulse className="mt-1 h-7 w-10 mx-auto" /> : (
-            <p className="mt-1 font-black text-amber-400" style={{ fontSize: "22px" }}>{stats?.completedCount ?? "—"}</p>
+            <p className="mt-1 font-black text-brand-accent" style={{ fontSize: "22px" }}>{stats?.completedCount ?? "—"}</p>
           )}
-          <p className="text-slate-500 font-medium" style={{ fontSize: "9px" }}>approval</p>
+          <p className="text-slate-400 font-bold" style={{ fontSize: "9px" }}>APPROVAL</p>
         </div>
 
         <div className="w-px h-12 bg-white/10 hidden sm:block" />
@@ -173,14 +173,14 @@ function KPICard({ label, value, sub, icon: Icon, loading, highlight }) {
     <div
       className={`group relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 ${
         highlight
-          ? "border-amber-300 bg-amber-50 hover:border-amber-400 hover:shadow-[0_4px_20px_rgba(245,158,11,0.15)]"
+          ? "border-brand-accent bg-brand-accent/5 hover:bg-brand-accent/10 hover:shadow-[0_4px_20px_rgba(255,255,0,0.15)]"
           : "border-zinc-200/80 bg-white hover:border-brand-primary/40 hover:shadow-[0_4px_20px_rgba(94,192,194,0.10)]"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           <p
-            className={`font-bold uppercase tracking-[0.1em] ${highlight ? "text-amber-600" : "text-zinc-400"}`}
+            className={`font-bold uppercase tracking-[0.1em] ${highlight ? "text-brand-black/60" : "text-zinc-400"}`}
             style={{ fontSize: "9px" }}
           >
             {label}
@@ -189,7 +189,7 @@ function KPICard({ label, value, sub, icon: Icon, loading, highlight }) {
             <Pulse className="mt-2 h-7 w-20" />
           ) : (
             <p
-              className={`mt-1.5 font-extrabold tracking-tight leading-none ${highlight ? "text-amber-600" : "text-zinc-900"}`}
+              className={`mt-1.5 font-extrabold tracking-tight leading-none ${highlight ? "text-brand-black" : "text-zinc-900"}`}
               style={{ fontSize: THEME.FONT_SIZE.XXLARGE }}
             >
               {value}
@@ -199,7 +199,7 @@ function KPICard({ label, value, sub, icon: Icon, loading, highlight }) {
             <Pulse className="mt-2 h-3 w-16" />
           ) : (
             <p
-              className={`mt-2 font-semibold ${highlight ? "text-amber-500" : "text-zinc-400"}`}
+              className={`mt-2 font-semibold ${highlight ? "text-brand-black/50" : "text-zinc-400"}`}
               style={{ fontSize: "10px" }}
             >
               {sub}
@@ -208,10 +208,10 @@ function KPICard({ label, value, sub, icon: Icon, loading, highlight }) {
         </div>
         <div
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-            highlight ? "bg-amber-100" : "bg-brand-primary/10"
+            highlight ? "bg-brand-accent shadow-[0_0_15px_rgba(255,255,0,0.4)]" : "bg-brand-primary/10"
           }`}
         >
-          <Icon className={`h-4 w-4 ${highlight ? "text-amber-500" : "text-brand-primary"}`} />
+          <Icon className={`h-4 w-4 ${highlight ? "text-brand-black" : "text-brand-primary"}`} />
         </div>
       </div>
     </div>
